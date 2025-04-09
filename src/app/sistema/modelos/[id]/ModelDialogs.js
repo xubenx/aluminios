@@ -1,0 +1,177 @@
+"use client";
+import React from "react";
+import {
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  Button,
+  Typography,
+  TextField,
+  Autocomplete
+} from "@mui/material";
+
+// Diálogo para confirmar la eliminación del modelo
+export function ConfirmDeleteDialog({ open, onCancel, onConfirm }) {
+  return (
+    <Dialog open={open} onClose={onCancel}>
+      <DialogTitle>Confirmar Eliminación</DialogTitle>
+      <DialogContent>
+        <Typography>¿Estás seguro de que deseas eliminar este modelo?</Typography>
+      </DialogContent>
+      <DialogActions>
+        <Button onClick={onCancel}>Cancelar</Button>
+        <Button onClick={onConfirm} color="error">Eliminar</Button>
+      </DialogActions>
+    </Dialog>
+  );
+}
+
+// Diálogo para confirmar la actualización del modelo
+export function ConfirmUpdateModelDialog({ open, onCancel, onConfirm }) {
+  return (
+    <Dialog open={open} onClose={onCancel}>
+      <DialogTitle>Confirmar Actualización</DialogTitle>
+      <DialogContent>
+        <Typography>¿Estás seguro de guardar los cambios en el modelo?</Typography>
+      </DialogContent>
+      <DialogActions>
+        <Button onClick={onCancel}>Cancelar</Button>
+        <Button onClick={onConfirm} color="primary">Confirmar</Button>
+      </DialogActions>
+    </Dialog>
+  );
+}
+
+// Diálogo para confirmar la actualización de un elemento
+export function ConfirmUpdateSectionDialog({ open, onCancel, onConfirm }) {
+  return (
+    <Dialog open={open} onClose={onCancel}>
+      <DialogTitle>Confirmar Actualización</DialogTitle>
+      <DialogContent>
+        <Typography>¿Estás seguro de guardar este elemento?</Typography>
+      </DialogContent>
+      <DialogActions>
+        <Button onClick={onCancel}>Cancelar</Button>
+        <Button onClick={onConfirm} color="primary">Confirmar</Button>
+      </DialogActions>
+    </Dialog>
+  );
+}
+
+// Diálogo para confirmar la eliminación de un elemento
+export function ConfirmDeleteItemDialog({ open, onCancel, onConfirm }) {
+  return (
+    <Dialog open={open} onClose={onCancel}>
+      <DialogTitle>Confirmar Eliminación</DialogTitle>
+      <DialogContent>
+        <Typography>¿Estás seguro de que deseas eliminar este elemento?</Typography>
+      </DialogContent>
+      <DialogActions>
+        <Button onClick={onCancel}>Cancelar</Button>
+        <Button onClick={onConfirm} color="error">Eliminar</Button>
+      </DialogActions>
+    </Dialog>
+  );
+}
+
+// Diálogo para confirmar el cambio de imagen del modelo
+export function ConfirmChangeImageDialog({ open, onCancel, onConfirm }) {
+  return (
+    <Dialog open={open} onClose={onCancel}>
+      <DialogTitle>Cambiar Imagen</DialogTitle>
+      <DialogContent>
+        <Typography>¿Estás seguro de que deseas cambiar la imagen del modelo?</Typography>
+      </DialogContent>
+      <DialogActions>
+        <Button onClick={onCancel}>Cancelar</Button>
+        <Button onClick={onConfirm} color="info">Cambiar Imagen</Button>
+      </DialogActions>
+    </Dialog>
+  );
+}
+
+// Diálogo para agregar o editar un elemento.
+// Para "materials" y "chapes" se muestra el Autocomplete; para "glasses" se fija el nombre "Vidrio".
+export function EditElementDialog({
+  open,
+  currentSection,
+  formData,
+  selectedOption,
+  options,
+  onFormChange,
+  onSave,
+  onCancel
+}) {
+  return (
+    <Dialog open={open} onClose={onCancel} fullWidth>
+      <DialogTitle>{"Editar Elemento"}</DialogTitle>
+      <DialogContent>
+        {currentSection === "glasses" ? (
+          <TextField
+            disabled
+            margin="dense"
+            label="Elemento"
+            fullWidth
+            variant="outlined"
+            value="Vidrio"
+            sx={{ mb: 2 }}
+          />
+        ) : (
+          <>
+            {formData.index === undefined ? (
+              <Autocomplete
+                options={options}
+                getOptionLabel={(option) => {
+                  const duplicates = options.filter(o => o.name === option.name);
+                  return duplicates.length > 1
+                    ? `${option.name} (${option.id.slice(0, 4)})`
+                    : option.name;
+                }}
+                isOptionEqualToValue={(option, value) => option.id === value.id}
+                value={selectedOption}
+                onChange={(event, newValue) =>
+                  onFormChange({
+                    ...formData,
+                    id: newValue ? newValue.id : "",
+                    name: newValue ? newValue.name : ""
+                  })
+                }
+                renderInput={(params) => <TextField {...params} label="Elemento" variant="outlined" />}
+                renderOption={(props, option) => {
+                  const duplicates = options.filter(o => o.name === option.name);
+                  const label = duplicates.length > 1
+                    ? `${option.name} (${option.id.slice(0, 4)})`
+                    : option.name;
+                  return <li {...props}>{label}</li>;
+                }}
+                sx={{ mb: 2 }}
+              />
+            ) : (
+              <Typography variant="h6" sx={{ mb: 2 }}>
+                {formData.name}
+              </Typography>
+            )}
+          </>
+        )}
+        <TextField
+          autoFocus
+          margin="dense"
+          label="Fórmula"
+          type="text"
+          fullWidth
+          variant="outlined"
+          name="formula"
+          value={formData.formula || ""}
+          onChange={(e) => onFormChange({ ...formData, formula: e.target.value })}
+        />
+      </DialogContent>
+      <DialogActions>
+        <Button onClick={onCancel}>Cancelar</Button>
+        <Button onClick={onSave} variant="contained" color="primary">
+          Guardar
+        </Button>
+      </DialogActions>
+    </Dialog>
+  );
+}

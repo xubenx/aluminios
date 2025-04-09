@@ -1,0 +1,4505 @@
+[
+  {
+    "name": "ORDEN VENTANA 2\" SIN/MOSQ DERECHA",
+    "materials": [
+      {
+        "id": "QawznrBZwvAj2wX8",
+        "formula": "PRECIO/TRAMO * (ALTO*2+ANCHO)"
+      },
+      {
+        "id": "SOcLOPScVGDKFg8Z",
+        "formula": "PRECIO/TRAMO * (ANCHO)"
+      },
+      {
+        "id": "czIf7aZ2Uepxa8qg",
+        "formula": "PRECIO/TRAMO * (ALTO*2)"
+      },
+      {
+        "id": "ZwZDTXXDOq3P7oHA",
+        "formula": "PRECIO/TRAMO * (ALTO*2)"
+      },
+      {
+        "id": "dXr03BwPhSPp3PqL",
+        "formula": "PRECIO/TRAMO * (ANCHO)"
+      },
+      {
+        "id": "xSmhzCWNTz3HVFeS",
+        "formula": "PRECIO/TRAMO * (ANCHO)"
+      }
+    ],
+    "chapes": [
+      {
+        "id": "5JkiGrKKYDfQXqgH",
+        "formula": "PRECIO * 2"
+      },
+      {
+        "id": "5OATaZbCgFTwaebF",
+        "formula": "PRECIO * 1"
+      },
+      {
+        "id": "QzsLDy7KyQOGjc3P",
+        "formula": "PRECIO * 40"
+      }
+    ],
+    "glasses": [
+      {
+        "id": "GG3cMlZYVmVrNrQW",
+        "formula": "PRECIO * (ALTO*ANCHO)"
+      }
+    ],
+    "manpower": "1.5",
+    "_id": "0vHa8RDLy9CfvPdu",
+    "type": "models"
+  },
+  {
+    "name": "PUERTA MITAD VIDRIO Y DUELA II",
+    "materials": [
+      {
+        "id": "85uHpiAqe2OrFJuz",
+        "formula": "PRECIO ALTO * 2 + ANCHO *2"
+      },
+      {
+        "id": "QPsFCfKGqZtBWEAp",
+        "formula": "PRECIO ANCHO * 1"
+      },
+      {
+        "id": "8BSFiGtvKRJEYSIP",
+        "formula": "PRECIO ALTO * 2 + ANCHO * 2"
+      },
+      {
+        "id": "7pUmXOiQq2GSZ7wV",
+        "formula": "PRECIO ANCHO * 1"
+      },
+      {
+        "id": "HJhQDfqt4DlH9zXd",
+        "formula": "PRECIO ALTO *2 +ANCHO *2"
+      },
+      {
+        "id": "N2sXRG2EZMiSei3F",
+        "formula": "PRECIO ALTO *2 + ANCHO * 2"
+      }
+    ],
+    "chapes": [
+      {
+        "id": "DSDiUllAH3qbcwBB",
+        "formula": "PRECIO * 1"
+      },
+      {
+        "id": "J67gNXFCl7KVT9Ny",
+        "formula": "PRECIO * 1"
+      }
+    ],
+    "glasses": [],
+    "manpower": "1.50",
+    "_id": "2IQPb91fTQrY2DBa",
+    "type": "models"
+  },
+  {
+    "name": "MAMPARA PARA MIJITORIO",
+    "materials": [
+      {
+        "id": "xx6ZF3z2UnX9CWSc",
+        "formula": "PRECIO ALTO * 2 + ANCHO * 2"
+      },
+      {
+        "id": "JptqZId2FrKwSX8O",
+        "formula": "PRECIO ALTO + 2 + ANCHO * 2"
+      },
+      {
+        "id": "b55G4Ftx3UWmzLH2",
+        "formula": "PRECIO ALTO * 2 + ANCHO * 2"
+      }
+    ],
+    "chapes": [],
+    "glasses": [],
+    "manpower": "1.50",
+    "_id": "3tyuBZheyuhSiCfE",
+    "type": "models"
+  },
+  {
+    "name": "VENTANA CON DOS CORREDIZAS Y FIJO AL CENTRO",
+    "materials": [
+      {
+        "id": "QawznrBZwvAj2wX8",
+        "formula": "PRECIO ALTO * 2 + ANCHO * 1"
+      },
+      {
+        "id": "SOcLOPScVGDKFg8Z",
+        "formula": "PRECIO ANCHO * 1"
+      },
+      {
+        "id": "czIf7aZ2Uepxa8qg",
+        "formula": "PRECIO ALTO * 2"
+      },
+      {
+        "id": "ZwZDTXXDOq3P7oHA",
+        "formula": "PRECIO ALTO * 2"
+      },
+      {
+        "id": "xSmhzCWNTz3HVFeS",
+        "formula": "PRECIO ANCHO * 1"
+      },
+      {
+        "id": "dXr03BwPhSPp3PqL",
+        "formula": "PRECIO ANCHO * 1"
+      }
+    ],
+    "chapes": [
+      {
+        "id": "5OATaZbCgFTwaebF",
+        "formula": "PRECIO * 2"
+      },
+      {
+        "id": "Qgppeve3GuI6khFE",
+        "formula": "PRECIO * 4"
+      }
+    ],
+    "glasses": [],
+    "manpower": "1.50",
+    "_id": "5cG3Yh8liItDTovI",
+    "type": "models"
+  },
+  {
+    "name": "ORDEN PUERTA 1\" 3/4 SOLO VIDRIO A.IZQUIERDA",
+    "materials": [
+      {
+        "id": "ZHpCIGudfKo8fykU",
+        "formula": "PRECIO * 1"
+      },
+      {
+        "id": "N2sXRG2EZMiSei3F",
+        "formula": "PRECIO * 1"
+      },
+      {
+        "id": "8BSFiGtvKRJEYSIP",
+        "formula": "PRECIO * 1"
+      },
+      {
+        "id": "7pUmXOiQq2GSZ7wV",
+        "formula": "PRECIO/TRAMO * (ANCHO)"
+      },
+      {
+        "id": "QPsFCfKGqZtBWEAp",
+        "formula": "PRECIO/TRAMO * (ANCHO)"
+      },
+      {
+        "id": "HJhQDfqt4DlH9zXd",
+        "formula": "PRECIO/TRAMO * (ALTO*4+ANCHO*4)"
+      }
+    ],
+    "chapes": [
+      {
+        "id": "J67gNXFCl7KVT9Ny",
+        "formula": "PRECIO * 1"
+      },
+      {
+        "id": "DSDiUllAH3qbcwBB",
+        "formula": "PRECIO * 1"
+      },
+      {
+        "id": "QzsLDy7KyQOGjc3P",
+        "formula": "PRECIO * 30"
+      }
+    ],
+    "glasses": [
+      {
+        "id": "GG3cMlZYVmVrNrQW",
+        "formula": "PRECIO * (ALTO*ANCHO)"
+      }
+    ],
+    "manpower": "1.25",
+    "_id": "5cjUZ1LQQZLBrhWV",
+    "type": "models"
+  },
+  {
+    "name": "PUERTA SENCILLA",
+    "materials": [
+      {
+        "id": "pXNqsd3MkHPeGUnS",
+        "formula": "PRECIO ALTO * 2 "
+      },
+      {
+        "id": "8Ve6QGz7FCBMDrFg",
+        "formula": "PRECIO ALTO * 2 + ANCHO * 2"
+      }
+    ],
+    "chapes": [
+      {
+        "id": "3oAYB5isOhGuorXU",
+        "formula": "PRECIO * 1"
+      },
+      {
+        "id": "YlUf2iuOkbSrnH0U",
+        "formula": "PRECIO * 1"
+      },
+      {
+        "id": "juY5Q9ADduBgJCGT",
+        "formula": "PRECIO * 1"
+      },
+      {
+        "id": "WQlLImW6zcMIk0db",
+        "formula": "PRECIO * 2"
+      }
+    ],
+    "glasses": [],
+    "manpower": "1.50",
+    "_id": "5ixvnN1WJxTsHW9S",
+    "type": "models"
+  },
+  {
+    "name": "CANCEL RESIDENCIAL",
+    "materials": [
+      {
+        "id": "V6G2T1KEatpu6cMi",
+        "formula": "PRECIO ALTO * 2 + ANCHO * 2"
+      },
+      {
+        "id": "9ZgYSgBcQjwAlXD2",
+        "formula": "PRECIO ALTO * 2 + ANCHO * 2"
+      },
+      {
+        "id": "8WpzzyuzNIRFhcLp",
+        "formula": "PRECIO ALTO * 2 + ANCHO * 2"
+      }
+    ],
+    "chapes": [
+      {
+        "id": "rcCTDN6Hv3s96Opp",
+        "formula": "PRECIO * 1"
+      }
+    ],
+    "glasses": [
+      {
+        "id": "GG3cMlZYVmVrNrQW",
+        "formula": "PRECIO ALTO * ANCHO"
+      }
+    ],
+    "manpower": "1.50",
+    "_id": "68FG8lcRzagyWgUP",
+    "type": "models"
+  },
+  {
+    "name": "CANCEL CON FIJOS Y DUELA",
+    "materials": [
+      {
+        "id": "QawznrBZwvAj2wX8",
+        "formula": "PRECIO ALTO * 2 + ANCHO * 1"
+      },
+      {
+        "id": "SOcLOPScVGDKFg8Z",
+        "formula": "PRECIO ANCHO * 1"
+      },
+      {
+        "id": "xSmhzCWNTz3HVFeS",
+        "formula": "PRECIO ANCHO * 1"
+      },
+      {
+        "id": "dXr03BwPhSPp3PqL",
+        "formula": "PRECIO ANCHO * 1"
+      },
+      {
+        "id": "czIf7aZ2Uepxa8qg",
+        "formula": "PRECIO ALTO * 2"
+      },
+      {
+        "id": "ZwZDTXXDOq3P7oHA",
+        "formula": "PRECIO ALTO * 2"
+      }
+    ],
+    "chapes": [
+      {
+        "id": "5OATaZbCgFTwaebF",
+        "formula": "PRECIO * 1"
+      },
+      {
+        "id": "Qgppeve3GuI6khFE",
+        "formula": "PRECIO * 2"
+      }
+    ],
+    "glasses": [],
+    "manpower": "1.50",
+    "_id": "6eQ4gQFUk64nSMiJ",
+    "type": "models"
+  },
+  {
+    "name": "VENTANA CON FIJO SUPERIOR",
+    "materials": [
+      {
+        "id": "8HzL2gJc6OQk5NEo",
+        "formula": "ALTO"
+      }
+    ],
+    "chapes": [],
+    "glasses": [],
+    "manpower": 1,
+    "_id": "8EXsCEPn1aEsO1F5",
+    "type": "models"
+  },
+  {
+    "name": "VENTANA ABATIBLE",
+    "materials": [
+      {
+        "id": "qcHGeqmOlGwv5daB",
+        "formula": "PRECIO ALTO * 2 + ANCHO * 2"
+      },
+      {
+        "id": "ElaSNM9ktpY0nnK4",
+        "formula": "PRECIO ALTO * 2 + ANCHO * 2"
+      },
+      {
+        "id": "iCrvtSABGDATPSpy",
+        "formula": "PRECIO ALTO * 2 + ANCHO * 2"
+      }
+    ],
+    "chapes": [
+      {
+        "id": "3oAYB5isOhGuorXU",
+        "formula": "PRECIO * 1"
+      },
+      {
+        "id": "itLPv0S2QqFQPqM2",
+        "formula": "PRECIO * 1"
+      }
+    ],
+    "glasses": [],
+    "manpower": "1.50",
+    "_id": "8YqU1WvnZXR5Sxip",
+    "type": "models"
+  },
+  {
+    "name": "PUERTA CON DUELA Y VIDRIO",
+    "materials": [
+      {
+        "id": "85uHpiAqe2OrFJuz",
+        "formula": "PRECIO ALTO * 2 + ANCHO * 1"
+      },
+      {
+        "id": "N2sXRG2EZMiSei3F",
+        "formula": "PRECIO ALTO * 2 + ANCHO * 1"
+      },
+      {
+        "id": "7pUmXOiQq2GSZ7wV",
+        "formula": "PRECIO ANCHO * 1"
+      },
+      {
+        "id": "QPsFCfKGqZtBWEAp",
+        "formula": "PRECIO ANCHO * 1"
+      },
+      {
+        "id": "HJhQDfqt4DlH9zXd",
+        "formula": "PRECIO ANCHO * 4 + ANCHO * 4"
+      },
+      {
+        "id": "8BSFiGtvKRJEYSIP",
+        "formula": "PRECIO ALTO * 2"
+      }
+    ],
+    "chapes": [
+      {
+        "id": "2BIexLKmgal3RGZW",
+        "formula": "PRECIO * 1"
+      },
+      {
+        "id": "DSDiUllAH3qbcwBB",
+        "formula": "PRECIO * 1"
+      }
+    ],
+    "glasses": [],
+    "manpower": "1.50",
+    "_id": "8nT2A8lHDnEHpiD7",
+    "type": "models"
+  },
+  {
+    "name": "FIJO II",
+    "materials": [
+      {
+        "id": "xT3yxY1qNNgJxqmp",
+        "formula": "PRECIO ALTO * 2 + ANCHO * 2"
+      },
+      {
+        "id": "wP438UC6HNeTBYPv",
+        "formula": "PRECIO ANCHO * 1"
+      },
+      {
+        "id": "gINNPk0aUbyCyijD",
+        "formula": "PRECIO ANCHO * 1"
+      }
+    ],
+    "chapes": [],
+    "glasses": [
+      {
+        "id": "GG3cMlZYVmVrNrQW",
+        "formula": "PRECIO ALTO * ANCHO"
+      }
+    ],
+    "manpower": "1.50",
+    "_id": "9Fyi3D4BKagikJJI",
+    "type": "models"
+  },
+  {
+    "name": "ORDEN VENTANA 2\" SIN/MOSQ IZQUIERDA",
+    "materials": [
+      {
+        "id": "QawznrBZwvAj2wX8",
+        "formula": "PRECIO/TRAMO * (ALTO*2+ANCHO)"
+      },
+      {
+        "id": "SOcLOPScVGDKFg8Z",
+        "formula": "PRECIO/TRAMO * (ANCHO)"
+      },
+      {
+        "id": "ZwZDTXXDOq3P7oHA",
+        "formula": "PRECIO/TRAMO * (ALTO*2)"
+      },
+      {
+        "id": "czIf7aZ2Uepxa8qg",
+        "formula": "PRECIO/TRAMO * (ALTO*2)"
+      },
+      {
+        "id": "dXr03BwPhSPp3PqL",
+        "formula": "PRECIO/TRAMO * (ANCHO)"
+      },
+      {
+        "id": "xSmhzCWNTz3HVFeS",
+        "formula": "PRECIO/TRAMO * (ANCHO)"
+      }
+    ],
+    "chapes": [
+      {
+        "id": "0YeI26G1EzwPtWcW",
+        "formula": "PRECIO * 1"
+      },
+      {
+        "id": "5OATaZbCgFTwaebF",
+        "formula": "PRECIO * 1"
+      },
+      {
+        "id": "QzsLDy7KyQOGjc3P",
+        "formula": "PRECIO * 40"
+      }
+    ],
+    "glasses": [
+      {
+        "id": "GG3cMlZYVmVrNrQW",
+        "formula": "PRECIO * (ALTO*ANCHO)"
+      }
+    ],
+    "manpower": "1.5",
+    "_id": "9lV9IXa1mwnLQzcS",
+    "type": "models"
+  },
+  {
+    "name": "PUERTA DE 3\" TODO DE VIDRIO",
+    "materials": [],
+    "chapes": [],
+    "glasses": [],
+    "manpower": 1,
+    "_id": "AFGYd5mvnvRX1OGo",
+    "type": "models"
+  },
+  {
+    "name": "PUERTA PARA ESCUELA",
+    "materials": [
+      {
+        "id": "85uHpiAqe2OrFJuz",
+        "formula": "PRECIO ALTO * 2 + ANCHO * 2"
+      },
+      {
+        "id": "8BSFiGtvKRJEYSIP",
+        "formula": "PRECIO ALTO * 2 + ANCHO * 2"
+      },
+      {
+        "id": "7pUmXOiQq2GSZ7wV",
+        "formula": "PRECIO ANCHO * 1"
+      },
+      {
+        "id": "QPsFCfKGqZtBWEAp",
+        "formula": "PRECIO ANCHO * 1"
+      },
+      {
+        "id": "HJhQDfqt4DlH9zXd",
+        "formula": "PRECIO ALTO *2 + ANCHO * 2"
+      },
+      {
+        "id": "HxQ2YBIRvEFy7fCY",
+        "formula": "PRECIO ALTO * 2 + ANCHO * 2"
+      },
+      {
+        "id": "N2sXRG2EZMiSei3F",
+        "formula": "PRECIO ALTO * 2 + ANCHO * 2"
+      }
+    ],
+    "chapes": [
+      {
+        "id": "DSDiUllAH3qbcwBB",
+        "formula": "PRECIO * 1"
+      },
+      {
+        "id": "ugvfXljxolFpL47q",
+        "formula": "PRECIO * 1"
+      }
+    ],
+    "glasses": [],
+    "manpower": "1.50",
+    "_id": "BWmVJn4BQtpnsFvP",
+    "type": "models"
+  },
+  {
+    "name": "PUERTA SERIE 1400",
+    "materials": [
+      {
+        "id": "jK1pA3AGtBLlhpZw",
+        "formula": "PRECIO ALTO * 2 + ANCHO * 2"
+      },
+      {
+        "id": "5iXBpueOrz9YhwE1",
+        "formula": "PRECIO ALTO * 2 + ANCHO  * 2"
+      },
+      {
+        "id": "Afp1gW1M0jAlDS4j",
+        "formula": "PRECIO ALTO * 4 + ANCHO * 4"
+      },
+      {
+        "id": "3HvqUHjbUEet2VvB",
+        "formula": "PRECIO ANCHO * 1"
+      },
+      {
+        "id": "nGz4fUAXMi6NQzeV",
+        "formula": "PRECIO ANCHO * 1"
+      }
+    ],
+    "chapes": [
+      {
+        "id": "ugvfXljxolFpL47q",
+        "formula": "PRECIO * 1"
+      },
+      {
+        "id": "4Ci5q8dI6PKQqLr1",
+        "formula": "PRECIO * 1"
+      }
+    ],
+    "glasses": [],
+    "manpower": "1.50",
+    "_id": "C2EC16OmHCLXztme",
+    "type": "models"
+  },
+  {
+    "name": "ORDEN VENTANA 3\" SIN/MOSQ IZQUIERDA",
+    "materials": [
+      {
+        "id": "VRs1QmTaohARWJqE",
+        "formula": "PRECIO/TRAMO * (ALTO*2+ANCHO)"
+      },
+      {
+        "id": "RcNL0hADvPE33wm4",
+        "formula": "PRECIO/TRAMO * (ANCHO)"
+      },
+      {
+        "id": "o3cZm8E7wupqBcnE",
+        "formula": "PRECIO/TRAMO * (ALTO*2)"
+      },
+      {
+        "id": "1diYNzTwa167sBI0",
+        "formula": "PRECIO/TRAMO * (ALTO*2)"
+      },
+      {
+        "id": "fVOTZljxvqeugywW",
+        "formula": "PRECIO/TRAMO * (ANCHO)"
+      },
+      {
+        "id": "ASZeV1ZrrWNot6mA",
+        "formula": "PRECIO/TRAMO * (ANCHO)"
+      }
+    ],
+    "chapes": [
+      {
+        "id": "5JkiGrKKYDfQXqgH",
+        "formula": "PRECIO * 2"
+      },
+      {
+        "id": "fQGPH04LxOf5dvga",
+        "formula": "PRECIO * 1"
+      },
+      {
+        "id": "QzsLDy7KyQOGjc3P",
+        "formula": "PRECIO * 40"
+      }
+    ],
+    "glasses": [
+      {
+        "id": "GG3cMlZYVmVrNrQW",
+        "formula": "PRECIO * (ALTO*ANCHO)"
+      }
+    ],
+    "manpower": "1.5",
+    "_id": "CG7p0Hz5LEmkrPPL",
+    "type": "models"
+  },
+  {
+    "name": "VENTANA CORREDIZA CON CUADRICULA Y CURVA",
+    "materials": [
+      {
+        "id": "QawznrBZwvAj2wX8",
+        "formula": "PRECIO ALTO *2 + ANCHO * 1"
+      },
+      {
+        "id": "SOcLOPScVGDKFg8Z",
+        "formula": "PRECIO ANCHO * 1"
+      },
+      {
+        "id": "xSmhzCWNTz3HVFeS",
+        "formula": "PRECIO ALTO * 2"
+      },
+      {
+        "id": "czIf7aZ2Uepxa8qg",
+        "formula": "PRECIO ALTO * 2"
+      },
+      {
+        "id": "ZwZDTXXDOq3P7oHA",
+        "formula": "PRECIO * 2"
+      },
+      {
+        "id": "Aabim7b9DT56LZ0Y",
+        "formula": "PRECIO ANCHO * 2"
+      },
+      {
+        "id": "Aabim7b9DT56LZ0Y",
+        "formula": "PRECIO ALTO * 2"
+      },
+      {
+        "id": "xT3yxY1qNNgJxqmp",
+        "formula": "PRECIO ANCHO * 1"
+      }
+    ],
+    "chapes": [
+      {
+        "id": "5OATaZbCgFTwaebF",
+        "formula": "PRECIO * 1"
+      },
+      {
+        "id": "2qAaKQ8oncM732x3",
+        "formula": "PRECIO * 1"
+      },
+      {
+        "id": "5JkiGrKKYDfQXqgH",
+        "formula": "PRECIO * 2"
+      },
+      {
+        "id": "dDtq5WANGh23l90j",
+        "formula": "PRECIO * 0"
+      }
+    ],
+    "glasses": [],
+    "manpower": "1.50",
+    "_id": "CMeIVjBIc11t8Bo9",
+    "type": "models"
+  },
+  {
+    "name": "ORDEN VENTANA 2\" CON/MOSQ IZQUIERDA",
+    "materials": [
+      {
+        "id": "t4tlK6Z15fHEnalY",
+        "formula": "PRECIO/TRAMO * (ALTO*2+ANCHO)"
+      },
+      {
+        "id": "SOcLOPScVGDKFg8Z",
+        "formula": "PRECIO/TRAMO * (ANCHO)"
+      },
+      {
+        "id": "ZDtIO08NfEqmQlAi",
+        "formula": "PRECIO/TRAMO * (ANCHO)"
+      },
+      {
+        "id": "czIf7aZ2Uepxa8qg",
+        "formula": "PRECIO/TRAMO * (ALTO*2)"
+      },
+      {
+        "id": "ZwZDTXXDOq3P7oHA",
+        "formula": "PRECIO/TRAMO * (ALTO*2)"
+      },
+      {
+        "id": "xSmhzCWNTz3HVFeS",
+        "formula": "PRECIO/TRAMO * (ANCHO)"
+      },
+      {
+        "id": "dXr03BwPhSPp3PqL",
+        "formula": "PRECIO/TRAMO * (ANCHO)"
+      },
+      {
+        "id": "Aabim7b9DT56LZ0Y",
+        "formula": "PRECIO/TRAMO * (ANCHO)"
+      },
+      {
+        "id": "RWQB7cuwad2tbDxn",
+        "formula": "PRECIO/TRAMO * (ALTO*2)"
+      }
+    ],
+    "chapes": [
+      {
+        "id": "0YeI26G1EzwPtWcW",
+        "formula": "PRECIO * 1"
+      },
+      {
+        "id": "5OATaZbCgFTwaebF",
+        "formula": "PRECIO * 1"
+      },
+      {
+        "id": "dDtq5WANGh23l90j",
+        "formula": "PRECIO * 2"
+      },
+      {
+        "id": "5JkiGrKKYDfQXqgH",
+        "formula": "PRECIO * 2"
+      },
+      {
+        "id": "zD3dmLQy9wnA0ylx",
+        "formula": "PRECIO * 1"
+      },
+      {
+        "id": "QzsLDy7KyQOGjc3P",
+        "formula": "PRECIO * 30"
+      }
+    ],
+    "glasses": [
+      {
+        "id": "GG3cMlZYVmVrNrQW",
+        "formula": "PRECIO * (ALTO*ANCHO)"
+      }
+    ],
+    "manpower": "1.5",
+    "_id": "CSWqgQmeTa5ccpr9",
+    "type": "models"
+  },
+  {
+    "name": "ORDEN VENTANA 3\" CON/MOSQ IZQUIERDA",
+    "materials": [
+      {
+        "id": "aMCLlOF94rwVSKYi",
+        "formula": "PRECIO/TRAMO * (ALTO*2+ANCHO)"
+      },
+      {
+        "id": "RcNL0hADvPE33wm4",
+        "formula": "PRECIO/TRAMO * (ANCHO)"
+      },
+      {
+        "id": "ZDtIO08NfEqmQlAi",
+        "formula": "PRECIO/TRAMO * (ANCHO)"
+      },
+      {
+        "id": "czIf7aZ2Uepxa8qg",
+        "formula": "PRECIO/TRAMO * (ALTO*2)"
+      },
+      {
+        "id": "ZwZDTXXDOq3P7oHA",
+        "formula": "PRECIO/TRAMO * (ALTO*2)"
+      },
+      {
+        "id": "xSmhzCWNTz3HVFeS",
+        "formula": "PRECIO/TRAMO * (ANCHO)"
+      },
+      {
+        "id": "dXr03BwPhSPp3PqL",
+        "formula": "PRECIO/TRAMO * (ANCHO)"
+      },
+      {
+        "id": "Aabim7b9DT56LZ0Y",
+        "formula": "PRECIO/TRAMO * (ANCHO)"
+      },
+      {
+        "id": "RWQB7cuwad2tbDxn",
+        "formula": "PRECIO/TRAMO * (ALTO*2)"
+      }
+    ],
+    "chapes": [
+      {
+        "id": "0YeI26G1EzwPtWcW",
+        "formula": "PRECIO * 1"
+      },
+      {
+        "id": "fQGPH04LxOf5dvga",
+        "formula": "PRECIO * 1"
+      },
+      {
+        "id": "NWDllumIWiP5dWhJ",
+        "formula": "PRECIO * 2"
+      },
+      {
+        "id": "dDtq5WANGh23l90j",
+        "formula": "PRECIO * 2"
+      },
+      {
+        "id": "zD3dmLQy9wnA0ylx",
+        "formula": "PRECIO * (ALTO*ANCHO)"
+      },
+      {
+        "id": "QzsLDy7KyQOGjc3P",
+        "formula": "PRECIO * 30"
+      }
+    ],
+    "glasses": [
+      {
+        "id": "GG3cMlZYVmVrNrQW",
+        "formula": "PRECIO * (ALTO*ANCHO)"
+      }
+    ],
+    "manpower": "1.5",
+    "_id": "CXe1MyERMDBC3iib",
+    "type": "models"
+  },
+  {
+    "name": "ORDEN VENTANA 2\" CON/MOSQ DERECHA",
+    "materials": [
+      {
+        "id": "t4tlK6Z15fHEnalY",
+        "formula": "PRECIO/TRAMO * (ALTO*2+ANCHO)"
+      },
+      {
+        "id": "SOcLOPScVGDKFg8Z",
+        "formula": "PRECIO/TRAMO * (ANCHO)"
+      },
+      {
+        "id": "ZDtIO08NfEqmQlAi",
+        "formula": "PRECIO/TRAMO * (ANCHO)"
+      },
+      {
+        "id": "czIf7aZ2Uepxa8qg",
+        "formula": "PRECIO/TRAMO * (ALTO*2)"
+      },
+      {
+        "id": "ZwZDTXXDOq3P7oHA",
+        "formula": "PRECIO/TRAMO * (ALTO*2)"
+      },
+      {
+        "id": "dXr03BwPhSPp3PqL",
+        "formula": "PRECIO/TRAMO * (ANCHO)"
+      },
+      {
+        "id": "xSmhzCWNTz3HVFeS",
+        "formula": "PRECIO/TRAMO * (ANCHO)"
+      },
+      {
+        "id": "Aabim7b9DT56LZ0Y",
+        "formula": "PRECIO/TRAMO * (ANCHO)"
+      },
+      {
+        "id": "RWQB7cuwad2tbDxn",
+        "formula": "PRECIO/TRAMO * (ALTO*2)"
+      }
+    ],
+    "chapes": [
+      {
+        "id": "0YeI26G1EzwPtWcW",
+        "formula": "PRECIO * 1"
+      },
+      {
+        "id": "5OATaZbCgFTwaebF",
+        "formula": "PRECIO * 1"
+      },
+      {
+        "id": "5JkiGrKKYDfQXqgH",
+        "formula": "PRECIO * 2"
+      },
+      {
+        "id": "dDtq5WANGh23l90j",
+        "formula": "PRECIO * 2"
+      },
+      {
+        "id": "zD3dmLQy9wnA0ylx",
+        "formula": "PRECIO * 1"
+      },
+      {
+        "id": "QzsLDy7KyQOGjc3P",
+        "formula": "PRECIO * 30"
+      }
+    ],
+    "glasses": [
+      {
+        "id": "GG3cMlZYVmVrNrQW",
+        "formula": "PRECIO * (ALTO*ANCHO)"
+      }
+    ],
+    "manpower": "1.5",
+    "_id": "EJ0I3nfD07Pa9yzk",
+    "type": "models"
+  },
+  {
+    "name": "VENTANA CON FIJO EN LA PARTE INFERIOR",
+    "materials": [
+      {
+        "id": "QawznrBZwvAj2wX8",
+        "formula": "PRECIO ALTO * 2 + ANCHO *1"
+      },
+      {
+        "id": "SOcLOPScVGDKFg8Z",
+        "formula": "PRECIO ANCHO * 1"
+      },
+      {
+        "id": "czIf7aZ2Uepxa8qg",
+        "formula": "PRECIO ALTO * 2"
+      },
+      {
+        "id": "ZwZDTXXDOq3P7oHA",
+        "formula": "PRECIO ALTO * 2"
+      },
+      {
+        "id": "dXr03BwPhSPp3PqL",
+        "formula": "PRECIO ANCHO * 1"
+      },
+      {
+        "id": "xSmhzCWNTz3HVFeS",
+        "formula": "PRECIO ANCHO * 1"
+      },
+      {
+        "id": "xT3yxY1qNNgJxqmp",
+        "formula": "PRECIO ANCHO * 1 + ALTO * 2"
+      },
+      {
+        "id": "gINNPk0aUbyCyijD",
+        "formula": "PRECIO ANCHO * 1"
+      },
+      {
+        "id": "wP438UC6HNeTBYPv",
+        "formula": "PRECIO ANCHO *1"
+      }
+    ],
+    "chapes": [
+      {
+        "id": "5OATaZbCgFTwaebF",
+        "formula": "PRECIO * 1"
+      }
+    ],
+    "glasses": [],
+    "manpower": "1.50",
+    "_id": "Ey2tZb8YTio1wWfV",
+    "type": "models"
+  },
+  {
+    "name": "VENTANA CORREDIZA CON CUDRICULA",
+    "materials": [
+      {
+        "id": "t4tlK6Z15fHEnalY",
+        "formula": "PRECIO ALTO * 2 + ANCHO * 1"
+      },
+      {
+        "id": "ZwZDTXXDOq3P7oHA",
+        "formula": "PRECIO ALTO * 2"
+      },
+      {
+        "id": "SOcLOPScVGDKFg8Z",
+        "formula": "PRECIO ANCHO *1"
+      }
+    ],
+    "chapes": [
+      {
+        "id": "5OATaZbCgFTwaebF",
+        "formula": "PRECIO * 1"
+      }
+    ],
+    "glasses": [
+      {
+        "id": "GG3cMlZYVmVrNrQW",
+        "formula": "PRECIO ALTO * ANCHO"
+      }
+    ],
+    "manpower": "1.50",
+    "_id": "HKcitbeUq5HS9t5N",
+    "type": "models"
+  },
+  {
+    "name": "PUERTA DOBLE CON FIJO",
+    "materials": [
+      {
+        "id": "85uHpiAqe2OrFJuz",
+        "formula": "PRECIO ALTO * 2 + ANCHO * 2"
+      },
+      {
+        "id": "o3cZm8E7wupqBcnE",
+        "formula": "PRECIO ALTO * 2 + ANCHO * 2"
+      },
+      {
+        "id": "N2sXRG2EZMiSei3F",
+        "formula": "PRECIO ALTO * 2 + ANCHO * 2"
+      },
+      {
+        "id": "KcSYs2sLogfUyS0B",
+        "formula": "PRECIO ANCHO * 1"
+      },
+      {
+        "id": "DAJ6PKxQq2aWB8GR",
+        "formula": "PRECIO ANCHO *1"
+      }
+    ],
+    "chapes": [
+      {
+        "id": "xtrS1J3CgnywgL3i",
+        "formula": "PRECIO * 3"
+      },
+      {
+        "id": "jfVBMsxzsNCNrlSk",
+        "formula": "PRECIO * 2"
+      },
+      {
+        "id": "J67gNXFCl7KVT9Ny",
+        "formula": "PRECIO * 1"
+      }
+    ],
+    "glasses": [],
+    "manpower": "1.50",
+    "_id": "J126qWaA9yD7qRNO",
+    "type": "models"
+  },
+  {
+    "name": "SIFON",
+    "materials": [
+      {
+        "id": "JFE5QKtlcw2n5KyL",
+        "formula": "PRECIO ALTO * 2 + ANCHO * 1"
+      },
+      {
+        "id": "P34AK6Km3VAA0KV7",
+        "formula": "PRECIO ANCHO * 1"
+      },
+      {
+        "id": "V4qnRMGnpGi9aZy9",
+        "formula": "PRECIO ANCHO * 1"
+      },
+      {
+        "id": "4UOTfhQ0vKIUBDIu",
+        "formula": "PRECIO ALTO * 2 + ANCHO * 2"
+      },
+      {
+        "id": "GgNGFgyO383EGZs5",
+        "formula": "PRECIO ANCHO * 1"
+      }
+    ],
+    "chapes": [],
+    "glasses": [],
+    "manpower": "1.50",
+    "_id": "KhIFkPw10XcEHIbl",
+    "type": "models"
+  },
+  {
+    "name": "VENTANA DOBLE RESIDENCIAL",
+    "materials": [
+      {
+        "id": "aMCLlOF94rwVSKYi",
+        "formula": "PRECIO ALTO * 2 + ANCHO * 1"
+      },
+      {
+        "id": "o3cZm8E7wupqBcnE",
+        "formula": "PRECIO ALTO * 2"
+      },
+      {
+        "id": "1diYNzTwa167sBI0",
+        "formula": "PRECIO ALTO * 2"
+      },
+      {
+        "id": "ASZeV1ZrrWNot6mA",
+        "formula": "PRECIO ANCHO * 1"
+      },
+      {
+        "id": "fVOTZljxvqeugywW",
+        "formula": "PRECIO ANCHO * 1"
+      },
+      {
+        "id": "Aabim7b9DT56LZ0Y",
+        "formula": "PRECIO ANCHO * 2"
+      },
+      {
+        "id": "RWQB7cuwad2tbDxn",
+        "formula": "PRECIO ALTO * 2"
+      }
+    ],
+    "chapes": [
+      {
+        "id": "fQGPH04LxOf5dvga",
+        "formula": "PRECIO * 1"
+      },
+      {
+        "id": "NWDllumIWiP5dWhJ",
+        "formula": "PRECIO * 2"
+      },
+      {
+        "id": "dDtq5WANGh23l90j",
+        "formula": "PRECIO * 2"
+      }
+    ],
+    "glasses": [],
+    "manpower": 1,
+    "_id": "KnkN9vwz0ctMc5qb",
+    "type": "models"
+  },
+  {
+    "name": "MAMPARA SENCILLA",
+    "materials": [
+      {
+        "id": "xx6ZF3z2UnX9CWSc",
+        "formula": "PRECIO ALTO *2 + ANCHO * 2"
+      },
+      {
+        "id": "o3cZm8E7wupqBcnE",
+        "formula": "PRECIO ALTO *2 + ANCHO * 2"
+      },
+      {
+        "id": "b55G4Ftx3UWmzLH2",
+        "formula": "PRECIO ALTO * 2 + ANCHO * 2"
+      },
+      {
+        "id": "JptqZId2FrKwSX8O",
+        "formula": "PRECIO ALTO * 2 + ANCHO * 2"
+      },
+      {
+        "id": "nZ19bLm2eEb0wBxQ",
+        "formula": "PRECIO ALTO * 2 + ANCHO * 2"
+      }
+    ],
+    "chapes": [
+      {
+        "id": "xtrS1J3CgnywgL3i",
+        "formula": "PRECIO * 3"
+      },
+      {
+        "id": "YlUf2iuOkbSrnH0U",
+        "formula": "PRECIO * 1"
+      },
+      {
+        "id": "juY5Q9ADduBgJCGT",
+        "formula": "PRECIO * 1"
+      }
+    ],
+    "glasses": [],
+    "manpower": "1.50",
+    "_id": "M0rfyvgWfKUhi0L7",
+    "type": "models"
+  },
+  {
+    "name": "DOMO CON SENCILLO CON VENTILACION",
+    "materials": [
+      {
+        "id": "PbajGLzTnUKbkceX",
+        "formula": "PRECIO ALTO * 2 + ANCHO * 2"
+      }
+    ],
+    "chapes": [],
+    "glasses": [
+      {
+        "id": "GG3cMlZYVmVrNrQW",
+        "formula": "ALTO * ANCHO"
+      }
+    ],
+    "manpower": "1.50",
+    "_id": "M8Kj3gENrFA6F0oT",
+    "type": "models"
+  },
+  {
+    "name": "ORDEN PUERTA MITAD DUELA-VIDRIO A.IZQ",
+    "materials": [
+      {
+        "id": "5iXBpueOrz9YhwE1",
+        "formula": "PRECIO/TRAMO * (ALTO*2+ANCHO)"
+      },
+      {
+        "id": "77h68ilO7JArBNOD",
+        "formula": "PRECIO/TRAMO * (ANCHO)"
+      },
+      {
+        "id": "nGz4fUAXMi6NQzeV",
+        "formula": "PRECIO/TRAMO * (ANCHO)"
+      },
+      {
+        "id": "F48Rt943C8mi50Wv",
+        "formula": "PRECIO * 1"
+      },
+      {
+        "id": "uTELntfTjQOlwlPS",
+        "formula": "PRECIO/TRAMO * (ANCHO)"
+      },
+      {
+        "id": "RxxUybmrKuWOlSbr",
+        "formula": "PRECIO * 1"
+      },
+      {
+        "id": "HxQ2YBIRvEFy7fCY",
+        "formula": "PRECIO/TRAMO * ((ANCHO) * (ALTO/.25))"
+      }
+    ],
+    "chapes": [
+      {
+        "id": "QzsLDy7KyQOGjc3P",
+        "formula": "PRECIO * 185"
+      },
+      {
+        "id": "J67gNXFCl7KVT9Ny",
+        "formula": "PRECIO * 1"
+      }
+    ],
+    "glasses": [
+      {
+        "id": "GG3cMlZYVmVrNrQW",
+        "formula": "PRECIO * (ANCHO*(ALTO/2))"
+      }
+    ],
+    "manpower": "1.50",
+    "_id": "MGWqa2A9jzLyoNd3",
+    "type": "models"
+  },
+  {
+    "name": "PUERTA CON DOBLE HOJA DE  13/4 TODA DE DUELA",
+    "materials": [
+      {
+        "id": "8BSFiGtvKRJEYSIP",
+        "formula": "PRECIO/TRAMO *(ALTO *4 )"
+      },
+      {
+        "id": "7pUmXOiQq2GSZ7wV",
+        "formula": "PRECIO/TRAMO * (ANCHO * 4)"
+      },
+      {
+        "id": "HJhQDfqt4DlH9zXd",
+        "formula": "PRECIO/TRAMO * ( ANCHO * 4 + ALTO * 4)"
+      },
+      {
+        "id": "ZHpCIGudfKo8fykU",
+        "formula": "PRECIO/TRAMO * (ANCHO * 1 + ALTO * 2)"
+      },
+      {
+        "id": "N2sXRG2EZMiSei3F",
+        "formula": "PRECIO/TRAMO * (ALTO * 2 + ANCHO *2 )"
+      },
+      {
+        "id": "ljKrbVWljs8xRYs6",
+        "formula": "PRECIO/TRAMO * ( ALTO * ANCHO )"
+      }
+    ],
+    "chapes": [
+      {
+        "id": "J67gNXFCl7KVT9Ny",
+        "formula": "PRECIO * 1"
+      },
+      {
+        "id": "jfVBMsxzsNCNrlSk",
+        "formula": "PRECIO * 2"
+      },
+      {
+        "id": "DSDiUllAH3qbcwBB",
+        "formula": "PRECIO * 2"
+      }
+    ],
+    "glasses": [],
+    "manpower": "1.50",
+    "_id": "MhNl9UbcUkgYf2K4",
+    "type": "models"
+  },
+  {
+    "name": "VENTANAL CON VENTILAS",
+    "materials": [
+      {
+        "id": "JFE5QKtlcw2n5KyL",
+        "formula": "PRECIO ALTO * 2 +ANCHO *2"
+      },
+      {
+        "id": "qcHGeqmOlGwv5daB",
+        "formula": "PRECIO ALTO * 2 + ANCHO * 2"
+      },
+      {
+        "id": "HndxD5pVhv6a0JS8",
+        "formula": "PRECIO ALTO * 2 + ANCHO * 2"
+      },
+      {
+        "id": "6cH8gzASibhtfCFv",
+        "formula": "PRECIO ANCHO * 1"
+      },
+      {
+        "id": "JltJuHB9mhvxVhPb",
+        "formula": "PRECIO ANCHO *1"
+      }
+    ],
+    "chapes": [
+      {
+        "id": "3oAYB5isOhGuorXU",
+        "formula": "PRECIO * 2"
+      },
+      {
+        "id": "itLPv0S2QqFQPqM2",
+        "formula": "PRECIO * 1"
+      }
+    ],
+    "glasses": [],
+    "manpower": 1,
+    "_id": "NSdSghU1pJRV9lwi",
+    "type": "models"
+  },
+  {
+    "name": "CANCEL CORREDIZO DE 3\" CON FIJO Y MOSQ CORREDIZO ",
+    "materials": [
+      {
+        "id": "aMCLlOF94rwVSKYi",
+        "formula": "PRECIO/TRAMO * (ALTO * 2)"
+      },
+      {
+        "id": "aMCLlOF94rwVSKYi",
+        "formula": "PRECIO/TRAMO * (ANCHO * 1)"
+      },
+      {
+        "id": "o3cZm8E7wupqBcnE",
+        "formula": "PRECIO/TRAMO * (ALTO * 2)"
+      },
+      {
+        "id": "1diYNzTwa167sBI0",
+        "formula": "PRECIO/TRAMO * (ALTO * 2)"
+      },
+      {
+        "id": "ZDtIO08NfEqmQlAi",
+        "formula": "PRECIO/TRAMO * (ANCHO * 1)"
+      },
+      {
+        "id": "fVOTZljxvqeugywW",
+        "formula": "PRECIO/TRAMO * (ANCHO * 1)"
+      },
+      {
+        "id": "ASZeV1ZrrWNot6mA",
+        "formula": "PRECIO/TRAMO * (ANCHO * 1)"
+      },
+      {
+        "id": "Aabim7b9DT56LZ0Y",
+        "formula": "PRECIO/TRAMO * (ANCHO * 2)"
+      },
+      {
+        "id": "PPWtlynnhfDz5pge",
+        "formula": "PRECIO/TRAMO * (ALTO * 2)"
+      },
+      {
+        "id": "6cH8gzASibhtfCFv",
+        "formula": "PRECIO/TRAMO * (ANCHO *2)"
+      },
+      {
+        "id": "JltJuHB9mhvxVhPb",
+        "formula": "PRECIO/TRAMO * (ANCHO * 2)"
+      }
+    ],
+    "chapes": [
+      {
+        "id": "fQGPH04LxOf5dvga",
+        "formula": "PRECIO * 1 "
+      },
+      {
+        "id": "NWDllumIWiP5dWhJ",
+        "formula": "PRECIO * 2"
+      },
+      {
+        "id": "32edPPXOrk8E0lZx",
+        "formula": "PRECIO * 1"
+      },
+      {
+        "id": "zD3dmLQy9wnA0ylx",
+        "formula": "PRECIO * ALTO * ANCHO"
+      }
+    ],
+    "glasses": [
+      {
+        "id": "GG3cMlZYVmVrNrQW",
+        "formula": "PRECIO * ALTO * ANCHO"
+      }
+    ],
+    "manpower": "1.50",
+    "_id": "NezoJTKrsAFNOLIC",
+    "type": "models"
+  },
+  {
+    "name": "ORDEN PUERTA 1\" 3/4 MITAD VIDRIO-VIDRIO A.DERECHA",
+    "materials": [
+      {
+        "id": "N2sXRG2EZMiSei3F",
+        "formula": "PRECIO * 1"
+      },
+      {
+        "id": "ZHpCIGudfKo8fykU",
+        "formula": "PRECIO * 1"
+      },
+      {
+        "id": "8BSFiGtvKRJEYSIP",
+        "formula": "PRECIO * 1"
+      },
+      {
+        "id": "7pUmXOiQq2GSZ7wV",
+        "formula": "PRECIO/TRAMO * (ANCHO)"
+      },
+      {
+        "id": "QPsFCfKGqZtBWEAp",
+        "formula": "PRECIO/TRAMO * (ANCHO)"
+      },
+      {
+        "id": "HJhQDfqt4DlH9zXd",
+        "formula": "PRECIO/TRAMO * (ALTO*4+ANCHO*4)"
+      }
+    ],
+    "chapes": [
+      {
+        "id": "J67gNXFCl7KVT9Ny",
+        "formula": "PRECIO * 1"
+      },
+      {
+        "id": "DSDiUllAH3qbcwBB",
+        "formula": "PRECIO * 1"
+      },
+      {
+        "id": "HIn9iONHNlQtbH7K",
+        "formula": "PRECIO * 2"
+      },
+      {
+        "id": "QzsLDy7KyQOGjc3P",
+        "formula": "PRECIO * 30"
+      }
+    ],
+    "glasses": [
+      {
+        "id": "GG3cMlZYVmVrNrQW",
+        "formula": "PRECIO * (ANCHO*ALTO)"
+      }
+    ],
+    "manpower": "1.25",
+    "_id": "NqCeFaKbEtB9i1F7",
+    "type": "models"
+  },
+  {
+    "name": "FIJO",
+    "materials": [
+      {
+        "id": "xT3yxY1qNNgJxqmp",
+        "formula": "PRECIO ALTO * 2 + ANCHO * 2"
+      },
+      {
+        "id": "wP438UC6HNeTBYPv",
+        "formula": "PRECIO ANCHO * 1"
+      },
+      {
+        "id": "gINNPk0aUbyCyijD",
+        "formula": "PRECIO ANCHO * 1"
+      }
+    ],
+    "chapes": [],
+    "glasses": [
+      {
+        "id": "GG3cMlZYVmVrNrQW",
+        "formula": "PRECIO ALTO *  ANCHO"
+      }
+    ],
+    "manpower": "1.50",
+    "_id": "OD1zBzvFRjTe7j1c",
+    "type": "models"
+  },
+  {
+    "name": "ORDEN PUERTA 1\" 3/4 SOLO VIDRIO CON FIJO A.IZQ",
+    "materials": [
+      {
+        "id": "N2sXRG2EZMiSei3F",
+        "formula": "PRECIO * 1"
+      },
+      {
+        "id": "HJhQDfqt4DlH9zXd",
+        "formula": "PRECIO/TRAMO * (ALTO*4+ANCHO*4)"
+      },
+      {
+        "id": "7pUmXOiQq2GSZ7wV",
+        "formula": "PRECIO/TRAMO * (ANCHO)"
+      },
+      {
+        "id": "ZHpCIGudfKo8fykU",
+        "formula": "PRECIO * 1"
+      },
+      {
+        "id": "QPsFCfKGqZtBWEAp",
+        "formula": "PRECIO/TRAMO * (ANCHO)"
+      },
+      {
+        "id": "xT3yxY1qNNgJxqmp",
+        "formula": "PRECIO/TRAMO * (ALTO*2+ANCHO)"
+      },
+      {
+        "id": "wP438UC6HNeTBYPv",
+        "formula": "PRECIO/TRAMO * (ANCHO)"
+      },
+      {
+        "id": "8BSFiGtvKRJEYSIP",
+        "formula": "PRECIO * 1"
+      }
+    ],
+    "chapes": [
+      {
+        "id": "HIn9iONHNlQtbH7K",
+        "formula": "PRECIO * 2"
+      },
+      {
+        "id": "J67gNXFCl7KVT9Ny",
+        "formula": "PRECIO * 1"
+      },
+      {
+        "id": "DSDiUllAH3qbcwBB",
+        "formula": "PRECIO * 1"
+      }
+    ],
+    "glasses": [
+      {
+        "id": "GG3cMlZYVmVrNrQW",
+        "formula": "PRECIO * (ANCHO*ALTO)"
+      }
+    ],
+    "manpower": "1.25",
+    "_id": "OZClZShMcKWd9nwX",
+    "type": "models"
+  },
+  {
+    "name": "VENTILA DE PROYECCIÓN CON FIJO INFERIOR",
+    "materials": [
+      {
+        "id": "qcHGeqmOlGwv5daB",
+        "formula": "PRECIO ALTO * 2 + ANCHO * 2"
+      },
+      {
+        "id": "ElaSNM9ktpY0nnK4",
+        "formula": "PRECIO ALTO * 2 + ANCHO * 2"
+      },
+      {
+        "id": "xT3yxY1qNNgJxqmp",
+        "formula": "PRECIO ALTO * 2"
+      },
+      {
+        "id": "wP438UC6HNeTBYPv",
+        "formula": "PRECIO ANCHO * 1"
+      },
+      {
+        "id": "gINNPk0aUbyCyijD",
+        "formula": "PRECIO ANCHO * 1"
+      }
+    ],
+    "chapes": [
+      {
+        "id": "3oAYB5isOhGuorXU",
+        "formula": "PRECIO * 1"
+      },
+      {
+        "id": "itLPv0S2QqFQPqM2",
+        "formula": "PRECIO * 1"
+      }
+    ],
+    "glasses": [],
+    "manpower": "1.50",
+    "_id": "OrKu6m705TOzr6VN",
+    "type": "models"
+  },
+  {
+    "name": "VENTANA CON DOBLE CORREDIZA Y FIJO",
+    "materials": [
+      {
+        "id": "QawznrBZwvAj2wX8",
+        "formula": "PRECIO ALTO * 2 + ANCHO * 1"
+      },
+      {
+        "id": "SOcLOPScVGDKFg8Z",
+        "formula": "PRECIO ANCHO * 1"
+      },
+      {
+        "id": "czIf7aZ2Uepxa8qg",
+        "formula": "PRECIO ALTO * 2"
+      },
+      {
+        "id": "ZwZDTXXDOq3P7oHA",
+        "formula": "PRECIO ALTO * 2"
+      },
+      {
+        "id": "xSmhzCWNTz3HVFeS",
+        "formula": "PRECIO ANCHO * 1"
+      },
+      {
+        "id": "dXr03BwPhSPp3PqL",
+        "formula": "PRECIO ANCHO *1"
+      },
+      {
+        "id": "xT3yxY1qNNgJxqmp",
+        "formula": "PRECIO ALTO * 2"
+      },
+      {
+        "id": "wP438UC6HNeTBYPv",
+        "formula": "PRECIO ANCHO * 1"
+      },
+      {
+        "id": "gINNPk0aUbyCyijD",
+        "formula": "PRECIO ANCHO * 1"
+      }
+    ],
+    "chapes": [
+      {
+        "id": "5OATaZbCgFTwaebF",
+        "formula": "PRECIO * 2"
+      },
+      {
+        "id": "Qgppeve3GuI6khFE",
+        "formula": "PRECIO * 4"
+      }
+    ],
+    "glasses": [],
+    "manpower": "1.50",
+    "_id": "P23r7fy778mVf5Du",
+    "type": "models"
+  },
+  {
+    "name": "ORDEN VENTANA 3\" CON/MOSQ DERECHA",
+    "materials": [
+      {
+        "id": "aMCLlOF94rwVSKYi",
+        "formula": "PRECIO/TRAMO * (ALTO*2+ANCHO)"
+      },
+      {
+        "id": "RcNL0hADvPE33wm4",
+        "formula": "PRECIO/TRAMO * (ANCHO)"
+      },
+      {
+        "id": "ZDtIO08NfEqmQlAi",
+        "formula": "PRECIO/TRAMO * (ANCHO)"
+      },
+      {
+        "id": "o3cZm8E7wupqBcnE",
+        "formula": "PRECIO/TRAMO * (ALTO*2)"
+      },
+      {
+        "id": "1diYNzTwa167sBI0",
+        "formula": "PRECIO/TRAMO * (ALTO*2)"
+      },
+      {
+        "id": "ASZeV1ZrrWNot6mA",
+        "formula": "PRECIO/TRAMO * (ANCHO)"
+      },
+      {
+        "id": "fVOTZljxvqeugywW",
+        "formula": "PRECIO/TRAMO * (ANCHO)"
+      },
+      {
+        "id": "RWQB7cuwad2tbDxn",
+        "formula": "PRECIO/TRAMO * (ALTO*2)"
+      },
+      {
+        "id": "PPWtlynnhfDz5pge",
+        "formula": "PRECIO/TRAMO * (ANCHO)"
+      }
+    ],
+    "chapes": [
+      {
+        "id": "0YeI26G1EzwPtWcW",
+        "formula": "PRECIO * 1"
+      },
+      {
+        "id": "fQGPH04LxOf5dvga",
+        "formula": "PRECIO * 1"
+      },
+      {
+        "id": "NWDllumIWiP5dWhJ",
+        "formula": "PRECIO * 2"
+      },
+      {
+        "id": "dDtq5WANGh23l90j",
+        "formula": "PRECIO * 2"
+      },
+      {
+        "id": "zD3dmLQy9wnA0ylx",
+        "formula": "PRECIO * (ALTO*ANCHO)"
+      },
+      {
+        "id": "QzsLDy7KyQOGjc3P",
+        "formula": "PRECIO * 30"
+      }
+    ],
+    "glasses": [
+      {
+        "id": "GG3cMlZYVmVrNrQW",
+        "formula": "PRECIO * (ALTO*ANCHO)"
+      }
+    ],
+    "manpower": "1.5",
+    "_id": "PGisdZK5dUsfRUex",
+    "type": "models"
+  },
+  {
+    "name": "Ventana en Escuadra",
+    "materials": [
+      {
+        "id": "L9ODHdODExZ4r83N",
+        "formula": "ALTO"
+      }
+    ],
+    "chapes": [],
+    "glasses": [],
+    "manpower": 1,
+    "_id": "QHcfR7zx86EXmT5t",
+    "type": "models"
+  },
+  {
+    "name": "ORDEN VENTILA PROYECCIÓN S-35",
+    "materials": [
+      {
+        "id": "9pYfxsiViblGmKSS",
+        "formula": "PRECIO/TRAMO * (ALTO*2+ANCHO*2)"
+      },
+      {
+        "id": "ElaSNM9ktpY0nnK4",
+        "formula": "PRECIO/TRAMO * (ALTO*2+ANCHO*2)"
+      },
+      {
+        "id": "zaPOn4lCDJSegrhE",
+        "formula": "PRECIO/TRAMO * (ALTO*2+ANCHO*2)"
+      }
+    ],
+    "chapes": [
+      {
+        "id": "VeQoBRYuWQAoUOAT",
+        "formula": "PRECIO * 1"
+      },
+      {
+        "id": "QzsLDy7KyQOGjc3P",
+        "formula": "PRECIO * 60"
+      },
+      {
+        "id": "zD3dmLQy9wnA0ylx",
+        "formula": "PRECIO * (ALTO*ANCHO)"
+      },
+      {
+        "id": "UujLkjunBlGaFRVK",
+        "formula": "PRECIO * 2"
+      }
+    ],
+    "glasses": [
+      {
+        "id": "GG3cMlZYVmVrNrQW",
+        "formula": " PRECIO * (ALTO*ANCHO)"
+      }
+    ],
+    "manpower": "1.50",
+    "_id": "RM5Rg1nBEYrDzJyJ",
+    "type": "models"
+  },
+  {
+    "name": "ORDEN CANCEL DE BAÑO",
+    "materials": [
+      {
+        "id": "8Ve6QGz7FCBMDrFg",
+        "formula": "PRECIO/TRAMO * (ALTO*2+ANCHO*2)"
+      },
+      {
+        "id": "gX7oHV6dpJ1vR83W",
+        "formula": "PRECIO/TRAMO * (ANCHO)"
+      },
+      {
+        "id": "GSCzHx1dKtHmD449",
+        "formula": "PRECIO/TRAMO * (ANCHO)"
+      },
+      {
+        "id": "7A9Do1QE2QEe0Y0t",
+        "formula": "PRECIO/TRAMO * (ALTO*2)"
+      }
+    ],
+    "chapes": [
+      {
+        "id": "QzsLDy7KyQOGjc3P",
+        "formula": "PRECIO * 60"
+      },
+      {
+        "id": "WQlLImW6zcMIk0db",
+        "formula": "PRECIO * 4"
+      },
+      {
+        "id": "Irm1mzpVkb2XGSvy",
+        "formula": "PRECIO * 2"
+      }
+    ],
+    "glasses": [
+      {
+        "id": "SSS1YP4lheyg0qK7",
+        "formula": "PRECIO * 1"
+      }
+    ],
+    "manpower": "1.50",
+    "_id": "S5lwaacbxZOUvL2w",
+    "type": "models"
+  },
+  {
+    "name": "ORDEN PUERTA 1\" 3/4 MITAD VIDRIO-VIDRIO A.IZQ",
+    "materials": [
+      {
+        "id": "ZHpCIGudfKo8fykU",
+        "formula": "PRECIO * 1"
+      },
+      {
+        "id": "N2sXRG2EZMiSei3F",
+        "formula": "PRECIO * 1"
+      },
+      {
+        "id": "8BSFiGtvKRJEYSIP",
+        "formula": "PRECIO * 1"
+      },
+      {
+        "id": "7pUmXOiQq2GSZ7wV",
+        "formula": "PRECIO/TRAMO * (ANCHO)"
+      },
+      {
+        "id": "QPsFCfKGqZtBWEAp",
+        "formula": "PRECIO/TRAMO * (ANCHO)"
+      },
+      {
+        "id": "HJhQDfqt4DlH9zXd",
+        "formula": "PRECIO/TRAMO * (ALTO*4+ANCHO*4)"
+      }
+    ],
+    "chapes": [
+      {
+        "id": "J67gNXFCl7KVT9Ny",
+        "formula": "PRECIO * 1"
+      },
+      {
+        "id": "HIn9iONHNlQtbH7K",
+        "formula": "PRECIO * 2"
+      },
+      {
+        "id": "QzsLDy7KyQOGjc3P",
+        "formula": "PRECIO * 30"
+      },
+      {
+        "id": "DSDiUllAH3qbcwBB",
+        "formula": "PRECIO * 1"
+      }
+    ],
+    "glasses": [
+      {
+        "id": "SSS1YP4lheyg0qK7",
+        "formula": "PRECIO * (ANCHO*ALTO)"
+      }
+    ],
+    "manpower": "1.25",
+    "_id": "TouV1SLDAL7wcD0S",
+    "type": "models"
+  },
+  {
+    "name": "MOSQUITERO CORREDIZO",
+    "materials": [
+      {
+        "id": "Aabim7b9DT56LZ0Y",
+        "formula": "PRECIO/TRAMO * (ANCHO * 2)"
+      },
+      {
+        "id": "c8FXnchIp1nB1wzo",
+        "formula": "PRECIO/TRAMO * (ALTO * 2)"
+      }
+    ],
+    "chapes": [
+      {
+        "id": "zD3dmLQy9wnA0ylx",
+        "formula": "PRECIO * ANCHO * ALTO"
+      },
+      {
+        "id": "dDtq5WANGh23l90j",
+        "formula": "PRECIO * 2"
+      },
+      {
+        "id": "WQlLImW6zcMIk0db",
+        "formula": "PRECIO * 1"
+      }
+    ],
+    "glasses": [],
+    "manpower": "1.50",
+    "_id": "UOH6FDa5rzVcp0ug",
+    "type": "models"
+  },
+  {
+    "name": "MAMPARA DOBLE",
+    "materials": [
+      {
+        "id": "xx6ZF3z2UnX9CWSc",
+        "formula": "PRECIO ALTO * 2 ANCHO * 2"
+      },
+      {
+        "id": "b55G4Ftx3UWmzLH2",
+        "formula": "PRECIO ALTO * 2 + ANCHO * 2"
+      },
+      {
+        "id": "JptqZId2FrKwSX8O",
+        "formula": "PRECIO ALTO * 2 + ANCHO * 2"
+      },
+      {
+        "id": "8Ve6QGz7FCBMDrFg",
+        "formula": "PRECIO ALTO * 2 + ANCHO * 2"
+      },
+      {
+        "id": "pXNqsd3MkHPeGUnS",
+        "formula": "PRECIO ALTO * 2 + ANCHO * 2"
+      }
+    ],
+    "chapes": [
+      {
+        "id": "3oAYB5isOhGuorXU",
+        "formula": "PRECIO * 2"
+      },
+      {
+        "id": "WQlLImW6zcMIk0db",
+        "formula": "PRECIO * 4"
+      },
+      {
+        "id": "YlUf2iuOkbSrnH0U",
+        "formula": "PRECIO * 3"
+      },
+      {
+        "id": "juY5Q9ADduBgJCGT",
+        "formula": "PRECIO * 3"
+      }
+    ],
+    "glasses": [],
+    "manpower": "1.50",
+    "_id": "V6zuaKzmu61nZeNV",
+    "type": "models"
+  },
+  {
+    "name": "ORDEN VENTANA 3\" SIN/MOSQ DERECHA",
+    "materials": [
+      {
+        "id": "VRs1QmTaohARWJqE",
+        "formula": "PRECIO/TRAMO * (ALTO*2+ANCHO)"
+      },
+      {
+        "id": "RcNL0hADvPE33wm4",
+        "formula": "PRECIO/TRAMO * (ANCHO)"
+      },
+      {
+        "id": "1diYNzTwa167sBI0",
+        "formula": "PRECIO/TRAMO * (ALTO*2)"
+      },
+      {
+        "id": "1diYNzTwa167sBI0",
+        "formula": "PRECIO/TRAMO * (ALTO*2)"
+      },
+      {
+        "id": "ASZeV1ZrrWNot6mA",
+        "formula": "PRECIO/TRAMO * (ANCHO)"
+      },
+      {
+        "id": "fVOTZljxvqeugywW",
+        "formula": "PRECIO/TRAMO * (ANCHO)"
+      }
+    ],
+    "chapes": [
+      {
+        "id": "5JkiGrKKYDfQXqgH",
+        "formula": "PRECIO * 2"
+      },
+      {
+        "id": "5OATaZbCgFTwaebF",
+        "formula": "PRECIO * 1"
+      },
+      {
+        "id": "QzsLDy7KyQOGjc3P",
+        "formula": "PRECIO * 40"
+      }
+    ],
+    "glasses": [
+      {
+        "id": "GG3cMlZYVmVrNrQW",
+        "formula": "PRECIO * (ALTO*ANCHO)"
+      }
+    ],
+    "manpower": "1.5",
+    "_id": "VIAucI2Au7TlWAe2",
+    "type": "models"
+  },
+  {
+    "name": "CANCEL CON DOS FIJOS Y UN CORREDIZO",
+    "materials": [
+      {
+        "id": "aMCLlOF94rwVSKYi",
+        "formula": "PRECIO ALTO * 2 + ANCHO * 1"
+      },
+      {
+        "id": "o3cZm8E7wupqBcnE",
+        "formula": "PRECIO ALTO * 2 "
+      },
+      {
+        "id": "1diYNzTwa167sBI0",
+        "formula": "PRECIO ALTO * 2 "
+      },
+      {
+        "id": "xSmhzCWNTz3HVFeS",
+        "formula": "PRECIO ANCHO * 1"
+      },
+      {
+        "id": "KcSYs2sLogfUyS0B",
+        "formula": "PRECIO ANCHO * 1"
+      },
+      {
+        "id": "SOcLOPScVGDKFg8Z",
+        "formula": "PRECIO ANCHO * 1"
+      }
+    ],
+    "chapes": [
+      {
+        "id": "fQGPH04LxOf5dvga",
+        "formula": "PRECIO * 1"
+      },
+      {
+        "id": "ZzLwql4FKlaFlEmO",
+        "formula": "PRECIO * 2"
+      }
+    ],
+    "glasses": [],
+    "manpower": "1.50",
+    "_id": "YDlhdG6uC5SrBuu1",
+    "type": "models"
+  },
+  {
+    "name": "VENTANA DE GUILLOTINA",
+    "materials": [
+      {
+        "id": "QawznrBZwvAj2wX8",
+        "formula": "PRECIO/TRAMO * (ALTO * 2 + ANCHO * 1)"
+      },
+      {
+        "id": "czIf7aZ2Uepxa8qg",
+        "formula": "PRECIO /TRAMO * (ANCHO * 1)"
+      },
+      {
+        "id": "xSmhzCWNTz3HVFeS",
+        "formula": "PRECIO/TRAMO * (ALTO * 2 + ANCHO * 2 )"
+      },
+      {
+        "id": "ZwZDTXXDOq3P7oHA",
+        "formula": "PRECIO/TRAMO * (ANCHO * 1)"
+      }
+    ],
+    "chapes": [
+      {
+        "id": "5OATaZbCgFTwaebF",
+        "formula": "PRECIO * 1"
+      },
+      {
+        "id": "B5GNycapK1jB6Vb4",
+        "formula": "PRECIO * 2"
+      }
+    ],
+    "glasses": [
+      {
+        "id": "GG3cMlZYVmVrNrQW",
+        "formula": "PRECIO * ALTO * ANCHO"
+      }
+    ],
+    "manpower": "1.50",
+    "_id": "YELQtyhOoXX3UjYC",
+    "type": "models"
+  },
+  {
+    "name": "PUERTA DOBLE CON FIJO",
+    "materials": [
+      {
+        "id": "85uHpiAqe2OrFJuz",
+        "formula": "PRECIO ALTO * 2 + ANCHO * 2"
+      },
+      {
+        "id": "o3cZm8E7wupqBcnE",
+        "formula": "PRECIO ALTO * 4 + ANCHO * 4"
+      },
+      {
+        "id": "N2sXRG2EZMiSei3F",
+        "formula": "PRECIO ALTO *2 + ANCHO * 2"
+      },
+      {
+        "id": "fVOTZljxvqeugywW",
+        "formula": "PRECIO ANCHO *2 "
+      },
+      {
+        "id": "DAJ6PKxQq2aWB8GR",
+        "formula": "PRECIO ANCHO * 1"
+      }
+    ],
+    "chapes": [
+      {
+        "id": "xtrS1J3CgnywgL3i",
+        "formula": "PRECIO * 6"
+      },
+      {
+        "id": "jfVBMsxzsNCNrlSk",
+        "formula": "PRECIO * 2"
+      },
+      {
+        "id": "J67gNXFCl7KVT9Ny",
+        "formula": "PRECIO * 1"
+      }
+    ],
+    "glasses": [],
+    "manpower": "1.50",
+    "_id": "ZhBmIR5E4QoYze2n",
+    "type": "models"
+  },
+  {
+    "name": "VENTILA DE PROYECCION",
+    "materials": [
+      {
+        "id": "qcHGeqmOlGwv5daB",
+        "formula": "PRECIO ALTO * 2 + ANCHO * 2"
+      },
+      {
+        "id": "ElaSNM9ktpY0nnK4",
+        "formula": "PRECIO ALTO * 2 + ANCHO * 2"
+      },
+      {
+        "id": "iCrvtSABGDATPSpy",
+        "formula": "PRECIO ALTO * 2 + ANCHO * 2"
+      }
+    ],
+    "chapes": [
+      {
+        "id": "itLPv0S2QqFQPqM2",
+        "formula": "PRECIO * 1"
+      },
+      {
+        "id": "3oAYB5isOhGuorXU",
+        "formula": "PRECIO * 1"
+      }
+    ],
+    "glasses": [
+      {
+        "id": "GG3cMlZYVmVrNrQW",
+        "formula": "PRECIO ALTO * ANCHO "
+      }
+    ],
+    "manpower": "1.50",
+    "_id": "aoFt1eREfmuwpEZc",
+    "type": "models"
+  },
+  {
+    "name": "VENTILA DE PROYECCIÓN CON FIJO SUPERIOR",
+    "materials": [
+      {
+        "id": "qcHGeqmOlGwv5daB",
+        "formula": "PRECIO ALTO * 2 + ANCHO * 2"
+      },
+      {
+        "id": "ElaSNM9ktpY0nnK4",
+        "formula": "PRECIO ALTO * 2 + ANCHO * 2"
+      },
+      {
+        "id": "xT3yxY1qNNgJxqmp",
+        "formula": "PRECIO ALTO * 2"
+      },
+      {
+        "id": "wP438UC6HNeTBYPv",
+        "formula": "PRECIO ANCHO * 1"
+      },
+      {
+        "id": "gINNPk0aUbyCyijD",
+        "formula": "PRECIO ANCHO * 1"
+      }
+    ],
+    "chapes": [
+      {
+        "id": "3oAYB5isOhGuorXU",
+        "formula": "PRECIO * 1"
+      },
+      {
+        "id": "itLPv0S2QqFQPqM2",
+        "formula": "PRECIO * 1"
+      }
+    ],
+    "glasses": [],
+    "manpower": "1.50",
+    "_id": "cTEgjwKbKGkKE58k",
+    "type": "models"
+  },
+  {
+    "name": "VENTANAL CON PUERTA Y VENTILAS DE PROYECCIÓN",
+    "materials": [
+      {
+        "id": "xT3yxY1qNNgJxqmp",
+        "formula": "PRECIO ALTO * 2 + ANCHO * 1"
+      },
+      {
+        "id": "wP438UC6HNeTBYPv",
+        "formula": "PRECIO ALTO * 2 + ANCHO * 2"
+      },
+      {
+        "id": "gINNPk0aUbyCyijD",
+        "formula": "PRECIO ALTO * 2 + ANCHO * 2"
+      },
+      {
+        "id": "qcHGeqmOlGwv5daB",
+        "formula": "PRECIO ALTO * 2 + ANCHO * 2"
+      },
+      {
+        "id": "HndxD5pVhv6a0JS8",
+        "formula": "PRECIO ALTO * 2 + ANCHO * 2"
+      },
+      {
+        "id": "8BSFiGtvKRJEYSIP",
+        "formula": "PRECIO ALTO * 2 + ANCHO * 2"
+      },
+      {
+        "id": "HJhQDfqt4DlH9zXd",
+        "formula": "PRECIO ALTO * 2 + ANCHO * 2"
+      },
+      {
+        "id": "nZ19bLm2eEb0wBxQ",
+        "formula": "PRECIO ALTO * 2 + ANCHO * 2"
+      },
+      {
+        "id": "QPsFCfKGqZtBWEAp",
+        "formula": "PRECIO  ANCHO * 1"
+      },
+      {
+        "id": "7pUmXOiQq2GSZ7wV",
+        "formula": "PRECIO ANCHO * 1"
+      },
+      {
+        "id": "85uHpiAqe2OrFJuz",
+        "formula": "PRECIO ALTO * 2 + ANCHO  *2"
+      },
+      {
+        "id": "iCrvtSABGDATPSpy",
+        "formula": "PRECIO ALTO * 2 + ANCHO * 2"
+      }
+    ],
+    "chapes": [
+      {
+        "id": "J67gNXFCl7KVT9Ny",
+        "formula": "PRECIO * 1"
+      },
+      {
+        "id": "DSDiUllAH3qbcwBB",
+        "formula": "PRECIO * 1"
+      },
+      {
+        "id": "itLPv0S2QqFQPqM2",
+        "formula": "PRECIO * 4"
+      },
+      {
+        "id": "3oAYB5isOhGuorXU",
+        "formula": "PRECIO * 4"
+      }
+    ],
+    "glasses": [],
+    "manpower": "1.50",
+    "_id": "d5jdqhyS5aR2gS19",
+    "type": "models"
+  },
+  {
+    "name": "CANCEL CON DOS FIJOS Y UN CORREDIZO AL CENTRO",
+    "materials": [
+      {
+        "id": "o3cZm8E7wupqBcnE",
+        "formula": "PRECIO ALTO * 2 "
+      },
+      {
+        "id": "VRs1QmTaohARWJqE",
+        "formula": "PRECIO ALTO * 2 + ANCHO * 1"
+      },
+      {
+        "id": "1diYNzTwa167sBI0",
+        "formula": "PRECIO ALTO * 2"
+      },
+      {
+        "id": "fVOTZljxvqeugywW",
+        "formula": "PRECIO ALTO * 2"
+      },
+      {
+        "id": "RcNL0hADvPE33wm4",
+        "formula": "PRECIO ANCHO *1"
+      }
+    ],
+    "chapes": [
+      {
+        "id": "NWDllumIWiP5dWhJ",
+        "formula": "PRECIO * 2"
+      },
+      {
+        "id": "fQGPH04LxOf5dvga",
+        "formula": "PRECIO * 1"
+      },
+      {
+        "id": "nPBTqk6awsqbXRGt",
+        "formula": "PRECIO * 1"
+      }
+    ],
+    "glasses": [],
+    "manpower": "1.50",
+    "_id": "dvjXPWlW3asnSkJV",
+    "type": "models"
+  },
+  {
+    "name": "CANCEL CORREDIZO",
+    "materials": [
+      {
+        "id": "VRs1QmTaohARWJqE",
+        "formula": "PRECIO ALTO * 2 + ANCHO * 1"
+      },
+      {
+        "id": "RcNL0hADvPE33wm4",
+        "formula": "PRECIO ANCHO * 1"
+      },
+      {
+        "id": "o3cZm8E7wupqBcnE",
+        "formula": "PRECIO ALTO * 1"
+      },
+      {
+        "id": "1diYNzTwa167sBI0",
+        "formula": "PRECIO ALTO *1"
+      },
+      {
+        "id": "fVOTZljxvqeugywW",
+        "formula": "PRECIO ANCHO * 1"
+      },
+      {
+        "id": "ASZeV1ZrrWNot6mA",
+        "formula": "PRECIO ANCHO * 1"
+      }
+    ],
+    "chapes": [
+      {
+        "id": "fQGPH04LxOf5dvga",
+        "formula": "PRECIO * 1"
+      },
+      {
+        "id": "NWDllumIWiP5dWhJ",
+        "formula": "PRECIO * 2"
+      }
+    ],
+    "glasses": [],
+    "manpower": "1.50",
+    "_id": "dzgLpmESEjVcnS9l",
+    "type": "models"
+  },
+  {
+    "name": "Ventana con escuadra- fijo de un lado, corredizo de otro",
+    "materials": [
+      {
+        "id": "8HzL2gJc6OQk5NEo",
+        "formula": "ALTO"
+      }
+    ],
+    "chapes": [],
+    "glasses": [],
+    "manpower": 1,
+    "_id": "ehqMKPCGuiPguWfG",
+    "type": "models"
+  },
+  {
+    "name": "VENTANA CON DOS CORREDIZAS",
+    "materials": [
+      {
+        "id": "QawznrBZwvAj2wX8",
+        "formula": "PRECIO ALTO * 2 + ANCHO * 1"
+      },
+      {
+        "id": "SOcLOPScVGDKFg8Z",
+        "formula": "PRECIO ANCHO * 1"
+      },
+      {
+        "id": "czIf7aZ2Uepxa8qg",
+        "formula": "PRECIO ALTO * 2"
+      },
+      {
+        "id": "ZwZDTXXDOq3P7oHA",
+        "formula": "PRECIO ALTO * 2"
+      },
+      {
+        "id": "xSmhzCWNTz3HVFeS",
+        "formula": "PRECIO ANCHO * 1"
+      },
+      {
+        "id": "xSmhzCWNTz3HVFeS",
+        "formula": "PRECIO ANCHO * 1"
+      }
+    ],
+    "chapes": [
+      {
+        "id": "5OATaZbCgFTwaebF",
+        "formula": "PRECIO * 2"
+      },
+      {
+        "id": "Qgppeve3GuI6khFE",
+        "formula": "PRECIO * 4"
+      }
+    ],
+    "glasses": [],
+    "manpower": "1.50",
+    "_id": "lDSE0dapjGK4A3KO",
+    "type": "models"
+  },
+  {
+    "name": "FIJO CON VENTILA DE PROYECCIÓN INFERIOR",
+    "materials": [
+      {
+        "id": "xT3yxY1qNNgJxqmp",
+        "formula": "PRECIO ALTO * 2 + ANCHO * 1"
+      },
+      {
+        "id": "gINNPk0aUbyCyijD",
+        "formula": "PRECIO ANCHO * 1"
+      },
+      {
+        "id": "wP438UC6HNeTBYPv",
+        "formula": "PRECIO ANCHO * 1"
+      },
+      {
+        "id": "qcHGeqmOlGwv5daB",
+        "formula": "PRECIO ALTO * 2 + ANCHO * 2"
+      },
+      {
+        "id": "ElaSNM9ktpY0nnK4",
+        "formula": "PRECIO ALTO * 2 + ANCHO * 2"
+      }
+    ],
+    "chapes": [
+      {
+        "id": "3oAYB5isOhGuorXU",
+        "formula": "PRECIO * 1"
+      },
+      {
+        "id": "itLPv0S2QqFQPqM2",
+        "formula": "PRECIO * 1"
+      }
+    ],
+    "glasses": [],
+    "manpower": "1.50",
+    "_id": "lHH9kJkPBjtBczkL",
+    "type": "models"
+  },
+  {
+    "name": "ORDEN DE PUERTA DE 3\" CON DUELA Y FIJO CON VIDRIO",
+    "materials": [
+      {
+        "id": "o3cZm8E7wupqBcnE",
+        "formula": "PRECIO/TRAMO * (ALTO * 2 + ANCHO * 2)"
+      },
+      {
+        "id": "pXNqsd3MkHPeGUnS",
+        "formula": "PRECIO/TRAMO * (ALTO * 2 +ANCHO * 2)"
+      },
+      {
+        "id": "ljKrbVWljs8xRYs6",
+        "formula": "PRECIO/TRAMO * (ALTO * ANCHO)"
+      }
+    ],
+    "chapes": [
+      {
+        "id": "xtrS1J3CgnywgL3i",
+        "formula": "PRECIO * 3"
+      },
+      {
+        "id": "YlUf2iuOkbSrnH0U",
+        "formula": "PRECIO * 1"
+      },
+      {
+        "id": "WQlLImW6zcMIk0db",
+        "formula": "PRECIO * 4"
+      },
+      {
+        "id": "juY5Q9ADduBgJCGT",
+        "formula": "PRECIO * 1"
+      }
+    ],
+    "glasses": [],
+    "manpower": 1,
+    "_id": "mXHRrxAqYWF4N1Ed",
+    "type": "models"
+  },
+  {
+    "name": "ORDEEN DE MOSQUITERO FIJO",
+    "materials": [
+      {
+        "id": "zaPOn4lCDJSegrhE",
+        "formula": "PRECIO/TRAMO * (ANCHO *2 + ALTO*2)"
+      }
+    ],
+    "chapes": [
+      {
+        "id": "32edPPXOrk8E0lZx",
+        "formula": "PRECIO * 4"
+      },
+      {
+        "id": "zD3dmLQy9wnA0ylx",
+        "formula": "PRECIO * ALTO * ANCHO"
+      }
+    ],
+    "glasses": [],
+    "manpower": "1.50",
+    "_id": "nMihGfrVxCe3JM9l",
+    "type": "models"
+  },
+  {
+    "name": "PUERTA DE 1 3/4 TODA CON DUELA",
+    "materials": [
+      {
+        "id": "8BSFiGtvKRJEYSIP",
+        "formula": "PRECIO/TRAMO *( ALTO * 2)"
+      },
+      {
+        "id": "N2sXRG2EZMiSei3F",
+        "formula": "PRECIO/TRAMO * (ALTO * 2 + ANCHO *1)"
+      },
+      {
+        "id": "HJhQDfqt4DlH9zXd",
+        "formula": "PRECIO/TRAMO * ( ALTO *2 + ANCHO *2)"
+      },
+      {
+        "id": "ZHpCIGudfKo8fykU",
+        "formula": "PRECIO/TRAMO * (ALTO * 2 +ANCHO * 1)"
+      },
+      {
+        "id": "ljKrbVWljs8xRYs6",
+        "formula": "PRECIO/TRAMO * (ALTO * ANCHO)"
+      },
+      {
+        "id": "7pUmXOiQq2GSZ7wV",
+        "formula": "PRECIO/TRAMO * (ANCHO * 2)"
+      }
+    ],
+    "chapes": [
+      {
+        "id": "J67gNXFCl7KVT9Ny",
+        "formula": "PRECIO *1 "
+      },
+      {
+        "id": "DSDiUllAH3qbcwBB",
+        "formula": "PRECIO *1"
+      }
+    ],
+    "glasses": [],
+    "manpower": "1.50",
+    "_id": "oZN1cnWnRSpf25n3",
+    "type": "models"
+  },
+  {
+    "name": "ORDEN CANCEL DE BAÑO EN ESC/FIJO",
+    "materials": [
+      {
+        "id": "7A9Do1QE2QEe0Y0t",
+        "formula": "PRECIO/TRAMO * (ALTO*2)"
+      },
+      {
+        "id": "gX7oHV6dpJ1vR83W",
+        "formula": "PRECIO/TRAMO * (ANCHO*2)"
+      },
+      {
+        "id": "GSCzHx1dKtHmD449",
+        "formula": "PRECIO/TRAMO * (ANCHO*2)"
+      },
+      {
+        "id": "HrUGLGpkmJLGR7fV",
+        "formula": "PRECIO/TRAMO * (ALTO*6+ANCHO*2)"
+      }
+    ],
+    "chapes": [
+      {
+        "id": "WQlLImW6zcMIk0db",
+        "formula": "PRECIO * 4"
+      },
+      {
+        "id": "Irm1mzpVkb2XGSvy",
+        "formula": "PRECIO * 4"
+      }
+    ],
+    "glasses": [
+      {
+        "id": "GG3cMlZYVmVrNrQW",
+        "formula": "PRECIO * (ALTO*ANCHO)"
+      }
+    ],
+    "manpower": "1.50",
+    "_id": "pYHu7NtK8fzkQfBZ",
+    "type": "models"
+  },
+  {
+    "name": "MAMPARA TRIPLE",
+    "materials": [
+      {
+        "id": "xx6ZF3z2UnX9CWSc",
+        "formula": "PRECIO ALTO * 2 + ANCHO * 2"
+      },
+      {
+        "id": "pXNqsd3MkHPeGUnS",
+        "formula": "PRECIO ALTO * 2 + ANCHO * 2"
+      },
+      {
+        "id": "8Ve6QGz7FCBMDrFg",
+        "formula": "PRECIO ALTO * 2 + ANCHO * 2"
+      },
+      {
+        "id": "JptqZId2FrKwSX8O",
+        "formula": "PRECIO ALTO * 2 + ANCHO * 2"
+      },
+      {
+        "id": "b55G4Ftx3UWmzLH2",
+        "formula": "PRECIO ALTO * 2 + ANCHO * 2"
+      }
+    ],
+    "chapes": [
+      {
+        "id": "3oAYB5isOhGuorXU",
+        "formula": "PRECIO * 2"
+      },
+      {
+        "id": "WQlLImW6zcMIk0db",
+        "formula": "PRECIO * 4"
+      },
+      {
+        "id": "juY5Q9ADduBgJCGT",
+        "formula": "PRECIO * 1"
+      },
+      {
+        "id": "YlUf2iuOkbSrnH0U",
+        "formula": "PRECIO * 1"
+      }
+    ],
+    "glasses": [],
+    "manpower": "1.50",
+    "_id": "tXwXpcicvOiVEnwH",
+    "type": "models"
+  },
+  {
+    "name": "ORDEN CANCEL DE BAÑO EN ESCUADRA",
+    "materials": [
+      {
+        "id": "IbH1pxUjQczxsW50",
+        "formula": "PRECIO/TRAMO *(ALTO*2)"
+      },
+      {
+        "id": "GSCzHx1dKtHmD449",
+        "formula": "PRECIO/TRAMO *(ANCHO)"
+      },
+      {
+        "id": "gX7oHV6dpJ1vR83W",
+        "formula": "PRECIO/TRAMO * (ANCHO)"
+      },
+      {
+        "id": "8Ve6QGz7FCBMDrFg",
+        "formula": "PRECIO/TRAMO *(ALTO*8*ANCHO*2)"
+      }
+    ],
+    "chapes": [
+      {
+        "id": "WQlLImW6zcMIk0db",
+        "formula": "PRECIO* 4"
+      },
+      {
+        "id": "Irm1mzpVkb2XGSvy",
+        "formula": "PRECIO*8"
+      }
+    ],
+    "glasses": [
+      {
+        "id": "GG3cMlZYVmVrNrQW",
+        "formula": "PRECIO*(ANCHO*ALTO)"
+      }
+    ],
+    "manpower": "1.50",
+    "_id": "uQHry1qcU42ON9aB",
+    "type": "models"
+  },
+  {
+    "name": "CANCEL RESIDENCIAL DOBLE",
+    "materials": [
+      {
+        "id": "V6G2T1KEatpu6cMi",
+        "formula": "PRECIO ALTO *2 + ANCHO *2"
+      },
+      {
+        "id": "9ZgYSgBcQjwAlXD2",
+        "formula": "PRECIO ALTO *2 + ANCHO * 2"
+      },
+      {
+        "id": "8WpzzyuzNIRFhcLp",
+        "formula": "PRECIO ALTO *2 + ANCHO * 2"
+      },
+      {
+        "id": "BBCzUPSJYYTx8Cas",
+        "formula": "PRECIO ALTO *2"
+      }
+    ],
+    "chapes": [
+      {
+        "id": "rcCTDN6Hv3s96Opp",
+        "formula": "PRECIO * 1"
+      }
+    ],
+    "glasses": [
+      {
+        "id": "GG3cMlZYVmVrNrQW",
+        "formula": "PRECIO ALTO * ANCHO"
+      }
+    ],
+    "manpower": "1.50",
+    "_id": "v88WKYBwgsxE3NHh",
+    "type": "models"
+  },
+  {
+    "name": "FIJO CON VENTILA DE PROYECCIÓN",
+    "materials": [
+      {
+        "id": "xT3yxY1qNNgJxqmp",
+        "formula": "PRECIO ALTO * 2 + ANCHO * 2"
+      },
+      {
+        "id": "gINNPk0aUbyCyijD",
+        "formula": "PRECIO ANCHO *1"
+      },
+      {
+        "id": "wP438UC6HNeTBYPv",
+        "formula": "PRECIO ANCHO * 1"
+      },
+      {
+        "id": "ElaSNM9ktpY0nnK4",
+        "formula": "PRECIO ALTO * 2 + ANCHO * 2"
+      },
+      {
+        "id": "qcHGeqmOlGwv5daB",
+        "formula": "PRECIO ALTO * 2 + ANCHO * 2"
+      }
+    ],
+    "chapes": [
+      {
+        "id": "itLPv0S2QqFQPqM2",
+        "formula": "PRECIO * 1"
+      },
+      {
+        "id": "3oAYB5isOhGuorXU",
+        "formula": "PRECIO * 1"
+      }
+    ],
+    "glasses": [
+      {
+        "id": "GG3cMlZYVmVrNrQW",
+        "formula": "PRECIO ALTO * ANCHO"
+      }
+    ],
+    "manpower": "1.50",
+    "_id": "vFd0T50udHbE8TXb",
+    "type": "models"
+  },
+  {
+    "name": "ORDEN PUERTA 1\" 3/4 SOLO VIDRIO A.DERECHA",
+    "materials": [
+      {
+        "id": "ZHpCIGudfKo8fykU",
+        "formula": "PRECIO * 1"
+      },
+      {
+        "id": "N2sXRG2EZMiSei3F",
+        "formula": "PRECIO * 1"
+      },
+      {
+        "id": "7pUmXOiQq2GSZ7wV",
+        "formula": "PRECIO/TRAMO * (ANCHO)"
+      },
+      {
+        "id": "QPsFCfKGqZtBWEAp",
+        "formula": "PRECIO/TRAMO * (ANCHO)"
+      },
+      {
+        "id": "8BSFiGtvKRJEYSIP",
+        "formula": "PRECIO * 1"
+      },
+      {
+        "id": "HJhQDfqt4DlH9zXd",
+        "formula": "PRECIO/TRAMO * (ALTO*4+ANCHO*4)"
+      }
+    ],
+    "chapes": [
+      {
+        "id": "J67gNXFCl7KVT9Ny",
+        "formula": "PRECIO * 1"
+      },
+      {
+        "id": "DSDiUllAH3qbcwBB",
+        "formula": "PRECIO * 1"
+      },
+      {
+        "id": "QzsLDy7KyQOGjc3P",
+        "formula": "PRECIO * 30"
+      }
+    ],
+    "glasses": [
+      {
+        "id": "GG3cMlZYVmVrNrQW",
+        "formula": "PRECIO * (ALTO*ANCHO)"
+      }
+    ],
+    "manpower": "1.25",
+    "_id": "wUJcPjE3ZL2haKDT",
+    "type": "models"
+  },
+  {
+    "name": "FIJO CON DOS VENTILAS DE PROYECCION",
+    "materials": [
+      {
+        "id": "qcHGeqmOlGwv5daB",
+        "formula": "PRECIO ALTO * 4 + ANCHO * 4"
+      },
+      {
+        "id": "ElaSNM9ktpY0nnK4",
+        "formula": "PRECIO ALTO * 4 + ANCHO * 4"
+      },
+      {
+        "id": "zaPOn4lCDJSegrhE",
+        "formula": "PRECIO ALTO * 4 + ANCHO * 4"
+      },
+      {
+        "id": "xT3yxY1qNNgJxqmp",
+        "formula": "PRECIO ALTO * 2 + ANCHO * 1"
+      },
+      {
+        "id": "wP438UC6HNeTBYPv",
+        "formula": "PRECIO ANCHO * 1"
+      },
+      {
+        "id": "gINNPk0aUbyCyijD",
+        "formula": "PRECIO ANCHO * 1"
+      }
+    ],
+    "chapes": [
+      {
+        "id": "3oAYB5isOhGuorXU",
+        "formula": "PRECIO * 2"
+      },
+      {
+        "id": "itLPv0S2QqFQPqM2",
+        "formula": "PRECIO * 2"
+      }
+    ],
+    "glasses": [],
+    "manpower": 1,
+    "_id": "wkEhZDCZfG0xLIMR",
+    "type": "models"
+  },
+  {
+    "name": "CELOCIA FIJA",
+    "materials": [
+      {
+        "id": "UbhOzNdBdaBix7dn",
+        "formula": "PRECIO ALTO * 2 + ANCHO * 2"
+      },
+      {
+        "id": "gxMvpDJWDjSC6G3R",
+        "formula": "PRECIO ANCHO * 2"
+      }
+    ],
+    "chapes": [],
+    "glasses": [],
+    "manpower": "1.50",
+    "_id": "ymFopM9JkifCJMVy",
+    "type": "models"
+  },
+  {
+    "name": "CONTRA PLANA 12CM",
+    "price": "1",
+    "_id": "07MEB3LC1mbNshQH",
+    "type": "chapes"
+  },
+  {
+    "name": "JALADERA 12CM ESTRIADA",
+    "price": "1",
+    "_id": "0YeI26G1EzwPtWcW",
+    "type": "chapes"
+  },
+  {
+    "name": "BALANCIN DE 17\"",
+    "price": "1",
+    "_id": "0z3TpsTNjMSSDlor",
+    "type": "chapes"
+  },
+  {
+    "name": "CHAPA PHILIHPS 425 DOBLE CILINDRO",
+    "price": "1",
+    "_id": "2BIexLKmgal3RGZW",
+    "type": "chapes"
+  },
+  {
+    "name": "BATIENTE DE LUJO",
+    "price": "1",
+    "_id": "2lvElCH0cTqxfYxN",
+    "type": "chapes"
+  },
+  {
+    "name": "JALADERA PLANA PARA MOSQUITERO ",
+    "price": "1",
+    "_id": "2qAaKQ8oncM732x3",
+    "type": "chapes"
+  },
+  {
+    "name": "ESCUADRAS PARA MOSQUITERO",
+    "price": "1",
+    "_id": "32edPPXOrk8E0lZx",
+    "type": "chapes"
+  },
+  {
+    "name": "BISAGRA SERIE 35",
+    "price": "1",
+    "_id": "3oAYB5isOhGuorXU",
+    "type": "chapes"
+  },
+  {
+    "name": "BISAGRA SERIE 70",
+    "price": "1",
+    "_id": "4Ci5q8dI6PKQqLr1",
+    "type": "chapes"
+  },
+  {
+    "name": "DUELA LISA",
+    "price": "1",
+    "_id": "5FKMj5GB25sPJ0Tx",
+    "type": "chapes"
+  },
+  {
+    "name": "CARRETILLA GORRA DE NAPOLEON",
+    "price": "1",
+    "_id": "5JkiGrKKYDfQXqgH",
+    "type": "chapes"
+  },
+  {
+    "name": "JALADERA DE EMBUTIR 2\"",
+    "price": "35",
+    "pricecol": "35",
+    "_id": "5OATaZbCgFTwaebF",
+    "type": "chapes"
+  },
+  {
+    "name": "GUARDA POLVO 1.20",
+    "price": "1",
+    "_id": "87MLMmZG3USQenUp",
+    "type": "chapes"
+  },
+  {
+    "name": "CARRETILLA PARA VITRINA",
+    "price": "1",
+    "_id": "8Cuj8qETnK32Snsk",
+    "type": "chapes"
+  },
+  {
+    "name": "BRAZO P/ VENTILA DE PROYECCIÓN 20\"",
+    "price": "1",
+    "_id": "9OdDOHfj07DT5mDh",
+    "type": "chapes"
+  },
+  {
+    "name": "CHAPA DE PALETA 590",
+    "price": "1",
+    "_id": "9ez81rb0ZsRtHYlE",
+    "type": "chapes"
+  },
+  {
+    "name": "FELPA",
+    "price": "1",
+    "_id": "A5pTbWDqhN1PB6XX",
+    "type": "chapes"
+  },
+  {
+    "name": "BALANCIN DE 30\"",
+    "price": "1",
+    "_id": "B5GNycapK1jB6Vb4",
+    "type": "chapes"
+  },
+  {
+    "name": "JALADERA 18CM ESTRIADA",
+    "price": "1",
+    "_id": "BKNtZpnakrDXJGy9",
+    "type": "chapes"
+  },
+  {
+    "name": "BALANCIN 20\"",
+    "price": "1",
+    "_id": "BsWuh8SmoDyMUSB9",
+    "type": "chapes"
+  },
+  {
+    "name": "CREMALLERA 1.20",
+    "price": "1",
+    "_id": "DOJmFTrbXCkOzq7C",
+    "type": "chapes"
+  },
+  {
+    "name": "PIVOTE DE CENTRADO",
+    "price": "1",
+    "_id": "DSDiUllAH3qbcwBB",
+    "type": "chapes"
+  },
+  {
+    "name": "ZOCLO DE LUJO",
+    "price": "1",
+    "_id": "DnQQ3mw83qBzxfiv",
+    "type": "chapes"
+  },
+  {
+    "name": "ESCUADRA PARA ARMAR",
+    "price": "1",
+    "_id": "EdW10K1ECPdqOtsS",
+    "type": "chapes"
+  },
+  {
+    "name": "BALANCINES 12\"",
+    "price": "1",
+    "_id": "GV8aEt132rm11Hbx",
+    "type": "chapes"
+  },
+  {
+    "name": "TENSOR 3.00",
+    "price": "1",
+    "_id": "GyKL0Fjt4GXbcn69",
+    "type": "chapes"
+  },
+  {
+    "name": "CINTA NORTON",
+    "price": "1",
+    "_id": "H3xYvgwL1Sq7F1xJ",
+    "type": "chapes"
+  },
+  {
+    "name": "TENSOR 1.20",
+    "price": "1",
+    "_id": "HIn9iONHNlQtbH7K",
+    "type": "chapes"
+  },
+  {
+    "name": "CERCO DE LUJO",
+    "price": "1",
+    "_id": "HbBuH8m86UUqfXPN",
+    "type": "chapes"
+  },
+  {
+    "name": "VINIL (5 PESOS X METRO)",
+    "price": "1",
+    "_id": "HrMadMMe8pkFmqMB",
+    "type": "chapes"
+  },
+  {
+    "name": "CARRETILLA PARA BAÑO",
+    "price": "1",
+    "_id": "Irm1mzpVkb2XGSvy",
+    "type": "chapes"
+  },
+  {
+    "name": "CHAPA DOBLE MANIJA",
+    "price": "1",
+    "_id": "J67gNXFCl7KVT9Ny",
+    "type": "chapes"
+  },
+  {
+    "name": "BALANCIN 24\"",
+    "price": "1",
+    "_id": "LhzPaPouuntIB2e3",
+    "type": "chapes"
+  },
+  {
+    "name": "BALANCIN 28\"",
+    "price": "1",
+    "_id": "LzxyTpr3tnJm0aOP",
+    "type": "chapes"
+  },
+  {
+    "name": "CHAPA DE PALETA TECNO",
+    "price": "1",
+    "_id": "MG1inmZGIB0ExU4B",
+    "type": "chapes"
+  },
+  {
+    "name": "CREMALLERA 1.80",
+    "price": "1",
+    "_id": "NFsyUPrkgaxk0P3O",
+    "type": "chapes"
+  },
+  {
+    "name": "CARRETILLA DE 3\"",
+    "price": "1",
+    "_id": "NWDllumIWiP5dWhJ",
+    "type": "chapes"
+  },
+  {
+    "name": "BRAZO P/ VENTILA DE PROYECCIÓN 8\"",
+    "price": "1",
+    "_id": "NlAKL83rBh2rIupn",
+    "type": "chapes"
+  },
+  {
+    "name": "SILICON",
+    "price": "1",
+    "_id": "NqW27zzrtoUdcItk",
+    "type": "chapes"
+  },
+  {
+    "name": "JALADERA DE LUJO IMPORTADA CON CHAPA",
+    "price": "1",
+    "_id": "OPArb5Sct170VDNF",
+    "type": "chapes"
+  },
+  {
+    "name": "TENSOR 1.00",
+    "price": "1",
+    "_id": "OSzLSzGCSYhmYqnw",
+    "type": "chapes"
+  },
+  {
+    "name": "CONTRA PLANA 18CM",
+    "price": "1",
+    "_id": "QVDm4VEihC1Bfbbz",
+    "type": "chapes"
+  },
+  {
+    "name": "CARRETILLA P/ VENTANA DE 2\"",
+    "price": "1",
+    "_id": "Qgppeve3GuI6khFE",
+    "type": "chapes"
+  },
+  {
+    "name": "Tornillos 1$",
+    "price": "1",
+    "_id": "QzsLDy7KyQOGjc3P",
+    "type": "chapes"
+  },
+  {
+    "name": "CABEZAL DE LUJO",
+    "price": "1",
+    "_id": "R6Ay4FxDHPU1KrSK",
+    "type": "chapes"
+  },
+  {
+    "name": "BRAZO P/ VENTILA DE PROYECCIÓN 16\"",
+    "price": "1",
+    "_id": "VeQoBRYuWQAoUOAT",
+    "type": "chapes"
+  },
+  {
+    "name": "JALADERA T/ELEFANTE",
+    "price": "1",
+    "_id": "WQlLImW6zcMIk0db",
+    "type": "chapes"
+  },
+  {
+    "name": "PASADOR DE RESBALON",
+    "price": "1",
+    "_id": "YlUf2iuOkbSrnH0U",
+    "type": "chapes"
+  },
+  {
+    "name": "CARRETILLA TANDELL 3\"",
+    "price": "1",
+    "_id": "ZzLwql4FKlaFlEmO",
+    "type": "chapes"
+  },
+  {
+    "name": "SILICON 3$ METRO LINEAL",
+    "price": "1",
+    "_id": "bP10JQKdmf114otc",
+    "type": "chapes"
+  },
+  {
+    "name": "JUNQUILLO  12543",
+    "price": "1",
+    "_id": "bWikey3L20Adma1W",
+    "type": "chapes"
+  },
+  {
+    "name": "CARRETILLA P/ MOSQUITERO",
+    "price": "1",
+    "_id": "dDtq5WANGh23l90j",
+    "type": "chapes"
+  },
+  {
+    "name": "GUARDA POLVO 1.00",
+    "price": "1",
+    "_id": "dFzXSUZ3N49XsRpt",
+    "type": "chapes"
+  },
+  {
+    "name": "JALADERA DE EMBUTIR DE 3\"",
+    "price": "1",
+    "_id": "fQGPH04LxOf5dvga",
+    "type": "chapes"
+  },
+  {
+    "name": "FELPA",
+    "price": "1",
+    "_id": "hDlu4Kb4CaCuSiEG",
+    "type": "chapes"
+  },
+  {
+    "name": "OPERADOR DE BRAZO LARGO",
+    "price": "1",
+    "_id": "itLPv0S2QqFQPqM2",
+    "type": "chapes"
+  },
+  {
+    "name": "MANIJA INVERTIBLE",
+    "price": "1",
+    "_id": "j81aEV3k7fIt69CZ",
+    "type": "chapes"
+  },
+  {
+    "name": "PASADOR DE MAROMA",
+    "price": "1",
+    "_id": "jfVBMsxzsNCNrlSk",
+    "type": "chapes"
+  },
+  {
+    "name": "PASADOR DE LUJO",
+    "price": "1",
+    "_id": "juY5Q9ADduBgJCGT",
+    "type": "chapes"
+  },
+  {
+    "name": "CIERRA PUERTA",
+    "price": "1",
+    "_id": "l7kb6qtDwweez4Ii",
+    "type": "chapes"
+  },
+  {
+    "name": "INTERMEDIO DE LUJO",
+    "price": "1",
+    "_id": "lxtxiYtPCViPWYWZ",
+    "type": "chapes"
+  },
+  {
+    "name": "CARRETILLA PARA BAÑO ESPALDA ALTA",
+    "price": "1",
+    "_id": "m7ngJ87d7L4d0LiX",
+    "type": "chapes"
+  },
+  {
+    "name": "CHAPA TETRALLAVE ",
+    "price": "1",
+    "_id": "nPBTqk6awsqbXRGt",
+    "type": "chapes"
+  },
+  {
+    "name": "FELPON",
+    "price": "1",
+    "_id": "o9mrA6vNAgwhnVSf",
+    "type": "chapes"
+  },
+  {
+    "name": "LAGRIMA",
+    "price": "1",
+    "_id": "pIzxSTzKB57Op9q0",
+    "type": "chapes"
+  },
+  {
+    "name": "KIT SERIE 4600",
+    "price": "1",
+    "_id": "rcCTDN6Hv3s96Opp",
+    "type": "chapes"
+  },
+  {
+    "name": "CHAPA PHILIPS CILINDRO MARIPOSA",
+    "price": "1",
+    "_id": "ugvfXljxolFpL47q",
+    "type": "chapes"
+  },
+  {
+    "name": "BISAGRA EUROVENT TUBULAR $43",
+    "price": "1",
+    "_id": "vKoJLbbxY0PKENyu",
+    "type": "chapes"
+  },
+  {
+    "name": "BRAZO P/ VENTILA DE PROYECCIÓN 12\"",
+    "price": "1",
+    "_id": "xZO6UQ9jElIFNggB",
+    "type": "chapes"
+  },
+  {
+    "name": "BISAGRA DE LIBRO ",
+    "price": "1",
+    "_id": "xtrS1J3CgnywgL3i",
+    "type": "chapes"
+  },
+  {
+    "name": "MANGO DE ALUMINIO",
+    "price": "1",
+    "_id": "y98i9xxIf9wfGkwG",
+    "type": "chapes"
+  },
+  {
+    "name": "BISAGRA DE PIANO",
+    "price": "1",
+    "_id": "yXYvqARIfxJOwzEd",
+    "type": "chapes"
+  },
+  {
+    "name": "BALANCIN 14\"",
+    "price": "1",
+    "_id": "ygFn5Y2pwCz84Lq3",
+    "type": "chapes"
+  },
+  {
+    "name": "TELA MOSQUITERA X METRO",
+    "price": "1",
+    "_id": "zD3dmLQy9wnA0ylx",
+    "type": "chapes"
+  },
+  {
+    "name": "VIDRIO CLARO 6MM",
+    "tickness": "6",
+    "priceinstall": "1",
+    "pricecut": "1",
+    "_id": "GG3cMlZYVmVrNrQW",
+    "type": "glasses"
+  },
+  {
+    "name": "PLASTICO PARA CANCEL DE BAÑO",
+    "tickness": ".3",
+    "priceinstall": "1",
+    "pricecut": "1",
+    "_id": "SSS1YP4lheyg0qK7",
+    "type": "glasses"
+  },
+  {
+    "name": "JUAN REYES REA",
+    "_id": "FkmSAl8bFlMCAE3Q",
+    "type": "employees"
+  },
+  {
+    "name": "MIGUEL ANGEL LOPEZ ROJAS",
+    "_id": "JuAk3CeI5AW2FpuC",
+    "type": "employees"
+  },
+  {
+    "name": "ABRAHAM RANGEL CANO",
+    "_id": "VxzqwZDVVpEgasdA",
+    "type": "employees"
+  },
+  {
+    "name": "MARIO RIOS HERNANDEZ",
+    "_id": "fQFpjnLAS3GT9oYA",
+    "type": "employees"
+  },
+  {
+    "name": "TAPA BOLSA 2\"",
+    "stretch": "6.10",
+    "price": "1",
+    "_id": "0NyAYu93RuuIK6dN",
+    "type": "materials"
+  },
+  {
+    "name": "ZOCLO Y CABEZAL S-70 (P)",
+    "stretch": 6.1,
+    "price": "1",
+    "_id": "0Z1d2SHoI06CDjIr",
+    "type": "materials"
+  },
+  {
+    "name": "INTERMEDIO DUOVENT S-70",
+    "stretch": 6.1,
+    "price": "1",
+    "_id": "1BCESrtDlEPxcdDx",
+    "type": "materials"
+  },
+  {
+    "name": "JUNQUILLO DUO-VENT S-50",
+    "stretch": 6.1,
+    "price": "1",
+    "_id": "1bweFUvobUeEZweQ",
+    "type": "materials"
+  },
+  {
+    "name": "CERCO TRASLAPE 3\"",
+    "stretch": 6.1,
+    "price": "1",
+    "_id": "1diYNzTwa167sBI0",
+    "type": "materials"
+  },
+  {
+    "name": "FIJO TUBULAR 4603",
+    "stretch": 6.1,
+    "price": "1",
+    "_id": "26PVtMgPDuWctv6D",
+    "type": "materials"
+  },
+  {
+    "name": "MOLDURA UNION S-50",
+    "stretch": 6.1,
+    "price": "1",
+    "_id": "2zVxYfae6DbtVjQh",
+    "type": "materials"
+  },
+  {
+    "name": "TAPA LISA 3\"",
+    "stretch": 6.1,
+    "price": "1",
+    "_id": "3GTAFSoD6V4HOptI",
+    "type": "materials"
+  },
+  {
+    "name": "ZOCLO S-50",
+    "stretch": 6.1,
+    "price": "1",
+    "_id": "3HvqUHjbUEet2VvB",
+    "type": "materials"
+  },
+  {
+    "name": "MOSQUITERO SIFON",
+    "stretch": 6.1,
+    "price": "1",
+    "_id": "4UOTfhQ0vKIUBDIu",
+    "type": "materials"
+  },
+  {
+    "name": "BATIENTE PUERTA S-50",
+    "stretch": 6.1,
+    "price": "1",
+    "_id": "5iXBpueOrz9YhwE1",
+    "type": "materials"
+  },
+  {
+    "name": "GUIA PARA BAÑO",
+    "stretch": 6.1,
+    "price": "1",
+    "_id": "5q2jFzBBdACYuu5b",
+    "type": "materials"
+  },
+  {
+    "name": "ESCALONADO 3\"",
+    "stretch": 6.1,
+    "price": "1",
+    "_id": "6cH8gzASibhtfCFv",
+    "type": "materials"
+  },
+  {
+    "name": "CERCO DUO S-70 (P)",
+    "stretch": 6.1,
+    "price": "1",
+    "_id": "6wPHyUPAtPik3CZj",
+    "type": "materials"
+  },
+  {
+    "name": "ZOCLO DE LUJO S-50",
+    "stretch": 6.1,
+    "price": "1",
+    "_id": "77h68ilO7JArBNOD",
+    "type": "materials"
+  },
+  {
+    "name": "JAMBA P/ BAÑO",
+    "stretch": "5.7",
+    "price": "1",
+    "_id": "7A9Do1QE2QEe0Y0t",
+    "type": "materials"
+  },
+  {
+    "name": "ZOCLO DE 1-3/4",
+    "stretch": 6.1,
+    "price": "1",
+    "_id": "7pUmXOiQq2GSZ7wV",
+    "type": "materials"
+  },
+  {
+    "name": "TEE DE 1X1",
+    "stretch": 6.1,
+    "price": "1",
+    "_id": "7taunPTKzzlFGcHI",
+    "type": "materials"
+  },
+  {
+    "name": "CANAL LISO",
+    "stretch": 6.1,
+    "price": "72.50",
+    "pricecol": "72.50",
+    "_id": "85uHpiAqe2OrFJuz",
+    "type": "materials"
+  },
+  {
+    "name": "CERCO CHAPA 1\" 3/4",
+    "stretch": "4.60",
+    "price": "1",
+    "_id": "8BSFiGtvKRJEYSIP",
+    "type": "materials"
+  },
+  {
+    "name": "ADAPTADOR OXXO 2\"",
+    "stretch": 6.1,
+    "price": "1",
+    "_id": "8HzL2gJc6OQk5NEo",
+    "type": "materials"
+  },
+  {
+    "name": "MARCO SEMILUJO",
+    "stretch": 6.1,
+    "price": "1",
+    "_id": "8Ve6QGz7FCBMDrFg",
+    "type": "materials"
+  },
+  {
+    "name": "HOJA PERIMETRAL MOSQUITERO 4623",
+    "stretch": 6.1,
+    "price": "1",
+    "_id": "8WpzzyuzNIRFhcLp",
+    "type": "materials"
+  },
+  {
+    "name": "tapa lisa",
+    "stretch": 6.1,
+    "price": "1",
+    "_id": "8lPSIogHNfNRXgTW",
+    "type": "materials"
+  },
+  {
+    "name": "ESCALONADO S-35",
+    "stretch": 6.1,
+    "price": "1",
+    "_id": "9LmdJrZb12xCA910",
+    "type": "materials"
+  },
+  {
+    "name": "HOJA  PERIMETRAL 4622",
+    "stretch": 6.1,
+    "price": "1",
+    "_id": "9ZgYSgBcQjwAlXD2",
+    "type": "materials"
+  },
+  {
+    "name": "MARCO COLONIAL S-35",
+    "stretch": 6.1,
+    "price": "1",
+    "_id": "9pYfxsiViblGmKSS",
+    "type": "materials"
+  },
+  {
+    "name": "ZOCLO CABEZAL 3\"",
+    "stretch": 6.1,
+    "price": "1",
+    "_id": "ASZeV1ZrrWNot6mA",
+    "type": "materials"
+  },
+  {
+    "name": "MOSQUITERO HORIZONTAL",
+    "stretch": 6.1,
+    "price": "1",
+    "_id": "Aabim7b9DT56LZ0Y",
+    "type": "materials"
+  },
+  {
+    "name": "JUNQUILLO COLONIAL S-50",
+    "stretch": 6.1,
+    "price": "1",
+    "_id": "Afp1gW1M0jAlDS4j",
+    "type": "materials"
+  },
+  {
+    "name": "TAPA HOJA CENTRAL 4620",
+    "stretch": 6.1,
+    "price": "1",
+    "_id": "BBCzUPSJYYTx8Cas",
+    "type": "materials"
+  },
+  {
+    "name": "TAPA BOLSA S-35",
+    "stretch": 6.1,
+    "price": "1",
+    "_id": "CbZLbe2ArNvypLfP",
+    "type": "materials"
+  },
+  {
+    "name": "TRASLAPE (V) S-70|",
+    "stretch": 6.1,
+    "price": "1",
+    "_id": "D6k3gWbYAzLXR9Ye",
+    "type": "materials"
+  },
+  {
+    "name": "FIJO 4613 ALTO",
+    "stretch": 6.1,
+    "price": "1",
+    "_id": "D7HLqSQbgroAJBET",
+    "type": "materials"
+  },
+  {
+    "name": "TAPA BOLSA 3\"",
+    "stretch": 6.1,
+    "price": "1",
+    "_id": "DAJ6PKxQq2aWB8GR",
+    "type": "materials"
+  },
+  {
+    "name": "ZOCLO S-50",
+    "stretch": 6.1,
+    "price": "1",
+    "_id": "DXQgZUGFjAUsj52K",
+    "type": "materials"
+  },
+  {
+    "name": "ZOCLO Y CABEZAL (V) S-70",
+    "stretch": 6.1,
+    "price": "1",
+    "_id": "DYADnZJEUsiRZ8ad",
+    "type": "materials"
+  },
+  {
+    "name": "RECTANGULAR 3\" X 1-3/4\"",
+    "stretch": 6.1,
+    "price": "1",
+    "_id": "DvMR1sgkme9yFJYa",
+    "type": "materials"
+  },
+  {
+    "name": "CONTRA MARCO S-35",
+    "stretch": "6.1",
+    "price": "1",
+    "_id": "ElaSNM9ktpY0nnK4",
+    "type": "materials"
+  },
+  {
+    "name": "CERCO CHAPA S-50",
+    "stretch": 6.1,
+    "price": "1",
+    "_id": "F48Rt943C8mi50Wv",
+    "type": "materials"
+  },
+  {
+    "name": "TAPA LISA S-35",
+    "stretch": 6.1,
+    "price": "1",
+    "_id": "FQg6ecICRTEmL3Pb",
+    "type": "materials"
+  },
+  {
+    "name": "RIEL SUPERIOR P/BAÑO",
+    "stretch": 6.1,
+    "price": "1",
+    "_id": "GSCzHx1dKtHmD449",
+    "type": "materials"
+  },
+  {
+    "name": "CERCO S-50",
+    "stretch": 6.1,
+    "price": "1",
+    "_id": "GWHNQUehbKOOq5Ml",
+    "type": "materials"
+  },
+  {
+    "name": "JALADERA SIFON",
+    "stretch": 6.1,
+    "price": "1",
+    "_id": "GgNGFgyO383EGZs5",
+    "type": "materials"
+  },
+  {
+    "name": "JUNQUILLO 1-3/4",
+    "stretch": 6.1,
+    "price": "1",
+    "_id": "HJhQDfqt4DlH9zXd",
+    "type": "materials"
+  },
+  {
+    "name": "CONTRA MARCO S-35",
+    "stretch": 6.1,
+    "price": "1",
+    "_id": "HndxD5pVhv6a0JS8",
+    "type": "materials"
+  },
+  {
+    "name": "MARCO DE LUJO",
+    "stretch": 6.1,
+    "price": "1",
+    "_id": "HrUGLGpkmJLGR7fV",
+    "type": "materials"
+  },
+  {
+    "name": "DUELA 5 ONDAS",
+    "stretch": 6.1,
+    "price": "1",
+    "_id": "HxQ2YBIRvEFy7fCY",
+    "type": "materials"
+  },
+  {
+    "name": "JAMBA PARA CANCEL DE BAÑO",
+    "stretch": 6.1,
+    "price": "1",
+    "_id": "IbH1pxUjQczxsW50",
+    "type": "materials"
+  },
+  {
+    "name": "CANAL P/DOMO",
+    "stretch": 6.1,
+    "price": "1",
+    "_id": "Ifwt6n8eHooRHpZC",
+    "type": "materials"
+  },
+  {
+    "name": "BOLSA LISO 3\"",
+    "stretch": 6.1,
+    "price": "1",
+    "_id": "IkA8NFKhWtVyXwdY",
+    "type": "materials"
+  },
+  {
+    "name": "BOLSA 3\"",
+    "stretch": 6.1,
+    "price": "1",
+    "_id": "JFE5QKtlcw2n5KyL",
+    "type": "materials"
+  },
+  {
+    "name": "JUNQUILLO 3\"",
+    "stretch": 6.1,
+    "price": "1",
+    "_id": "JltJuHB9mhvxVhPb",
+    "type": "materials"
+  },
+  {
+    "name": "PORTAVIDRIO",
+    "stretch": 6.1,
+    "price": "1",
+    "_id": "JptqZId2FrKwSX8O",
+    "type": "materials"
+  },
+  {
+    "name": "MARCO ECONOMICO",
+    "stretch": 6.1,
+    "price": "1",
+    "_id": "JrSwCBr5ZZJIyLy8",
+    "type": "materials"
+  },
+  {
+    "name": "SOLERA 3/4",
+    "stretch": 6.1,
+    "price": "1",
+    "_id": "K2IOuraCfyJFP6U6",
+    "type": "materials"
+  },
+  {
+    "name": "ZOCLO VENTANA 3\"",
+    "stretch": 6.1,
+    "price": "1",
+    "_id": "KcSYs2sLogfUyS0B",
+    "type": "materials"
+  },
+  {
+    "name": "ADAPTADOR OXXO 2\"",
+    "stretch": 6.1,
+    "price": "1",
+    "_id": "L9ODHdODExZ4r83N",
+    "type": "materials"
+  },
+  {
+    "name": "BATIENTE PUERTA S-50",
+    "stretch": 6.1,
+    "price": "1",
+    "_id": "LBUAPhJo06LY9ctw",
+    "type": "materials"
+  },
+  {
+    "name": "ANGULO 1/2",
+    "stretch": 6.1,
+    "price": "1",
+    "_id": "LtK8f51v6XD9XuRx",
+    "type": "materials"
+  },
+  {
+    "name": "PISA ALFOMBRA",
+    "stretch": 6.1,
+    "price": "1",
+    "_id": "LzW34o7BLwetrFsd",
+    "type": "materials"
+  },
+  {
+    "name": "BOLSA CORTA 2\"",
+    "stretch": 6.1,
+    "price": "1",
+    "_id": "MWYitLQZF7fBLrtj",
+    "type": "materials"
+  },
+  {
+    "name": "TRASLAPE DUO (P) S-70",
+    "stretch": 6.1,
+    "price": "1",
+    "_id": "Mos6BJ0ErdsIr6tw",
+    "type": "materials"
+  },
+  {
+    "name": "BATIENTE 3/4",
+    "stretch": 6.1,
+    "price": "1",
+    "_id": "N2sXRG2EZMiSei3F",
+    "type": "materials"
+  },
+  {
+    "name": "SOLERA 1\"",
+    "stretch": 6.1,
+    "price": "1",
+    "_id": "NrHXjGaE3TdAhoI5",
+    "type": "materials"
+  },
+  {
+    "name": "RIEL S-70",
+    "stretch": 6.1,
+    "price": "1",
+    "_id": "OZI6VARjvLs1ZtQl",
+    "type": "materials"
+  },
+  {
+    "name": "CABEZAL P/SIFON",
+    "stretch": 6.1,
+    "price": "1",
+    "_id": "P34AK6Km3VAA0KV7",
+    "type": "materials"
+  },
+  {
+    "name": "TAPA BOLSA CORTA 3\"",
+    "stretch": 6.1,
+    "price": "1",
+    "_id": "PJVsivswlf3Iiq0T",
+    "type": "materials"
+  },
+  {
+    "name": "MARCO HORIZONTAL",
+    "stretch": 6.1,
+    "price": "1",
+    "_id": "PPWtlynnhfDz5pge",
+    "type": "materials"
+  },
+  {
+    "name": "RECTANGULAR 2X1",
+    "stretch": 6.1,
+    "price": "1",
+    "_id": "PbajGLzTnUKbkceX",
+    "type": "materials"
+  },
+  {
+    "name": "CERCO FIJO 3\"",
+    "stretch": 6.1,
+    "price": "1",
+    "_id": "Q6BqAxVfbBusEcvQ",
+    "type": "materials"
+  },
+  {
+    "name": "CABEZAL 1- 3/4\"",
+    "stretch": 6.1,
+    "price": "1",
+    "_id": "QPsFCfKGqZtBWEAp",
+    "type": "materials"
+  },
+  {
+    "name": "JAMBA 2\"",
+    "stretch": 6.1,
+    "price": "1",
+    "_id": "QawznrBZwvAj2wX8",
+    "type": "materials"
+  },
+  {
+    "name": "CERCO PUERTA CURVO 1400",
+    "stretch": 6.1,
+    "price": "1054",
+    "pricecol": "1054",
+    "_id": "RRwFnmpXS4x16coT",
+    "type": "materials"
+  },
+  {
+    "name": "MOSQUITERO VERTICAL",
+    "stretch": 6.1,
+    "price": "1",
+    "_id": "RWQB7cuwad2tbDxn",
+    "type": "materials"
+  },
+  {
+    "name": "RIEL 3\"",
+    "stretch": 6.1,
+    "price": "1",
+    "_id": "RcNL0hADvPE33wm4",
+    "type": "materials"
+  },
+  {
+    "name": "CERCO DUO S-70 (V)",
+    "stretch": 6.1,
+    "price": "1",
+    "_id": "RuDNprrP9rmuuC1I",
+    "type": "materials"
+  },
+  {
+    "name": "CERCO TRASLAPE",
+    "stretch": 6.1,
+    "price": "1",
+    "_id": "Rx3wIm5ySRoozOsY",
+    "type": "materials"
+  },
+  {
+    "name": "JUNQUILLO S-50",
+    "stretch": 6.1,
+    "price": "1",
+    "_id": "RxxUybmrKuWOlSbr",
+    "type": "materials"
+  },
+  {
+    "name": "TRASLAPE DUO (V) S-70",
+    "stretch": 6.1,
+    "price": "1",
+    "_id": "S36sbUtOBMnjfR9V",
+    "type": "materials"
+  },
+  {
+    "name": "RIEL 2\" ",
+    "stretch": 6.1,
+    "price": "1",
+    "_id": "SOcLOPScVGDKFg8Z",
+    "type": "materials"
+  },
+  {
+    "name": "BATIENTE 2\"",
+    "stretch": 6.1,
+    "price": "1",
+    "_id": "TeSOCZQV8cbcgXyE",
+    "type": "materials"
+  },
+  {
+    "name": "TAPA LISA 2\"",
+    "stretch": 6.1,
+    "price": "1",
+    "_id": "UbhOzNdBdaBix7dn",
+    "type": "materials"
+  },
+  {
+    "name": "REPIZON P/SIFON",
+    "stretch": 6.1,
+    "price": "1",
+    "_id": "V4qnRMGnpGi9aZy9",
+    "type": "materials"
+  },
+  {
+    "name": "MARCO PERIMETRAL 3 RIELES 4602",
+    "stretch": 6.1,
+    "price": "1",
+    "_id": "V6G2T1KEatpu6cMi",
+    "type": "materials"
+  },
+  {
+    "name": "JAMBA 3\" SIN MOSQUITERO",
+    "stretch": 6.1,
+    "price": "1",
+    "_id": "VRs1QmTaohARWJqE",
+    "type": "materials"
+  },
+  {
+    "name": "INTERMEDIO 1-3/4\"",
+    "stretch": 6.1,
+    "price": "1",
+    "_id": "W3KQaiq9nKlS9kXq",
+    "type": "materials"
+  },
+  {
+    "name": "CERCO DE LUJO S-50",
+    "stretch": 6.1,
+    "price": "1",
+    "_id": "WG13CxR2E6Qf85cg",
+    "type": "materials"
+  },
+  {
+    "name": "BOLSA S-35",
+    "stretch": 6.1,
+    "price": "1",
+    "_id": "XmjWlJ5EwypFUP2c",
+    "type": "materials"
+  },
+  {
+    "name": "CUADRADO DE 1\"",
+    "stretch": 6.1,
+    "price": "1",
+    "_id": "Z6PiANryVKlXKBiC",
+    "type": "materials"
+  },
+  {
+    "name": "ADAPTADOR MOSQUITERO",
+    "stretch": 6.1,
+    "price": "1",
+    "_id": "ZDtIO08NfEqmQlAi",
+    "type": "materials"
+  },
+  {
+    "name": "BOLSA LISA 2\"",
+    "stretch": 6.1,
+    "price": "1",
+    "_id": "ZHpCIGudfKo8fykU",
+    "type": "materials"
+  },
+  {
+    "name": "ESCALONADO S-50",
+    "stretch": 6.1,
+    "price": "1",
+    "_id": "ZVhi33YjGymasxs7",
+    "type": "materials"
+  },
+  {
+    "name": "CERCO TRASLAPE 2\"",
+    "stretch": "6.10",
+    "price": "1",
+    "_id": "ZwZDTXXDOq3P7oHA",
+    "type": "materials"
+  },
+  {
+    "name": "ADAPTADOR OXXO 3\"",
+    "stretch": 6.1,
+    "price": "1",
+    "_id": "a3w5YVJkGfhRdbUx",
+    "type": "materials"
+  },
+  {
+    "name": "CERCO (V) S-70",
+    "stretch": 6.1,
+    "price": "1",
+    "_id": "aFJiUMhWbVktTqsf",
+    "type": "materials"
+  },
+  {
+    "name": "JAMBA CON MOSQUITERO 3\"",
+    "stretch": 6.1,
+    "price": "1",
+    "_id": "aMCLlOF94rwVSKYi",
+    "type": "materials"
+  },
+  {
+    "name": "CABEZAL P/MOSQUITERO S-70",
+    "stretch": 6.1,
+    "price": "1",
+    "_id": "aVmm0e0eUhydJiGD",
+    "type": "materials"
+  },
+  {
+    "name": "JUNQUILLO P/PORTAVIDRIO",
+    "stretch": 6.1,
+    "price": "1",
+    "_id": "b55G4Ftx3UWmzLH2",
+    "type": "materials"
+  },
+  {
+    "name": "ADAPTADOR INTERMEDIO S-50",
+    "stretch": 6.1,
+    "price": "1",
+    "_id": "bFiE4kECkkOMzV9n",
+    "type": "materials"
+  },
+  {
+    "name": "ZAPATA P/ VITRINA",
+    "stretch": 6.1,
+    "price": "1",
+    "_id": "bcJyC5tt0SXd2lH6",
+    "type": "materials"
+  },
+  {
+    "name": "ZOCLO Y CABEZAL DUO (V) S-70",
+    "stretch": 6.1,
+    "price": "1",
+    "_id": "brvsMm5ZMJ3lBSNd",
+    "type": "materials"
+  },
+  {
+    "name": "MOSQUITERO",
+    "stretch": 6.1,
+    "price": "1",
+    "_id": "c8FXnchIp1nB1wzo",
+    "type": "materials"
+  },
+  {
+    "name": "JUNQUILLO S-50",
+    "stretch": 6.1,
+    "price": "1",
+    "_id": "cBtLU8gjvVBDIgIi",
+    "type": "materials"
+  },
+  {
+    "name": "RIEL P/ VITRINA",
+    "stretch": 6.1,
+    "price": "1",
+    "_id": "cTmuIIqlIWqHS3eJ",
+    "type": "materials"
+  },
+  {
+    "name": "CERCO FIJO 2\"",
+    "stretch": 6.1,
+    "price": "1",
+    "_id": "ceAyRynIFSnGy9OI",
+    "type": "materials"
+  },
+  {
+    "name": "TAPA BOLSA DUO VENT S-50",
+    "stretch": 6.1,
+    "price": "1",
+    "_id": "chKmqWtqvhzDkuTU",
+    "type": "materials"
+  },
+  {
+    "name": "CERCO CHAPA 2\"",
+    "stretch": 6.1,
+    "price": "1",
+    "_id": "czIf7aZ2Uepxa8qg",
+    "type": "materials"
+  },
+  {
+    "name": "ZOCLO PUERTA 2\"",
+    "stretch": 6.1,
+    "price": "1",
+    "_id": "dXr03BwPhSPp3PqL",
+    "type": "materials"
+  },
+  {
+    "name": "MOSQUITERO S-35",
+    "stretch": 6.1,
+    "price": "1",
+    "_id": "deWQXRJgV68mChdq",
+    "type": "materials"
+  },
+  {
+    "name": "ADAPTADOR OXXO S-70",
+    "stretch": 6.1,
+    "price": "1",
+    "_id": "e2V68SgMjb3UUImo",
+    "type": "materials"
+  },
+  {
+    "name": "RIEL Y CABEZAL S-70",
+    "stretch": 6.1,
+    "price": "1",
+    "_id": "ebHIs6NphSE8VNtE",
+    "type": "materials"
+  },
+  {
+    "name": "BOLSA S-50",
+    "stretch": 6.1,
+    "price": "1",
+    "_id": "eonY2qYVzYC1ca2A",
+    "type": "materials"
+  },
+  {
+    "name": "RECTANGULAR 3X1",
+    "stretch": 6.1,
+    "price": "1",
+    "_id": "eukx0Snqzjm3A1Mz",
+    "type": "materials"
+  },
+  {
+    "name": "ZOCLO PUERTA 3\"",
+    "stretch": 6.1,
+    "price": "1",
+    "_id": "fVOTZljxvqeugywW",
+    "type": "materials"
+  },
+  {
+    "name": "RIEL SUPERIOR P/CANCEL DE BAÑO",
+    "stretch": 6.1,
+    "price": "1",
+    "_id": "fcCZp9733s0eizDl",
+    "type": "materials"
+  },
+  {
+    "name": "JUNQUILLO 2\"",
+    "stretch": 6.1,
+    "price": "1",
+    "_id": "gINNPk0aUbyCyijD",
+    "type": "materials"
+  },
+  {
+    "name": "GUIA INFERIOR P/BAÑO",
+    "stretch": 6.1,
+    "price": "1",
+    "_id": "gX7oHV6dpJ1vR83W",
+    "type": "materials"
+  },
+  {
+    "name": "TABLETA FIJA",
+    "stretch": 6.1,
+    "price": "200.00",
+    "pricecol": "200.00",
+    "_id": "gxMvpDJWDjSC6G3R",
+    "type": "materials"
+  },
+  {
+    "name": "SOLERA MOSQUITERA",
+    "stretch": 6.1,
+    "price": "1",
+    "_id": "iCrvtSABGDATPSpy",
+    "type": "materials"
+  },
+  {
+    "name": "PECHO PALOMA",
+    "stretch": 6.1,
+    "price": "1",
+    "_id": "iTuk2tfNjU8HsOWN",
+    "type": "materials"
+  },
+  {
+    "name": "BOLSA CORTA S-50",
+    "stretch": 6.1,
+    "price": "1",
+    "_id": "j2QkwX5J6fVX3n8f",
+    "type": "materials"
+  },
+  {
+    "name": "CERCO (P) S-70",
+    "stretch": 6.1,
+    "price": "1",
+    "_id": "jK1pA3AGtBLlhpZw",
+    "type": "materials"
+  },
+  {
+    "name": "JAMBA (V) S-70",
+    "stretch": 6.1,
+    "price": "1",
+    "_id": "jxcwgSibmCUMlqei",
+    "type": "materials"
+  },
+  {
+    "name": "MOSQUITERO S-70",
+    "stretch": 6.1,
+    "price": "1",
+    "_id": "k59Mr1PI8DKcjoPT",
+    "type": "materials"
+  },
+  {
+    "name": "MARCO DUO VENT S-35",
+    "stretch": 6.1,
+    "price": "1",
+    "_id": "knMWhKiMjeA4u74n",
+    "type": "materials"
+  },
+  {
+    "name": "DUELA LISA",
+    "stretch": 6.1,
+    "price": "1",
+    "_id": "ljKrbVWljs8xRYs6",
+    "type": "materials"
+  },
+  {
+    "name": "INTERMEDIO S-35",
+    "stretch": 6.1,
+    "price": "1",
+    "_id": "lspVrlk7N330zUEp",
+    "type": "materials"
+  },
+  {
+    "name": "TAPA BOLSA S-50",
+    "stretch": 6.1,
+    "price": "1",
+    "_id": "mlyarlJNsjgAg9ba",
+    "type": "materials"
+  },
+  {
+    "name": "BOLSA CORTA 3\"",
+    "stretch": 6.1,
+    "price": "1",
+    "_id": "n73lIBQPuqMLoOPG",
+    "type": "materials"
+  },
+  {
+    "name": "CABEZAL S-50",
+    "stretch": 6.1,
+    "price": "1",
+    "_id": "nGz4fUAXMi6NQzeV",
+    "type": "materials"
+  },
+  {
+    "name": "ANGULO 3/4",
+    "stretch": 6.1,
+    "price": "1",
+    "_id": "nZ19bLm2eEb0wBxQ",
+    "type": "materials"
+  },
+  {
+    "name": "MARCO S-35",
+    "stretch": 6.1,
+    "price": "1",
+    "_id": "ny2IR0euwVRxO5Qu",
+    "type": "materials"
+  },
+  {
+    "name": "CERCO CHAPA 3\"",
+    "stretch": 6.1,
+    "price": "1",
+    "_id": "o3cZm8E7wupqBcnE",
+    "type": "materials"
+  },
+  {
+    "name": "ESCALONADO DUO VENT S-50",
+    "stretch": 6.1,
+    "price": "1",
+    "_id": "ooTG2SgKetywNldT",
+    "type": "materials"
+  },
+  {
+    "name": "TRASLAPE (P) S-70",
+    "stretch": 6.1,
+    "price": "1",
+    "_id": "ovMiCeb5RfZPYzWF",
+    "type": "materials"
+  },
+  {
+    "name": "INTERMEDIO S-70",
+    "stretch": 6.1,
+    "price": "1",
+    "_id": "p5F4enrlsWnyyj3R",
+    "type": "materials"
+  },
+  {
+    "name": "BATIENTE DE 1-1/2",
+    "stretch": 6.1,
+    "price": "1",
+    "_id": "pXNqsd3MkHPeGUnS",
+    "type": "materials"
+  },
+  {
+    "name": "MARCO ECONOMICO",
+    "stretch": 6.1,
+    "price": "1",
+    "_id": "qEpBbkxazfKsjoTK",
+    "type": "materials"
+  },
+  {
+    "name": "ANGULO 1\"",
+    "stretch": 6.1,
+    "price": "1",
+    "_id": "qOnh3TOP30gNP6QT",
+    "type": "materials"
+  },
+  {
+    "name": "MARCO COLONIAL",
+    "stretch": 6.1,
+    "price": "1",
+    "_id": "qcHGeqmOlGwv5daB",
+    "type": "materials"
+  },
+  {
+    "name": "JUNQUILLO ALTO RELIEVE S-50",
+    "stretch": 6.1,
+    "price": "1",
+    "_id": "qrWqkFmCcj7uLpXZ",
+    "type": "materials"
+  },
+  {
+    "name": "ESCALONADO DUO-VENT S-50",
+    "stretch": 6.1,
+    "price": "1",
+    "_id": "rjUCINW12KuBZ1UI",
+    "type": "materials"
+  },
+  {
+    "name": "GUIA P/ VITRINA",
+    "stretch": 6.1,
+    "price": "1",
+    "_id": "s6FYalqWNTaadSaR",
+    "type": "materials"
+  },
+  {
+    "name": "BOLSA DUO-VENT S-50",
+    "stretch": 6.1,
+    "price": "1",
+    "_id": "sb0NTPNVafNSRX8W",
+    "type": "materials"
+  },
+  {
+    "name": "JAMBA C/MOSQUITERO 2\"",
+    "stretch": 6.1,
+    "price": "1",
+    "_id": "t4tlK6Z15fHEnalY",
+    "type": "materials"
+  },
+  {
+    "name": "JAMBA S-70",
+    "stretch": 6.1,
+    "price": "1",
+    "_id": "tEw4pIRbcmeaT0EO",
+    "type": "materials"
+  },
+  {
+    "name": "RECTANGULAR 1-1/2\" X 3/4\"",
+    "stretch": 6.1,
+    "price": "1",
+    "_id": "tfS4Xl2YdNMBtgeN",
+    "type": "materials"
+  },
+  {
+    "name": "INTERMEDIO S-50",
+    "stretch": 6.1,
+    "price": "1",
+    "_id": "uTELntfTjQOlwlPS",
+    "type": "materials"
+  },
+  {
+    "name": "TABLETA FIJA",
+    "stretch": 6.1,
+    "price": "66.00",
+    "pricecol": "66.00",
+    "_id": "v5eKdsVWsx9HhIBK",
+    "type": "materials"
+  },
+  {
+    "name": "RIEL INFERIOR P/MOSQUITERO S-70",
+    "stretch": 6.1,
+    "price": "395",
+    "pricecol": "395",
+    "_id": "vDDQsqoNm6cqVUWA",
+    "type": "materials"
+  },
+  {
+    "name": "ESCALONADO 2\"",
+    "stretch": 6.1,
+    "price": "1",
+    "_id": "wP438UC6HNeTBYPv",
+    "type": "materials"
+  },
+  {
+    "name": "ZOCLO CABEZAL 2\"",
+    "stretch": 6.1,
+    "price": "1",
+    "_id": "xSmhzCWNTz3HVFeS",
+    "type": "materials"
+  },
+  {
+    "name": "BOLSA 2\"",
+    "stretch": 6.1,
+    "price": "1",
+    "_id": "xT3yxY1qNNgJxqmp",
+    "type": "materials"
+  },
+  {
+    "name": "CUADRADO DE 1-1/2\"",
+    "stretch": 6.1,
+    "price": "1",
+    "_id": "xx6ZF3z2UnX9CWSc",
+    "type": "materials"
+  },
+  {
+    "name": "TRASLAPE DUO",
+    "stretch": 6.1,
+    "price": "1",
+    "_id": "y0TDuyhdeXYzoSlU",
+    "type": "materials"
+  },
+  {
+    "name": "INTERMEDIO 3\"",
+    "stretch": 6.1,
+    "price": "1",
+    "_id": "yGS07txt9qOSxp4D",
+    "type": "materials"
+  },
+  {
+    "name": "ZOCLO Y CABEZAL DUO S-70 (P)",
+    "stretch": 6.1,
+    "price": "1",
+    "_id": "zAXLQRnWhqAkEBzl",
+    "type": "materials"
+  },
+  {
+    "name": "JUNQUILLO S-35",
+    "stretch": 6.1,
+    "price": "1",
+    "_id": "zI1y3JGVuwqSpvCf",
+    "type": "materials"
+  },
+  {
+    "name": "SOLERA P/ MOSQUITERO",
+    "stretch": 6.1,
+    "price": "1",
+    "_id": "zaPOn4lCDJSegrhE",
+    "type": "materials"
+  },
+  {
+    "name": "HOJA MONUMENTAL 1400",
+    "stretch": 6.1,
+    "price": "1568",
+    "_id": "zuZafuPtlKQFespc",
+    "type": "materials"
+  }
+]
