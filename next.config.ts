@@ -1,9 +1,12 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  /* config options here */
+  // Cambiar el directorio de salida a "build"
 
-  
+  // Habilitar el modo estricto de React
+  reactStrictMode: true,
+
+
 };
 
 export default nextConfig;
