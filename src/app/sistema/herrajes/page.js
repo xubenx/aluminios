@@ -1,7 +1,7 @@
 "use client";
-import React, { useState, useEffect } from 'react';
-import { collection, getDocs, addDoc, updateDoc, deleteDoc, doc } from 'firebase/firestore';
-import { db } from '../../../../firebase';
+import React, { useState, useEffect } from "react";
+import { collection, getDocs, addDoc, updateDoc, deleteDoc, doc } from "firebase/firestore";
+import { db } from "../../../../firebase";
 import {
   Button,
   Table,
@@ -17,31 +17,51 @@ import {
   DialogTitle,
   Snackbar,
   Alert,
-} from '@mui/material';
+  Fab,
+  Paper,
+  Typography,
+} from "@mui/material";
+import { Add, Edit, Delete } from "@mui/icons-material";
 
 export default function ChapesPage() {
   const [chapes, setChapes] = useState([]);
+  const [filteredChapes, setFilteredChapes] = useState([]); // Para herrajes filtrados
+  const [searchText, setSearchText] = useState(""); // Texto de búsqueda
   const [openDialog, setOpenDialog] = useState(false);
   const [currentChape, setCurrentChape] = useState(null);
-  const [formData, setFormData] = useState({ name: '', price: '' });
-  const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
+  const [formData, setFormData] = useState({ name: "", price: "" });
+  const [snackbar, setSnackbar] = useState({ open: false, message: "", severity: "success" });
 
   useEffect(() => {
     fetchChapes();
   }, []);
 
+  useEffect(() => {
+    // Filtrar herrajes en base al texto de búsqueda
+    const filtered = chapes.filter((chape) =>
+      chape.name.toLowerCase().includes(searchText.toLowerCase())
+    );
+    setFilteredChapes(filtered);
+  }, [searchText, chapes]);
+
   const fetchChapes = async () => {
-    const chapesSnapshot = await getDocs(collection(db, 'chapes'));
-    setChapes(chapesSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+    const chapesSnapshot = await getDocs(collection(db, "chapes"));
+    const chapesData = chapesSnapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
+    setChapes(chapesData);
+    setFilteredChapes(chapesData); // Inicializar herrajes filtrados
   };
 
   const handleInputChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
+  const handleSearchChange = (e) => {
+    setSearchText(e.target.value); // Actualizar texto de búsqueda
+  };
+
   const handleOpenDialog = (chape = null) => {
     setCurrentChape(chape);
-    setFormData(chape || { name: '', price: '' });
+    setFormData(chape || { name: "", price: "" });
     setOpenDialog(true);
   };
 
@@ -52,80 +72,111 @@ export default function ChapesPage() {
 
   const handleSave = async () => {
     if (!formData.name.trim() || !formData.price.trim() || isNaN(formData.price)) {
-      setSnackbar({ open: true, message: 'Todos los campos son obligatorios y el precio debe ser un número.', severity: 'error' });
+      setSnackbar({ open: true, message: "Todos los campos son obligatorios y el precio debe ser un número.", severity: "error" });
       return;
     }
 
     try {
       if (currentChape) {
-        await updateDoc(doc(db, 'chapes', currentChape.id), formData);
-        setSnackbar({ open: true, message: 'Accesorio actualizado correctamente.', severity: 'success' });
+        await updateDoc(doc(db, "chapes", currentChape.id), { ...formData, price: parseFloat(formData.price) });
+        setSnackbar({ open: true, message: "Herraje actualizado correctamente.", severity: "success" });
       } else {
-        await addDoc(collection(db, 'chapes'), { ...formData, price: parseFloat(formData.price) });
-        setSnackbar({ open: true, message: 'Accesorio agregado correctamente.', severity: 'success' });
+        await addDoc(collection(db, "chapes"), { ...formData, price: parseFloat(formData.price) });
+        setSnackbar({ open: true, message: "Herraje agregado correctamente.", severity: "success" });
       }
       fetchChapes();
       handleCloseDialog();
     } catch (error) {
       console.log(error);
-
-      setSnackbar({ open: true, message: 'Error al guardar el accesorio.', severity: 'error' });
+      setSnackbar({ open: true, message: "Error al guardar el herraje.", severity: "error" });
     }
   };
 
   const handleDelete = async (id) => {
-    if (confirm('¿Estás seguro de eliminar este accesorio?')) {
+    if (confirm("¿Estás seguro de eliminar este herraje?")) {
       try {
-        await deleteDoc(doc(db, 'chapes', id));
-        setSnackbar({ open: true, message: 'Accesorio eliminado correctamente.', severity: 'success' });
+        await deleteDoc(doc(db, "chapes", id));
+        setSnackbar({ open: true, message: "Herraje eliminado correctamente.", severity: "success" });
         fetchChapes();
       } catch (error) {
         console.log(error);
-
-        setSnackbar({ open: true, message: 'Error al eliminar el accesorio.', severity: 'error' });
+        setSnackbar({ open: true, message: "Error al eliminar el herraje.", severity: "error" });
       }
     }
   };
 
   return (
-    <div>
-      <h1>Accesorios</h1>
-      <Button variant="contained" color="primary" onClick={() => handleOpenDialog()}>
-        Agregar Accesorio
-      </Button>
-      <TableContainer>
-        <Table>
-          <TableHead>
-            <TableRow>
-              <TableCell>ID</TableCell>
-              <TableCell>Nombre</TableCell>
-              <TableCell>Precio</TableCell>
-              <TableCell>Acciones</TableCell>
-            </TableRow>
-          </TableHead>
-          <TableBody>
-            {chapes.map(chape => (
-              <TableRow key={chape.id}>
-                <TableCell>{chape.id}</TableCell>
-                <TableCell>{chape.name}</TableCell>
-                <TableCell>${chape.price}</TableCell>
-                <TableCell>
-                  <Button color="primary" onClick={() => handleOpenDialog(chape)}>
-                    Editar
-                  </Button>
-                  <Button color="secondary" onClick={() => handleDelete(chape.id)}>
-                    Eliminar
-                  </Button>
-                </TableCell>
+    <div style={{ padding: "1rem" }}>
+      <Typography variant="h4" align="center" gutterBottom sx={{ color: "black" }}>
+        Herrajes
+      </Typography>
+
+      {/* Buscador */}
+      <TextField
+        fullWidth
+        label="Buscar Herraje"
+        variant="outlined"
+        margin="normal"
+        value={searchText}
+        onChange={handleSearchChange}
+      />
+
+      <Paper elevation={3} sx={{ padding: "1rem", marginBottom: "1rem" }}>
+        <TableContainer>
+          <Table>
+            <TableHead>
+              <TableRow>
+                <TableCell><strong>Nombre</strong></TableCell>
+                <TableCell><strong>Precio</strong></TableCell>
+                <TableCell><strong>Acciones</strong></TableCell>
               </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      </TableContainer>
+            </TableHead>
+            <TableBody>
+              {filteredChapes.map((chape) => (
+                <TableRow key={chape.id}>
+                  <TableCell>{chape.name}</TableCell>
+                  <TableCell>${chape.price}</TableCell>
+                  <TableCell>
+                    <Button
+                      color="primary"
+                      startIcon={<Edit />}
+                      onClick={() => handleOpenDialog(chape)}
+                      sx={{ marginRight: "0.5rem" }}
+                    >
+                      Editar
+                    </Button>
+                    <Button
+                      color="secondary"
+                      startIcon={<Delete />}
+                      onClick={() => handleDelete(chape.id)}
+                    >
+                      Eliminar
+                    </Button>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </TableContainer>
+      </Paper>
+
+      {/* Botón flotante */}
+      <Fab
+        color="primary"
+        aria-label="add"
+        onClick={() => handleOpenDialog()}
+        sx={{
+          position: "fixed",
+          bottom: "2rem",
+          right: "2rem",
+        }}
+      >
+        <Add />
+      </Fab>
 
       {/* Dialog */}
       <Dialog open={openDialog} onClose={handleCloseDialog}>
-        <DialogTitle>{currentChape ? 'Editar Accesorio' : 'Agregar Accesorio'}</DialogTitle>
+        <DialogTitle>{currentChape ? "Editar Herraje" : "Agregar Herraje"}</DialogTitle>
         <DialogContent>
           <TextField
             autoFocus

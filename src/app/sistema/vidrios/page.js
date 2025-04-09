@@ -17,12 +17,21 @@ import {
   DialogTitle,
   Snackbar,
   Alert,
+  Fab,
+  Paper,
+  Typography,
+  Box,
 } from "@mui/material";
+import { Add, Edit, Delete } from "@mui/icons-material";
 
 export default function GlassesPage() {
   const [glasses, setGlasses] = useState([]);
+  const [filteredGlasses, setFilteredGlasses] = useState([]);
+  const [searchText, setSearchText] = useState("");
   const [openDialog, setOpenDialog] = useState(false);
+  const [openConfirmDialog, setOpenConfirmDialog] = useState(false); // Confirmación para eliminar
   const [currentGlass, setCurrentGlass] = useState(null);
+  const [glassToDelete, setGlassToDelete] = useState(null); // Vidrio a eliminar
   const [formData, setFormData] = useState({
     name: "",
     options: [{ tickness: "", priceCost: "", priceCut: "", priceInstalled: "" }],
@@ -33,19 +42,26 @@ export default function GlassesPage() {
     fetchGlasses();
   }, []);
 
+  useEffect(() => {
+    const filtered = glasses.filter((glass) =>
+      glass.name.toLowerCase().includes(searchText.toLowerCase())
+    );
+    setFilteredGlasses(filtered);
+  }, [searchText, glasses]);
+
   const fetchGlasses = async () => {
     const glassesSnapshot = await getDocs(collection(db, "glasses"));
-    setGlasses(glassesSnapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() })));
+    const glassesData = glassesSnapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
+    setGlasses(glassesData);
+    setFilteredGlasses(glassesData);
   };
 
   const handleInputChange = (e, index = null, field = null) => {
     if (index !== null && field) {
-      // Update specific option
       const updatedOptions = [...formData.options];
       updatedOptions[index][field] = e.target.value;
       setFormData({ ...formData, options: updatedOptions });
     } else {
-      // Update general field
       setFormData({ ...formData, [e.target.name]: e.target.value });
     }
   };
@@ -96,68 +112,137 @@ export default function GlassesPage() {
       handleCloseDialog();
     } catch (error) {
       console.log(error);
-
       setSnackbar({ open: true, message: "Error al guardar el vidrio.", severity: "error" });
     }
   };
 
-  const handleDelete = async (id) => {
-    if (confirm("¿Estás seguro de eliminar este vidrio?")) {
-      try {
-        await deleteDoc(doc(db, "glasses", id));
-        setSnackbar({ open: true, message: "Vidrio eliminado correctamente.", severity: "success" });
-        fetchGlasses();
-      } catch (error) {
-        console.log(error);
-
-        setSnackbar({ open: true, message: "Error al eliminar el vidrio.", severity: "error" });
-      }
+  const handleDelete = async () => {
+    try {
+      await deleteDoc(doc(db, "glasses", glassToDelete.id));
+      setSnackbar({ open: true, message: "Vidrio eliminado correctamente.", severity: "success" });
+      fetchGlasses();
+      setOpenConfirmDialog(false);
+    } catch (error) {
+      console.log(error);
+      setSnackbar({ open: true, message: "Error al eliminar el vidrio.", severity: "error" });
     }
   };
 
-  return (
-    <div>
-      <h1>Vidrios</h1>
-      <Button variant="contained" color="primary" onClick={() => handleOpenDialog()}>
-        Agregar Vidrio
-      </Button>
-      <TableContainer>
-        <Table>
-          <TableHead>
-            <TableRow>
-              <TableCell>ID</TableCell>
-              <TableCell>Nombre</TableCell>
-              <TableCell>Opciones</TableCell>
-              <TableCell>Acciones</TableCell>
-            </TableRow>
-          </TableHead>
-          <TableBody>
-            {glasses.map((glass) => (
-              <TableRow key={glass.id}>
-                <TableCell>{glass.id}</TableCell>
-                <TableCell>{glass.name}</TableCell>
-                <TableCell>
-                  {glass.options.map((opt, index) => (
-                    <div key={index}>
-                      {opt.tickness}mm - Costo: ${opt.priceCost}, Corte: ${opt.priceCut}, Instalado: ${opt.priceInstalled}
-                    </div>
-                  ))}
-                </TableCell>
-                <TableCell>
-                  <Button color="primary" onClick={() => handleOpenDialog(glass)}>
-                    Editar
-                  </Button>
-                  <Button color="secondary" onClick={() => handleDelete(glass.id)}>
-                    Eliminar
-                  </Button>
-                </TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      </TableContainer>
+  const handleOpenConfirmDialog = (glass) => {
+    setGlassToDelete(glass);
+    setOpenConfirmDialog(true);
+  };
 
-      {/* Dialog */}
+  const handleCloseConfirmDialog = () => {
+    setOpenConfirmDialog(false);
+    setGlassToDelete(null);
+  };
+
+  return (
+    <div style={{ padding: "1rem" }}>
+      <Typography variant="h4" align="center" gutterBottom sx={{ color: "black" }}>
+        Vidrios
+      </Typography>
+
+      {/* Buscador */}
+      <TextField
+        fullWidth
+        label="Buscar Vidrio"
+        variant="outlined"
+        margin="normal"
+        value={searchText}
+        onChange={(e) => setSearchText(e.target.value)}
+      />
+
+      <Paper elevation={3} sx={{ padding: "1rem", marginBottom: "1rem" }}>
+        <TableContainer>
+          <Table>
+            <TableHead>
+              <TableRow>
+                <TableCell><strong>Nombre</strong></TableCell>
+                <TableCell><strong>Opciones</strong></TableCell>
+                <TableCell><strong>Acciones</strong></TableCell>
+              </TableRow>
+            </TableHead>
+            <TableBody>
+              {filteredGlasses.map((glass) => (
+                <TableRow key={glass.id}>
+                  <TableCell>{glass.name}</TableCell>
+                  <TableCell>
+                    <Box
+                      sx={{
+                        display: "grid",
+                        gridTemplateColumns: "repeat(2, 1fr)",
+                        gap: "1rem",
+                      }}
+                    >
+                      {glass.options.map((opt, index) => (
+                        <Box
+                          key={index}
+                          sx={{
+                            display: "flex",
+                            flexDirection: "column",
+                            backgroundColor: "#f5f5f5",
+                            padding: "0.5rem",
+                            borderRadius: "8px",
+                            boxShadow: "0 2px 4px rgba(0, 0, 0, 0.1)",
+                          }}
+                        >
+                          <Typography variant="body2">
+                            <strong>Grosor:</strong> {opt.tickness} mm
+                          </Typography>
+                          <Typography variant="body2">
+                            <strong>Costo:</strong> ${opt.priceCost}
+                          </Typography>
+                          <Typography variant="body2">
+                            <strong>Corte:</strong> ${opt.priceCut}
+                          </Typography>
+                          <Typography variant="body2">
+                            <strong>Instalado:</strong> ${opt.priceInstalled}
+                          </Typography>
+                        </Box>
+                      ))}
+                    </Box>
+                  </TableCell>
+                  <TableCell>
+                    <Button
+                      color="primary"
+                      startIcon={<Edit />}
+                      onClick={() => handleOpenDialog(glass)}
+                      sx={{ marginRight: "0.5rem" }}
+                    >
+                      Editar
+                    </Button>
+                    <Button
+                      color="secondary"
+                      startIcon={<Delete />}
+                      onClick={() => handleOpenConfirmDialog(glass)}
+                    >
+                      Eliminar
+                    </Button>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </TableContainer>
+      </Paper>
+
+      {/* Botón flotante */}
+      <Fab
+        color="primary"
+        aria-label="add"
+        onClick={() => handleOpenDialog()}
+        sx={{
+          position: "fixed",
+          bottom: "2rem",
+          right: "2rem",
+        }}
+      >
+        <Add />
+      </Fab>
+
+      {/* Dialog para CRUD */}
       <Dialog open={openDialog} onClose={handleCloseDialog}>
         <DialogTitle>{currentGlass ? "Editar Vidrio" : "Agregar Vidrio"}</DialogTitle>
         <DialogContent>
@@ -172,14 +257,14 @@ export default function GlassesPage() {
             onChange={handleInputChange}
           />
           {formData.options.map((option, index) => (
-            <div key={index} style={{ marginBottom: "1rem" }}>
+            <Box key={index} sx={{ display: "flex", alignItems: "center", marginBottom: "1rem" }}>
               <TextField
                 margin="dense"
                 label="Grosor (mm)"
                 type="number"
                 value={option.tickness}
                 onChange={(e) => handleInputChange(e, index, "tickness")}
-                style={{ marginRight: "1rem" }}
+                sx={{ marginRight: "1rem", flex: 1 }}
               />
               <TextField
                 margin="dense"
@@ -187,7 +272,7 @@ export default function GlassesPage() {
                 type="number"
                 value={option.priceCost}
                 onChange={(e) => handleInputChange(e, index, "priceCost")}
-                style={{ marginRight: "1rem" }}
+                sx={{ marginRight: "1rem", flex: 1 }}
               />
               <TextField
                 margin="dense"
@@ -195,7 +280,7 @@ export default function GlassesPage() {
                 type="number"
                 value={option.priceCut}
                 onChange={(e) => handleInputChange(e, index, "priceCut")}
-                style={{ marginRight: "1rem" }}
+                sx={{ marginRight: "1rem", flex: 1 }}
               />
               <TextField
                 margin="dense"
@@ -203,11 +288,12 @@ export default function GlassesPage() {
                 type="number"
                 value={option.priceInstalled}
                 onChange={(e) => handleInputChange(e, index, "priceInstalled")}
+                sx={{ flex: 1 }}
               />
-              <Button color="error" onClick={() => handleRemoveOption(index)}>
+              <Button color="error" onClick={() => handleRemoveOption(index)} sx={{ marginLeft: "1rem" }}>
                 Eliminar
               </Button>
-            </div>
+            </Box>
           ))}
           <Button onClick={handleAddOption} color="primary">
             Agregar Opción
@@ -217,6 +303,20 @@ export default function GlassesPage() {
           <Button onClick={handleCloseDialog}>Cancelar</Button>
           <Button onClick={handleSave} color="primary">
             Guardar
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Dialog de confirmación */}
+      <Dialog open={openConfirmDialog} onClose={handleCloseConfirmDialog}>
+        <DialogTitle>Confirmar Eliminación</DialogTitle>
+        <DialogContent>
+          <Typography>¿Estás seguro de que deseas eliminar este vidrio?</Typography>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleCloseConfirmDialog}>Cancelar</Button>
+          <Button onClick={handleDelete} color="secondary">
+            Eliminar
           </Button>
         </DialogActions>
       </Dialog>
