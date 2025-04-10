@@ -24,12 +24,10 @@ import {
 import Image from "next/image";
 import { evaluate } from "mathjs";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
-import { useMediaQuery } from "@mui/material";
 
 export default function CotizadorApp() {
   // Estados para la búsqueda de modelos
   const [models, setModels] = useState([]);
-  const isMobile = useMediaQuery("(max-width: 600px)"); // Detecta si el ancho de la pantalla es menor a 600px
 
   const [filteredModels, setFilteredModels] = useState([]);
   const [searchQuery, setSearchQuery] = useState("");
