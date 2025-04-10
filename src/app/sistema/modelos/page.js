@@ -29,6 +29,7 @@ import {
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { Add } from "@mui/icons-material";
+import { useMediaQuery } from "@mui/material";
 
 export default function ModelsPage() {
   const [models, setModels] = useState([]);
@@ -41,6 +42,8 @@ export default function ModelsPage() {
   const [snackbar, setSnackbar] = useState({ open: false, message: "", severity: "success" });
 
   const router = useRouter();
+  const isMobile = useMediaQuery("(max-width: 600px)"); // Detecta si el ancho de la pantalla es menor a 600px
+
 
   useEffect(() => {
     fetchModels();
@@ -150,44 +153,84 @@ export default function ModelsPage() {
 
       {/* Tabla de Modelos */}
       <TableContainer>
-        <Table>
-          <TableHead>
-            <TableRow>
-              <TableCell>Imagen</TableCell>
-              <TableCell>Nombre</TableCell>
-              <TableCell>Acciones</TableCell>
-            </TableRow>
-          </TableHead>
-          <TableBody>
+        {isMobile ? (
+          // Diseño para dispositivos móviles
+          <Box>
             {filteredModels.map((model) => (
-              <TableRow key={model.id}>
-                <TableCell>
-                  <Image
-                    src={`/images/${model.id}.png`}
-                    alt={`Imagen de ${model.name}`}
-                    width={400}
-                    height={400}
-                    style={{ objectFit: "cover", borderRadius: "8px" }}
-                    onError={(e) => (e.target.style.display = "none")}
-                  />
-                </TableCell>
-                <TableCell>{model.name}</TableCell>
-                <TableCell>
-                  <Button
-                    color="info"
-                    variant="outlined"
-                    onClick={() => router.push(`/sistema/modelos/${model.id}`)}
-                    sx={{ marginRight: "0.5rem" }}
-                  >
-                    Ver Detalles
-                  </Button>
-        
-                </TableCell>
-              </TableRow>
+              <Box
+                key={model.id}
+                sx={{
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: 2,
+                  padding: 2,
+                  border: "1px solid #ddd",
+                  borderRadius: "8px",
+                  marginBottom: 2,
+                }}
+              >
+                <Image
+                  src={`/images/${model.id}.png`}
+                  alt={`Imagen de ${model.name}`}
+                  width={400}
+                  height={400}
+                  style={{ objectFit: "cover", borderRadius: "8px" }}
+                  onError={(e) => (e.target.style.display = "none")}
+                />
+                <Typography variant="h6" sx={{color:'black'}} component="div">
+                  {model.name}
+                </Typography>
+                <Button
+                  color="info"
+                  variant="outlined"
+                  onClick={() => router.push(`/sistema/modelos/${model.id}`)}
+                >
+                  Ver Detalles
+                </Button>
+              </Box>
             ))}
-          </TableBody>
-        </Table>
+          </Box>
+        ) : (
+          // Diseño para pantallas grandes
+          <Table>
+            <TableHead>
+              <TableRow>
+                <TableCell>Imagen</TableCell>
+                <TableCell>Nombre</TableCell>
+                <TableCell>Acciones</TableCell>
+              </TableRow>
+            </TableHead>
+            <TableBody>
+              {filteredModels.map((model) => (
+                <TableRow key={model.id}>
+                  <TableCell>
+                    <Image
+                      src={`/images/${model.id}.png`}
+                      alt={`Imagen de ${model.name}`}
+                      width={500}
+                      height={500}
+                      style={{ objectFit: "cover", borderRadius: "8px" }}
+                      onError={(e) => (e.target.style.display = "none")}
+                    />
+                  </TableCell>
+                  <TableCell sx={{color:'black'}}>{model.name}</TableCell>
+                  <TableCell>
+                    <Button
+                      color="info"
+                      variant="outlined"
+                      onClick={() => router.push(`/sistema/modelos/${model.id}`)}
+                      sx={{ marginRight: "0.5rem" }}
+                    >
+                      Ver Detalles
+                    </Button>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        )}
       </TableContainer>
+
 
       {/* Dialogo para Agregar/Editar Modelo */}
       <Dialog open={openDialog} onClose={handleCloseDialog}>

@@ -20,10 +20,13 @@ import {
 import Image from "next/image";
 import { evaluate } from "mathjs";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
+import { useMediaQuery } from "@mui/material";
 
 export default function CotizadorApp() {
   // Estados para la búsqueda de modelos
   const [models, setModels] = useState([]);
+  const isMobile = useMediaQuery("(max-width: 600px)"); // Detecta si el ancho de la pantalla es menor a 600px
+
   const [filteredModels, setFilteredModels] = useState([]);
   const [searchQuery, setSearchQuery] = useState("");
 
@@ -254,18 +257,56 @@ export default function CotizadorApp() {
     // Vista de búsqueda y selección de modelos
     return (
       <Box sx={{ padding: 2 }}>
-        <Typography variant="h4" align="center" sx={{ mb: 2, color: "black" }}>
-          Selecciona modelo a cotizar
-        </Typography>
-        <TextField
-          fullWidth
-          label="Buscar modelos"
-          variant="outlined"
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-          sx={{ mb: 2 }}
-        />
-        <TableContainer>
+      <Typography variant="h4" align="center" sx={{ mb: 2, color: "black" }}>
+        Selecciona modelo a cotizar
+      </Typography>
+      <TextField
+        fullWidth
+        label="Buscar modelos"
+        variant="outlined"
+        value={searchQuery}
+        onChange={(e) => setSearchQuery(e.target.value)}
+        sx={{ mb: 2 }}
+      />
+      <TableContainer>
+        {isMobile ? (
+          // Vista móvil: muestra los modelos en filas
+          <Box>
+            {filteredModels.map((model) => (
+              <Box
+                key={model.id}
+                sx={{
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: 2,
+                  padding: 2,
+                  border: "1px solid #ddd",
+                  borderRadius: "8px",
+                  marginBottom: 2,
+                }}
+              >
+                <Image
+                  src={`/images/${model.id}.png`}
+                  alt={`Imagen de ${model.name}`}
+                  width={400}
+                  height={400}
+                  style={{ objectFit: "cover", borderRadius: "8px" }}
+                  onError={(e) => (e.target.style.display = "none")}
+                />
+                <Typography variant="h6"  sx={{color:'black'}}component="div">
+                  {model.name}
+                </Typography>
+                <Button
+                  variant="outlined"
+                  onClick={() => handleSelectModel(model)}
+                >
+                  Seleccionar
+                </Button>
+              </Box>
+            ))}
+          </Box>
+        ) : (
+          // Vista de escritorio: muestra los modelos en una tabla
           <Table>
             <TableHead>
               <TableRow>
@@ -297,21 +338,22 @@ export default function CotizadorApp() {
               ))}
             </TableBody>
           </Table>
-        </TableContainer>
-        {snackbar.open && (
-          <Snackbar
-            open={snackbar.open}
-            autoHideDuration={6000}
-            onClose={() => setSnackbar({ ...snackbar, open: false })}
-          >
-            <Alert onClose={() => setSnackbar({ ...snackbar, open: false })} severity={snackbar.severity}>
-              {snackbar.message}
-            </Alert>
-          </Snackbar>
         )}
-      </Box>
-    );
-  } else if (modelData) {
+      </TableContainer>
+      {snackbar.open && (
+        <Snackbar
+          open={snackbar.open}
+          autoHideDuration={6000}
+          onClose={() => setSnackbar({ ...snackbar, open: false })}
+        >
+          <Alert onClose={() => setSnackbar({ ...snackbar, open: false })} severity={snackbar.severity}>
+            {snackbar.message}
+          </Alert>
+        </Snackbar>
+      )}
+    </Box>
+  );
+}else if (modelData) {
     // Vista del cotizador del modelo seleccionado
     const calculations = getCalculations();
     return (
