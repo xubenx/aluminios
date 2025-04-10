@@ -206,7 +206,7 @@ export default function GlassesPage() {
                   </TableCell>
                   <TableCell>
                     <Button
-                      color="primary"
+                      color="azulote"
                       startIcon={<Edit />}
                       onClick={() => handleOpenDialog(glass)}
                       sx={{ marginRight: "0.5rem" }}
@@ -295,8 +295,8 @@ export default function GlassesPage() {
               </Button>
             </Box>
           ))}
-          <Button onClick={handleAddOption} color="primary">
-            Agregar Opción
+          <Button onClick={handleAddOption} color="azulote">
+            Agregar Variante
           </Button>
         </DialogContent>
         <DialogActions>

@@ -2,7 +2,7 @@
 
 import Head from "next/head"; // Importa Head para configurar metaetiquetas
 import type { ReactNode } from "react";
-import { AppBar, Toolbar, Typography, Button, Container, Box, IconButton, Drawer, List, ListItem, ListItemIcon, ListItemText } from "@mui/material";
+import { AppBar, Toolbar, Typography, Button, Container, Box, IconButton, Drawer, List, ListItem, ListItemIcon, ListItemText, ThemeProvider } from "@mui/material";
 import MenuIcon from "@mui/icons-material/Menu";
 import Link from "next/link";
 import WindowIcon from "@mui/icons-material/Window";
@@ -14,6 +14,7 @@ import ArchiveIcon from "@mui/icons-material/Archive";
 import RequestQuote from "@mui/icons-material/RequestQuote";
 import { useState } from "react";
 import Image from "next/image";
+import theme from './theme';
 
 export default function RootLayout({ children }: { children: ReactNode }) {
   const [drawerOpen, setDrawerOpen] = useState(false);
@@ -126,6 +127,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
       </Drawer>
 
       {/* Main Content */}
+      <ThemeProvider theme={theme}>
       <Container
         maxWidth={false}
         sx={{
@@ -137,6 +139,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
       >
         {children}
       </Container>
+      </ThemeProvider>
     </>
   );
 }

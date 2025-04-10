@@ -14,7 +14,11 @@ import {
   TableBody,
   Typography,
   Snackbar,
+  CardContent,
+  CardMedia,
   Alert,
+  Grid,
+  Card,
   Autocomplete
 } from "@mui/material";
 import Image from "next/image";
@@ -268,78 +272,39 @@ export default function CotizadorApp() {
         onChange={(e) => setSearchQuery(e.target.value)}
         sx={{ mb: 2 }}
       />
-      <TableContainer>
-        {isMobile ? (
-          // Vista móvil: muestra los modelos en filas
-          <Box>
-            {filteredModels.map((model) => (
-              <Box
-                key={model.id}
-                sx={{
-                  display: "flex",
-                  flexDirection: "column",
-                  gap: 2,
-                  padding: 2,
-                  border: "1px solid #ddd",
-                  borderRadius: "8px",
-                  marginBottom: 2,
-                }}
-              >
-                <Image
-                  src={`/images/${model.id}.png`}
-                  alt={`Imagen de ${model.name}`}
-                  width={400}
-                  height={400}
-                  style={{ objectFit: "cover", borderRadius: "8px" }}
-                  onError={(e) => (e.target.style.display = "none")}
-                />
-                <Typography variant="h6"  sx={{color:'black'}}component="div">
+      <Grid container spacing={3}>
+        {filteredModels.map((model) => (
+          <Grid item xs={12} sm={6} md={4} lg={3} key={model.id}>
+            <Card sx={{ maxWidth: 345, boxShadow: 3 }}>
+              <CardMedia
+                component="img"
+                height="200"
+                image={`/images/${model.id}.png`}
+                alt={`Imagen de ${model.name}`}
+                onError={(e) => (e.target.style.display = "none")}
+              />
+              <CardContent>
+                <Typography
+                  gutterBottom
+                  variant="h6"
+                  component="div"
+                  sx={{ color: "black" }}
+                >
                   {model.name}
                 </Typography>
                 <Button
+                  color="info"
                   variant="outlined"
                   onClick={() => handleSelectModel(model)}
+                  sx={{ color: "black", borderColor: "black" }}
                 >
                   Seleccionar
                 </Button>
-              </Box>
-            ))}
-          </Box>
-        ) : (
-          // Vista de escritorio: muestra los modelos en una tabla
-          <Table>
-            <TableHead>
-              <TableRow>
-                <TableCell>Imagen</TableCell>
-                <TableCell>Nombre</TableCell>
-                <TableCell>Acciones</TableCell>
-              </TableRow>
-            </TableHead>
-            <TableBody>
-              {filteredModels.map((model) => (
-                <TableRow key={model.id}>
-                  <TableCell>
-                    <Image
-                      src={`/images/${model.id}.png`}
-                      alt={`Imagen de ${model.name}`}
-                      width={200}
-                      height={200}
-                      style={{ objectFit: "cover", borderRadius: "8px" }}
-                      onError={(e) => (e.target.style.display = "none")}
-                    />
-                  </TableCell>
-                  <TableCell>{model.name}</TableCell>
-                  <TableCell>
-                    <Button variant="outlined" onClick={() => handleSelectModel(model)}>
-                      Seleccionar
-                    </Button>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        )}
-      </TableContainer>
+              </CardContent>
+            </Card>
+          </Grid>
+        ))}
+      </Grid>
       {snackbar.open && (
         <Snackbar
           open={snackbar.open}
@@ -371,16 +336,26 @@ export default function CotizadorApp() {
         <Typography variant="h4" align="center" sx={{ mt: 2, mb: 2, color: "black" }}>
           {modelData.name}
         </Typography>
-        <Box sx={{ textAlign: "center", mb: 4 }}>
-          <Image
-            src={`/images/${modelData.id}.png`}
-            alt={`Imagen de ${modelData.name}`}
-            width={500}
-            height={500}
-            style={{ objectFit: "cover", borderRadius: "16px" }}
-            onError={(e) => (e.target.style.display = "none")}
-          />
-        </Box>
+        <Box
+  sx={{
+    display: "flex",
+    justifyContent: "center",
+    alignItems: "center",
+    mb: 4,
+  }}
+>
+  <Image
+    src={`/images/${modelData.id}.png`}
+    alt={`Imagen de ${modelData.name}`}
+    width={500}
+    height={500}
+    style={{
+      objectFit: "cover",
+      borderRadius: "16px",
+    }}
+    onError={(e) => (e.target.style.display = "none")}
+  />
+</Box>
         {/* Campos para modificar dimensiones */}
         <Box sx={{ display: "flex", gap: 2, justifyContent: "center", mb: 2 }}>
           <TextField
@@ -419,6 +394,16 @@ export default function CotizadorApp() {
             )}
           />
         </Box>
+                <Box sx={{ mt: 4, textAlign: "right" }}>
+              <Typography variant="h5" sx={{ color: "black" }}>
+                Total:
+              </Typography>
+            </Box>
+        <Box sx={{textAlign: "right" }}>
+              <Typography variant="h1" sx={{ color: "black" }}>
+                ${calculations.totalGeneral.toFixed(2)}
+              </Typography>
+            </Box>
         {/* Desglose de secciones */}
         {calculations && (
           <>
@@ -517,11 +502,7 @@ export default function CotizadorApp() {
             </Typography>
 
             {/* Total General */}
-            <Box sx={{ mt: 4, textAlign: "right" }}>
-              <Typography variant="h1" sx={{ color: "black" }}>
-                Total: ${calculations.totalGeneral.toFixed(2)}
-              </Typography>
-            </Box>
+
           </>
         )}
         {snackbar.open && (

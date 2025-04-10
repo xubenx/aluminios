@@ -199,7 +199,7 @@ export default function MaterialsPage() {
                   <TableCell>{material.stretch} m</TableCell>
                   <TableCell>
                     <Button
-                      color="primary"
+                      color="azulote"
                       startIcon={<Edit />}
                       onClick={() => handleOpenDialog(material)}
                       sx={{ marginRight: "0.5rem" }}

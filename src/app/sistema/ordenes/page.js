@@ -35,9 +35,9 @@ export default function OrdersPage() {
   return (
     <Box sx={{ padding: 3, bgcolor: "#f5f5f5", minHeight: "100vh" }}>
       {/* Título */}
-      <Typography variant="h4" align="center" gutterBottom>
-        Orden de Trabajo
-      </Typography>
+                  <Typography variant="h4" align="center" gutterBottom sx={{ color: "black" }}>
+                    Crear Orden
+                  </Typography>
 
       {/* Contenido */}
       <Grid container spacing={3} columns={12}>

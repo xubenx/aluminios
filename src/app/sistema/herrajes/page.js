@@ -183,7 +183,7 @@ export default function ChapesPage() {
                   </TableCell>
                   <TableCell>
                     <Button
-                      color="primary"
+                      color="azulote"
                       startIcon={<Edit />}
                       onClick={() => handleOpenDialog(chape)}
                       sx={{ marginRight: "0.5rem" }}

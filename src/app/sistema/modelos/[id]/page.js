@@ -404,8 +404,11 @@ const totalGlassMeterage = model.glasses.reduce((acc, glass) => {
   const totalGeneral = totalMaterialsData.price + totalChapesData.price + totalGlassesData.price + laborCost;
 
   return (
+    
     <Box sx={{ padding: 2, backgroundColor: "#ffffff", margin: "0 auto", maxWidth: "1200px" }}>
       {/* Combobox independiente para seleccionar vidrio */}
+
+      
       <Box sx={{ mb: 2 }}>
         <Typography variant="h6" align="center" sx={{ color: "black", mb: 1 }}>
           Seleccionar Vidrio
@@ -452,7 +455,7 @@ const totalGlassMeterage = model.glasses.reduce((acc, glass) => {
             onError={(e) => (e.target.style.display = "none")}
           />
         </Box>
-        <Button variant="contained" color="info" startIcon={<AddPhotoAlternate />} onClick={handleChangeImage}>
+        <Button  variant="contained" color="azulote" startIcon={<AddPhotoAlternate />} onClick={handleChangeImage}>
           Cambiar Imagen
         </Button>
       </Box>
@@ -555,7 +558,7 @@ const totalGlassMeterage = model.glasses.reduce((acc, glass) => {
                   <TableCell>{meterage.toFixed(2)} mts</TableCell>
                   <TableCell>${price.toFixed(2)}</TableCell>
                   <TableCell>
-                    <Button color="primary" startIcon={<Edit />} onClick={() => handleOpenDialog("materials", { ...material, index })}>
+                    <Button color="azulote" startIcon={<Edit />} onClick={() => handleOpenDialog("materials", { ...material, index })}>
                       Editar
                     </Button>
                     <Button color="secondary" startIcon={<Delete />} onClick={() => setDeleteItemConfirmation({ open: true, section: "materials", index })}>
@@ -613,7 +616,7 @@ const totalGlassMeterage = model.glasses.reduce((acc, glass) => {
                   <TableCell>{pieces.toFixed(2)} pcs</TableCell>
                   <TableCell>${price.toFixed(2)}</TableCell>
                   <TableCell>
-                    <Button color="primary" startIcon={<Edit />} onClick={() => handleOpenDialog("chapes", { ...chape, index })}>
+                    <Button color="azulote" startIcon={<Edit />} onClick={() => handleOpenDialog("chapes", { ...chape, index })}>
                       Editar
                     </Button>
                     <Button color="secondary" startIcon={<Delete />} onClick={() => setDeleteItemConfirmation({ open: true, section: "chapes", index })}>
@@ -665,7 +668,7 @@ const totalGlassMeterage = model.glasses.reduce((acc, glass) => {
                   <TableCell>{meterage.toFixed(2)} mts</TableCell>
                   <TableCell>${price.toFixed(2)}</TableCell>
                   <TableCell>
-                    <Button color="primary" startIcon={<Edit />} onClick={() => handleOpenDialog("glasses", { ...glass, index })}>
+                    <Button color="azulote" startIcon={<Edit />} onClick={() => handleOpenDialog("glasses", { ...glass, index })}>
                       Editar
                     </Button>
                     <Button color="secondary" startIcon={<Delete />} onClick={() => setDeleteItemConfirmation({ open: true, section: "glasses", index })}>

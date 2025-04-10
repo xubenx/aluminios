@@ -5,17 +5,15 @@ import {
   getDocs,
   addDoc,
   updateDoc,
-  doc
+  doc,
 } from "firebase/firestore";
 import { db } from "../../../../firebase";
 import {
   Button,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
+  Card,
+  CardContent,
+  CardMedia,
+  Grid,
   TextField,
   Dialog,
   DialogActions,
@@ -24,12 +22,12 @@ import {
   Snackbar,
   Alert,
   Box,
-  Typography
+  Typography,
+  Fab,
 } from "@mui/material";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { Add } from "@mui/icons-material";
-import { useMediaQuery } from "@mui/material";
 
 export default function ModelsPage() {
   const [models, setModels] = useState([]);
@@ -37,20 +35,25 @@ export default function ModelsPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [openDialog, setOpenDialog] = useState(false);
   const [currentModel, setCurrentModel] = useState(null);
-  // Form data tendrá name, manpower y el campo imageFile (para la imagen) y previewImage
-  const [formData, setFormData] = useState({ name: "", manpower: "", imageFile: null, previewImage: "" });
-  const [snackbar, setSnackbar] = useState({ open: false, message: "", severity: "success" });
+  const [formData, setFormData] = useState({
+    name: "",
+    manpower: "",
+    imageFile: null,
+    previewImage: "",
+  });
+  const [snackbar, setSnackbar] = useState({
+    open: false,
+    message: "",
+    severity: "success",
+  });
 
   const router = useRouter();
-  const isMobile = useMediaQuery("(max-width: 600px)"); // Detecta si el ancho de la pantalla es menor a 600px
-
 
   useEffect(() => {
     fetchModels();
   }, []);
 
   useEffect(() => {
-    // Filtra los modelos según el término de búsqueda
     setFilteredModels(
       models.filter((model) =>
         model.name.toLowerCase().includes(searchQuery.toLowerCase())
@@ -60,7 +63,10 @@ export default function ModelsPage() {
 
   const fetchModels = async () => {
     const modelsSnapshot = await getDocs(collection(db, "models"));
-    const modelsData = modelsSnapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
+    const modelsData = modelsSnapshot.docs.map((doc) => ({
+      id: doc.id,
+      ...doc.data(),
+    }));
     setModels(modelsData);
     setFilteredModels(modelsData);
   };
@@ -69,21 +75,27 @@ export default function ModelsPage() {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
-  // Maneja la selección del archivo de imagen desde el dispositivo
   const handleImageFileChange = (e) => {
     if (e.target.files && e.target.files[0]) {
       const file = e.target.files[0];
-      setFormData({ ...formData, imageFile: file, previewImage: URL.createObjectURL(file) });
+      setFormData({
+        ...formData,
+        imageFile: file,
+        previewImage: URL.createObjectURL(file),
+      });
     }
   };
 
   const handleOpenDialog = (model = null) => {
     setCurrentModel(model);
     if (model) {
-      // En modo edición, se cargan los datos del modelo
-      setFormData({ name: model.name, manpower: model.manpower, imageFile: null, previewImage: "" });
+      setFormData({
+        name: model.name,
+        manpower: model.manpower,
+        imageFile: null,
+        previewImage: "",
+      });
     } else {
-      // En modo agregar, se inicializan los datos; imageFile queda nulo y se usará un preview si el usuario elige un archivo
       setFormData({ name: "", manpower: "", imageFile: null, previewImage: "" });
     }
     setOpenDialog(true);
@@ -97,7 +109,11 @@ export default function ModelsPage() {
 
   const handleSave = async () => {
     if (!formData.name.trim() || !formData.manpower.trim() || isNaN(formData.manpower)) {
-      setSnackbar({ open: true, message: "El nombre y la mano de obra son obligatorios y válidos.", severity: "error" });
+      setSnackbar({
+        open: true,
+        message: "El nombre y la mano de obra son obligatorios y válidos.",
+        severity: "error",
+      });
       return;
     }
     try {
@@ -105,26 +121,27 @@ export default function ModelsPage() {
       if (currentModel) {
         await updateDoc(doc(db, "models", currentModel.id), {
           name: formData.name,
-          manpower: formData.manpower
+          manpower: formData.manpower,
         });
-        setSnackbar({ open: true, message: "Modelo actualizado correctamente.", severity: "success" });
+        setSnackbar({
+          open: true,
+          message: "Modelo actualizado correctamente.",
+          severity: "success",
+        });
         docRef = { id: currentModel.id };
       } else {
-        // Agrega el modelo a Firebase; supongamos que el modelo guardará name y manpower
         docRef = await addDoc(collection(db, "models"), {
           name: formData.name,
-          manpower: formData.manpower
+          manpower: formData.manpower,
         });
-        setSnackbar({ open: true, message: "Modelo agregado correctamente.", severity: "success" });
+        setSnackbar({
+          open: true,
+          message: "Modelo agregado correctamente.",
+          severity: "success",
+        });
       }
 
-      // Si se seleccionó un archivo de imagen, se debe subir al directorio public/images
-      // El nombre de la imagen será el docRef.id (nuevo o existente)
       if (formData.imageFile) {
-        // Aquí llamas a tu función o API para subir el archivo.
-        // Por ejemplo:
-        // await uploadImage(formData.imageFile, docRef.id);
-        // La función uploadImage se encargaría de guardar el archivo en public/images con el nombre docRef.id.ext
         console.log("Subir imagen con nombre:", docRef.id);
       }
 
@@ -132,14 +149,20 @@ export default function ModelsPage() {
       handleCloseDialog();
     } catch (error) {
       console.log(error);
-
-      setSnackbar({ open: true, message: "Error al guardar el modelo.", severity: "error" });
+      setSnackbar({
+        open: true,
+        message: "Error al guardar el modelo.",
+        severity: "error",
+      });
     }
   };
 
-
   return (
+    
     <Box sx={{ padding: 2 }}>
+                  <Typography variant="h4" align="center" gutterBottom sx={{ color: "black" }}>
+                    Modelos
+                  </Typography>
       {/* Searchbox */}
       <Box sx={{ marginBottom: 2 }}>
         <TextField
@@ -151,86 +174,40 @@ export default function ModelsPage() {
         />
       </Box>
 
-      {/* Tabla de Modelos */}
-      <TableContainer>
-        {isMobile ? (
-          // Diseño para dispositivos móviles
-          <Box>
-            {filteredModels.map((model) => (
-              <Box
-                key={model.id}
-                sx={{
-                  display: "flex",
-                  flexDirection: "column",
-                  gap: 2,
-                  padding: 2,
-                  border: "1px solid #ddd",
-                  borderRadius: "8px",
-                  marginBottom: 2,
-                }}
-              >
-                <Image
-                  src={`/images/${model.id}.png`}
-                  alt={`Imagen de ${model.name}`}
-                  width={400}
-                  height={400}
-                  style={{ objectFit: "cover", borderRadius: "8px" }}
-                  onError={(e) => (e.target.style.display = "none")}
-                />
-                <Typography variant="h6" sx={{color:'black'}} component="div">
+      {/* Grid de Modelos */}
+      <Grid container spacing={3}>
+        {filteredModels.map((model) => (
+          <Grid item xs={12} sm={6} md={4} lg={3} key={model.id}>
+            <Card sx={{ maxWidth: 345, boxShadow: 3 }}>
+              <CardMedia
+                component="img"
+                height="200"
+                image={`/images/${model.id}.png`}
+                alt={`Imagen de ${model.name}`}
+                onError={(e) => (e.target.style.display = "none")}
+              />
+              <CardContent>
+                <Typography
+                  gutterBottom
+                  variant="h6"
+                  component="div"
+                  sx={{ color: "black" }}
+                >
                   {model.name}
                 </Typography>
                 <Button
                   color="info"
                   variant="outlined"
                   onClick={() => router.push(`/sistema/modelos/${model.id}`)}
+                  sx={{ color: "black", borderColor: "black" }}
                 >
                   Ver Detalles
                 </Button>
-              </Box>
-            ))}
-          </Box>
-        ) : (
-          // Diseño para pantallas grandes
-          <Table>
-            <TableHead>
-              <TableRow>
-                <TableCell>Imagen</TableCell>
-                <TableCell>Nombre</TableCell>
-                <TableCell>Acciones</TableCell>
-              </TableRow>
-            </TableHead>
-            <TableBody>
-              {filteredModels.map((model) => (
-                <TableRow key={model.id}>
-                  <TableCell>
-                    <Image
-                      src={`/images/${model.id}.png`}
-                      alt={`Imagen de ${model.name}`}
-                      width={500}
-                      height={500}
-                      style={{ objectFit: "cover", borderRadius: "8px" }}
-                      onError={(e) => (e.target.style.display = "none")}
-                    />
-                  </TableCell>
-                  <TableCell sx={{color:'black'}}>{model.name}</TableCell>
-                  <TableCell>
-                    <Button
-                      color="info"
-                      variant="outlined"
-                      onClick={() => router.push(`/sistema/modelos/${model.id}`)}
-                      sx={{ marginRight: "0.5rem" }}
-                    >
-                      Ver Detalles
-                    </Button>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        )}
-      </TableContainer>
-
+              </CardContent>
+            </Card>
+          </Grid>
+        ))}
+      </Grid>
 
       {/* Dialogo para Agregar/Editar Modelo */}
       <Dialog open={openDialog} onClose={handleCloseDialog}>
@@ -272,7 +249,12 @@ export default function ModelsPage() {
                   component="img"
                   src={formData.previewImage}
                   alt="Preview"
-                  sx={{ width: 200, height: 200, objectFit: "cover", borderRadius: "8px" }}
+                  sx={{
+                    width: 200,
+                    height: 200,
+                    objectFit: "cover",
+                    borderRadius: "8px",
+                  }}
                 />
               </Box>
             )}
@@ -292,28 +274,28 @@ export default function ModelsPage() {
         autoHideDuration={6000}
         onClose={() => setSnackbar({ ...snackbar, open: false })}
       >
-        <Alert onClose={() => setSnackbar({ ...snackbar, open: false })} severity={snackbar.severity}>
+        <Alert
+          onClose={() => setSnackbar({ ...snackbar, open: false })}
+          severity={snackbar.severity}
+        >
           {snackbar.message}
         </Alert>
       </Snackbar>
 
       {/* Botón flotante para crear modelo */}
-      <Box
+      <Fab
+        color="primary"
+        aria-label="add"
+        onClick={() => handleOpenDialog()}
         sx={{
           position: "fixed",
           bottom: 16,
           right: 16,
-          zIndex: 1000
+          zIndex: 1000,
         }}
       >
-        <Button
-          variant="contained"
-          color="primary"
-          startIcon={<Add />}
-          onClick={() => handleOpenDialog()}
-          sx={{ borderRadius: "50%", width: 56, height: 56 }}
-        />
-      </Box>
+        <Add />
+      </Fab>
     </Box>
   );
 }
