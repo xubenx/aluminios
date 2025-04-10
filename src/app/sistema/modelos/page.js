@@ -25,7 +25,6 @@ import {
   Typography,
   Fab,
 } from "@mui/material";
-import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { Add } from "@mui/icons-material";
 
