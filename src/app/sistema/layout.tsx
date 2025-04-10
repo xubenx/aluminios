@@ -1,5 +1,6 @@
 "use client";
 
+import Head from "next/head"; // Importa Head para configurar metaetiquetas
 import type { ReactNode } from "react";
 import { AppBar, Toolbar, Typography, Button, Container, Box, IconButton, Drawer, List, ListItem, ListItemIcon, ListItemText } from "@mui/material";
 import MenuIcon from "@mui/icons-material/Menu";
@@ -33,17 +34,43 @@ export default function RootLayout({ children }: { children: ReactNode }) {
 
   return (
     <>
+      {/* Metaetiquetas para evitar indexación */}
+      <Head>
+        <meta name="robots" content="noindex, nofollow" />
+      </Head>
+
       {/* Imagen superior antes del AppBar */}
-
-
-      {/* Header */}
-      <AppBar position="static" color="primary">
+      <AppBar
+        position="static"
+        sx={{
+          background: " #1976d2", // Degradado de blanco a azul limitado al ancho de la imagen
+        }}
+      >
         <Toolbar>
-          <Typography variant="h6" sx={{ flexGrow: 1 }}>
-            <Link href="/sistema" style={{ textDecoration: "none", color: "inherit" }}>
-              Aluminios San Francisco
+          {/* Imagen y texto visibles en todas las pantallas */}
+          <Box sx={{ flexGrow: 1, display: "flex", alignItems: "center", gap: 2 }}>
+            <Link href="/sistema" style={{ display: "flex", alignItems: "center", textDecoration: "none", color: "inherit" }}>
+              <Image
+                src="/logo128.png" // Cambia esto por la ruta de tu imagen
+                alt="Aluminios San Francisco"
+                width={90}
+                height={90}
+                style={{ maxWidth: "100%", height: "auto" }}
+              />
+              <Typography
+                variant="h6"
+                component="div"
+                sx={{
+                  fontFamily: "'Roboto', sans-serif",
+                  fontSize: { xs: "1.2rem", md: "1.25rem" }, // Ajusta el tamaño del texto según el tamaño de la pantalla
+                  marginLeft: 1,
+                }}
+              >
+                ALUMINIOS SAN FRANCISCO
+              </Typography>
             </Link>
-          </Typography>
+          </Box>
+
           {/* Icono de menú para pantallas pequeñas */}
           <IconButton
             color="inherit"
@@ -53,10 +80,18 @@ export default function RootLayout({ children }: { children: ReactNode }) {
           >
             <MenuIcon />
           </IconButton>
+
           {/* Botones para pantallas grandes */}
-          <Box sx={{ display: { xs: "none", md: "flex" }, gap: 2 }}>
+          <Box sx={{ display: { xs: "none", md: "flex" }, gap: 3 }}>
             {menuItems.map((item) => (
-              <Button key={item.text} color="inherit" component={Link} href={item.href} startIcon={item.icon}>
+              <Button
+                key={item.text}
+                color="inherit"
+                component={Link}
+                href={item.href}
+                startIcon={item.icon}
+                sx={{ fontSize: "1rem" }}
+              >
                 {item.text}
               </Button>
             ))}
