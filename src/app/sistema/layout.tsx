@@ -31,7 +31,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
     { text: "Herrajes", href: "/sistema/herrajes", icon: <BuildIcon /> },
     { text: "Vidrios", href: "/sistema/vidrios", icon: <GlassIcon /> },
     { text: "Colaboradores", href: "/sistema/colaboradores", icon: <PeopleIcon /> },
-    { text: "Ordenes", href: "/sistema/ordenes", icon: <ArchiveIcon /> },
+    //{ text: "Ordenes", href: "/sistema/ordenes", icon: <ArchiveIcon /> },
   ];
 
   return (
