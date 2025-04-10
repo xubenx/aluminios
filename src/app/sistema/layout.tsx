@@ -44,7 +44,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
       <AppBar
         position="static"
         sx={{
-          background: " #1976d2", // Degradado de blanco a azul limitado al ancho de la imagen
+          background: " #000000", // Degradado de blanco a azul limitado al ancho de la imagen
         }}
       >
         <Toolbar>
