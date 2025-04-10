@@ -1,6 +1,6 @@
 "use client";
 import React, { useState, useEffect } from "react";
-import { collection, getDocs, addDoc, updateDoc, deleteDoc, doc } from "firebase/firestore";
+import { collection, getDocs, updateDoc, doc, deleteDoc, addDoc } from "firebase/firestore"; // Se agregó `deleteDoc` y `addDoc` porque se usan en el código
 import { db } from "../../../../firebase";
 import {
   Button,
@@ -25,8 +25,10 @@ import { Add, Edit, Delete } from "@mui/icons-material";
 
 export default function MaterialsPage() {
   const [materials, setMaterials] = useState([]);
-  const [filteredMaterials, setFilteredMaterials] = useState([]); // Para materiales filtrados
-  const [searchText, setSearchText] = useState(""); // Texto de búsqueda
+  const [filteredMaterials, setFilteredMaterials] = useState([]);
+  const [searchText, setSearchText] = useState("");
+  const [editingPriceId, setEditingPriceId] = useState(null); // ID del material en edición
+  const [editingPriceValue, setEditingPriceValue] = useState(""); // Valor del precio en edición
   const [openDialog, setOpenDialog] = useState(false);
   const [currentMaterial, setCurrentMaterial] = useState(null);
   const [formData, setFormData] = useState({ name: "", price: "", stretch: "" });
@@ -37,7 +39,6 @@ export default function MaterialsPage() {
   }, []);
 
   useEffect(() => {
-    // Filtrar materiales en base al texto de búsqueda
     const filtered = materials.filter((material) =>
       material.name.toLowerCase().includes(searchText.toLowerCase())
     );
@@ -48,15 +49,48 @@ export default function MaterialsPage() {
     const materialsSnapshot = await getDocs(collection(db, "materials"));
     const materialsData = materialsSnapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
     setMaterials(materialsData);
-    setFilteredMaterials(materialsData); // Inicializar materiales filtrados
-  };
-
-  const handleInputChange = (e) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
+    setFilteredMaterials(materialsData);
   };
 
   const handleSearchChange = (e) => {
-    setSearchText(e.target.value); // Actualizar texto de búsqueda
+    setSearchText(e.target.value);
+  };
+
+  const handlePriceDoubleClick = (id, price) => {
+    setEditingPriceId(id); // Establece el ID del material en edición
+    setEditingPriceValue(price); // Establece el valor actual del precio
+  };
+
+  const handlePriceChange = (e) => {
+    setEditingPriceValue(e.target.value); // Actualiza el valor del precio en edición
+  };
+
+  const handlePriceBlur = async () => {
+    if (isNaN(editingPriceValue) || editingPriceValue.trim() === "") {
+      setSnackbar({ open: true, message: "El precio debe ser un número válido.", severity: "error" });
+      setEditingPriceId(null); // Salir del modo de edición
+      return;
+    }
+
+    try {
+      const materialRef = doc(db, "materials", editingPriceId);
+      await updateDoc(materialRef, { price: parseFloat(editingPriceValue) });
+      setSnackbar({ open: true, message: "Precio actualizado correctamente.", severity: "success" });
+      fetchMaterials(); // Actualiza la lista de materiales
+    } catch (error) {
+      console.error(error);
+      setSnackbar({ open: true, message: "Error al actualizar el precio.", severity: "error" });
+    } finally {
+      setEditingPriceId(null); // Salir del modo de edición
+    }
+  };
+
+  const handleInputChange = (e) => {
+    const { name, value } = e.target;
+    setFormData((prevFormData) => ({
+      ...prevFormData,
+      [name]: value,
+    }));
   };
 
   const handleOpenDialog = (material = null) => {
@@ -66,6 +100,7 @@ export default function MaterialsPage() {
     );
     setOpenDialog(true);
   };
+
   const handleCloseDialog = () => {
     setOpenDialog(false);
     setCurrentMaterial(null);
@@ -130,6 +165,7 @@ export default function MaterialsPage() {
         onChange={handleSearchChange}
       />
 
+      {/* Tabla */}
       <Paper elevation={3} sx={{ padding: "1rem", marginBottom: "1rem" }}>
         <TableContainer>
           <Table>
@@ -145,7 +181,21 @@ export default function MaterialsPage() {
               {filteredMaterials.map((material) => (
                 <TableRow key={material.id}>
                   <TableCell>{material.name}</TableCell>
-                  <TableCell>${material.price}</TableCell>
+                  <TableCell
+                    onDoubleClick={() => handlePriceDoubleClick(material.id, material.price)}
+                  >
+                    {editingPriceId === material.id ? (
+                      <TextField
+                        value={editingPriceValue}
+                        onChange={handlePriceChange}
+                        onBlur={handlePriceBlur}
+                        autoFocus
+                        size="small"
+                      />
+                    ) : (
+                      `$${material.price}`
+                    )}
+                  </TableCell>
                   <TableCell>{material.stretch} m</TableCell>
                   <TableCell>
                     <Button

@@ -23,13 +23,14 @@ export default function RootLayout({ children }: { children: ReactNode }) {
   };
 
   const menuItems = [
+    { text: "Presupuestos", href: "/sistema/presupuestos", icon: <RequestQuote /> },
+
     { text: "Modelos", href: "/sistema/modelos", icon: <WindowIcon /> },
     { text: "Materiales", href: "/sistema/materiales", icon: <ConstructionIcon /> },
-    { text: "Accesorios", href: "/sistema/herrajes", icon: <BuildIcon /> },
+    { text: "Herrajes", href: "/sistema/herrajes", icon: <BuildIcon /> },
     { text: "Vidrios", href: "/sistema/vidrios", icon: <GlassIcon /> },
     { text: "Colaboradores", href: "/sistema/colaboradores", icon: <PeopleIcon /> },
     { text: "Ordenes", href: "/sistema/ordenes", icon: <ArchiveIcon /> },
-    { text: "Presupuestos", href: "/sistema/presupuestos", icon: <RequestQuote /> },
   ];
 
   return (

@@ -27,6 +27,8 @@ export default function ChapesPage() {
   const [chapes, setChapes] = useState([]);
   const [filteredChapes, setFilteredChapes] = useState([]); // Para herrajes filtrados
   const [searchText, setSearchText] = useState(""); // Texto de búsqueda
+  const [editingPriceId, setEditingPriceId] = useState(null); // ID del herraje en edición
+  const [editingPriceValue, setEditingPriceValue] = useState(""); // Valor del precio en edición
   const [openDialog, setOpenDialog] = useState(false);
   const [currentChape, setCurrentChape] = useState(null);
   const [formData, setFormData] = useState({ name: "", price: "" });
@@ -57,6 +59,35 @@ export default function ChapesPage() {
 
   const handleSearchChange = (e) => {
     setSearchText(e.target.value); // Actualizar texto de búsqueda
+  };
+
+  const handlePriceDoubleClick = (id, price) => {
+    setEditingPriceId(id); // Establece el ID del herraje en edición
+    setEditingPriceValue(price); // Establece el valor actual del precio
+  };
+
+  const handlePriceChange = (e) => {
+    setEditingPriceValue(e.target.value); // Actualiza el valor del precio en edición
+  };
+
+  const handlePriceBlur = async () => {
+    if (isNaN(editingPriceValue) || editingPriceValue.trim() === "") {
+      setSnackbar({ open: true, message: "El precio debe ser un número válido.", severity: "error" });
+      setEditingPriceId(null); // Salir del modo de edición
+      return;
+    }
+
+    try {
+      const chapeRef = doc(db, "chapes", editingPriceId);
+      await updateDoc(chapeRef, { price: parseFloat(editingPriceValue) });
+      setSnackbar({ open: true, message: "Precio actualizado correctamente.", severity: "success" });
+      fetchChapes(); // Actualiza la lista de herrajes
+    } catch (error) {
+      console.error(error);
+      setSnackbar({ open: true, message: "Error al actualizar el precio.", severity: "error" });
+    } finally {
+      setEditingPriceId(null); // Salir del modo de edición
+    }
   };
 
   const handleOpenDialog = (chape = null) => {
@@ -135,7 +166,21 @@ export default function ChapesPage() {
               {filteredChapes.map((chape) => (
                 <TableRow key={chape.id}>
                   <TableCell>{chape.name}</TableCell>
-                  <TableCell>${chape.price}</TableCell>
+                  <TableCell
+                    onDoubleClick={() => handlePriceDoubleClick(chape.id, chape.price)}
+                  >
+                    {editingPriceId === chape.id ? (
+                      <TextField
+                        value={editingPriceValue}
+                        onChange={handlePriceChange}
+                        onBlur={handlePriceBlur}
+                        autoFocus
+                        size="small"
+                      />
+                    ) : (
+                      `$${chape.price}`
+                    )}
+                  </TableCell>
                   <TableCell>
                     <Button
                       color="primary"

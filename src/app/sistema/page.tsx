@@ -11,13 +11,14 @@ import RequestQuoteIcon from "@mui/icons-material/RequestQuote";
 
 export default function Home() {
   const sections = [
+    { text: "Presupuestos", href: "/sistema/presupuestos", icon: <RequestQuoteIcon sx={{ fontSize: 60 }} /> },
+
     { text: "Modelos", href: "/sistema/modelos", icon: <WindowIcon sx={{ fontSize: 60 }} /> },
     { text: "Materiales", href: "/sistema/materiales", icon: <ConstructionIcon sx={{ fontSize: 60 }} /> },
-    { text: "Accesorios", href: "/sistema/herrajes", icon: <BuildIcon sx={{ fontSize: 60 }} /> },
+    { text: "Herrajes", href: "/sistema/herrajes", icon: <BuildIcon sx={{ fontSize: 60 }} /> },
     { text: "Vidrios", href: "/sistema/vidrios", icon: <GlassIcon sx={{ fontSize: 60 }} /> },
     { text: "Colaboradores", href: "/sistema/colaboradores", icon: <PeopleIcon sx={{ fontSize: 60 }} /> },
     { text: "Ordenes", href: "/sistema/ordenes", icon: <ArchiveIcon sx={{ fontSize: 60 }} /> },
-    { text: "Presupuestos", href: "/sistema/presupuestos", icon: <RequestQuoteIcon sx={{ fontSize: 60 }} /> },
   ];
 
   return (

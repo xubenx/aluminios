@@ -17,7 +17,7 @@ export default function ClientOnlyLayout({ children }: Props) {
   const menuItems = [
     { text: "Modelos", icon: <WindowIcon />, href: "/sistema/modelos" },
     { text: "Materiales", icon: <ConstructionIcon />, href: "/sistema/materiales" },
-    { text: "Accesorios", icon: <BuildIcon />, href: "/sistema/herrajes" },
+    { text: "Herrajes", icon: <BuildIcon />, href: "/sistema/herrajes" },
     { text: "Vidrios", icon: <GlassIcon />, href: "/sistema/vidrios" },
     { text: "Colaboradores", icon: <PeopleIcon />, href: "/sistema/colaboradores" },
   ];
