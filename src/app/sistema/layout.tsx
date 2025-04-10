@@ -53,11 +53,11 @@ export default function RootLayout({ children }: { children: ReactNode }) {
           <Box sx={{ flexGrow: 1, display: "flex", alignItems: "center", gap: 2 }}>
             <Link href="/sistema" style={{ display: "flex", alignItems: "center", textDecoration: "none", color: "inherit" }}>
               <Image
-                src="/logo128.png" // Cambia esto por la ruta de tu imagen
+                src="/aluminios.svg" // Cambia esto por la ruta de tu imagen
                 alt="Aluminios San Francisco"
                 width={90}
                 height={90}
-                style={{ maxWidth: "100%", height: "auto" }}
+                style={{ maxWidth: "100%", height: "auto", marginBottom: 15, marginTop: 15 }} // Ajusta el tamaño de la imagen
               />
               <Typography
                 variant="h6"

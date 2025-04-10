@@ -1,2 +1,9 @@
+# *
 User-agent: *
-Disallow: /sistema/
+Disallow: /sistema/*
+
+# Host
+Host: https://aluminiosfr.vercel.app/
+
+# Sitemaps
+Sitemap: https://aluminiosfr.vercel.app/sitemap.xml

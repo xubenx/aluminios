@@ -23,9 +23,9 @@ export default function Home() {
         <div className="container mx-auto flex items-center justify-between py-4 px-6">
           <div className="flex items-center">
             <Image
-              src="/logo128.png"
+              src="/aluminios.svg"
               alt="Logo de Aluminios San Francisco"
-              width={164}
+              width={200}
               height={614}
               className="w-16 h-16"
             />
