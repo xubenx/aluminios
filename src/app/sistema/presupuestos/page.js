@@ -171,25 +171,32 @@ export default function CotizadorApp() {
   // Calcula para cada sección (materials, chapes y vidrios) y la mano de obra
   const getCalculations = () => {
     if (!modelData) return null;
-
+  
     // MATERIALS
     const materialsCalc = modelData.materials?.reduce(
       (acc, material) => {
         const matOption = materialsOptions.find((m) => m.id === material.id);
         const currentPrice = matOption ? parseFloat(matOption.price || "0") : 0;
-        const tramo = matOption ? (matOption.tramo || 1) : 1;
+        const tramo = matOption ? parseFloat(matOption.stretch || "6.1") : 6.1;
+  
         const meterage = calculatePrice(material.formula, {
           PRECIO: 1,
           ALTO: dimensions.height,
           ANCHO: dimensions.width,
-          TRAMO: tramo,
+          TRAMO: 1,
         });
+  
         const price = calculatePrice(material.formula, {
           PRECIO: currentPrice,
           ALTO: dimensions.height,
           ANCHO: dimensions.width,
           TRAMO: tramo,
         });
+  
+        console.log("Material:", material.name);
+        console.log("Meterage:", meterage);
+        console.log("Price:", price);
+  
         return {
           price: acc.price + price,
           meterage: acc.meterage + meterage,
@@ -198,24 +205,33 @@ export default function CotizadorApp() {
       },
       { price: 0, meterage: 0, items: [] }
     ) || { price: 0, meterage: 0, items: [] };
-
+  
+    console.log("Cálculos de materiales:", materialsCalc);
+  
     // CHAPES (herrajes)
     const chapesCalc = modelData.chapes?.reduce(
       (acc, chape) => {
         const chapeOption = chapesOptions.find((c) => c.id === chape.id);
         const currentPrice = chapeOption ? parseFloat(chapeOption.price || "0") : 0;
+  
         const pieces = calculatePrice(chape.formula, {
           PRECIO: 1,
           ALTO: dimensions.height,
           ANCHO: dimensions.width,
           TRAMO: 1,
         });
+  
         const price = calculatePrice(chape.formula, {
           PRECIO: currentPrice,
           ALTO: dimensions.height,
           ANCHO: dimensions.width,
           TRAMO: 1,
         });
+  
+        console.log("Herraje:", chape.name);
+        console.log("Pieces:", pieces);
+        console.log("Price:", price);
+  
         return {
           price: acc.price + price,
           pieces: acc.pieces + pieces,
@@ -224,7 +240,9 @@ export default function CotizadorApp() {
       },
       { price: 0, pieces: 0, items: [] }
     ) || { price: 0, pieces: 0, items: [] };
-
+  
+    console.log("Cálculos de herrajes:", chapesCalc);
+  
     // VIDRIOS
     const glassesCalc = modelData.glasses?.reduce(
       (acc, glass) => {
@@ -233,8 +251,14 @@ export default function CotizadorApp() {
           ALTO: dimensions.height,
           ANCHO: dimensions.width,
         });
+  
         const glassPrice = selectedGlass ? parseFloat(selectedGlass.priceInstalled || "0") : 0;
         const price = meterage * glassPrice;
+  
+        console.log("Vidrio:", glass.name);
+        console.log("Meterage:", meterage);
+        console.log("Price:", price);
+  
         return {
           price: acc.price + price,
           meterage: acc.meterage + meterage,
@@ -243,15 +267,19 @@ export default function CotizadorApp() {
       },
       { price: 0, meterage: 0, items: [] }
     ) || { price: 0, meterage: 0, items: [] };
-
-// Mano de obra: se multiplica la mano de obra (del modelo) por el precio total de los materiales
+  
+    console.log("Cálculos de vidrios:", glassesCalc);
+  
+    // Mano de obra
     const laborCost = parseFloat(modelData.manpower || "0") * materialsCalc.price;
+    console.log("Costo de mano de obra:", laborCost);
+  
     // Total general
     const totalGeneral = materialsCalc.price + chapesCalc.price + glassesCalc.price + laborCost;
-
+    console.log("Total general:", totalGeneral);
+  
     return { materialsCalc, chapesCalc, glassesCalc, laborCost, totalGeneral };
   };
-
   // ––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––
   // RENDERIZADO: si no hay un modelo seleccionado se muestra la búsqueda; si hay, se muestra la cotización
   // ––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––

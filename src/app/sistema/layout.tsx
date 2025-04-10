@@ -10,7 +10,6 @@ import ConstructionIcon from "@mui/icons-material/Carpenter";
 import BuildIcon from "@mui/icons-material/Key";
 import GlassIcon from "@mui/icons-material/WindowOutlined";
 import PeopleIcon from "@mui/icons-material/People";
-import ArchiveIcon from "@mui/icons-material/Archive";
 import RequestQuote from "@mui/icons-material/RequestQuote";
 import { useState } from "react";
 import Image from "next/image";
@@ -68,7 +67,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
                   marginLeft: 1,
                 }}
               >
-                ALUMINIOS SAN FRANCISCO
+                ALUMINIO SAN FRANCISCO
               </Typography>
             </Link>
           </Box>

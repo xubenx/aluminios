@@ -36,7 +36,7 @@ export default function Home() {
               height={614}
               className="w-16 h-16"
             />
-            <h1 className="ml-4 text-xl font-bold">Aluminios San Francisco</h1>
+            <h1 className="ml-4 text-xl font-bold">Aluminio San Francisco</h1>
           </div>
           <nav>
             <ul className="flex space-x-6">

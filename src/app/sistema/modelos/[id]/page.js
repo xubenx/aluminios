@@ -162,7 +162,7 @@ export default function ModelDetailsPage({ params }) {
             id: doc.id,
             name: doc.data().name,
             price: doc.data().price,   // Campo con el precio (puede ser string o número)
-            tramo: doc.data().tramo    // TRAMO para materiales
+            tramo: doc.data().stretch    // TRAMO para materiales
           }))
         );
         const chapesSnap = await getDocs(collection(db, "chapes"));
@@ -332,26 +332,35 @@ export default function ModelDetailsPage({ params }) {
 
   // MATERIALS: Se consulta el precio y TRAMO de la colección de materiales para cada material.
   const totalMaterialsData = model.materials.reduce((acc, material) => {
-    const materialData = materialsOptions.find(m => m.id === material.id);
+    const materialData = materialsOptions.find((m) => m.id === material.id);
     const currentPrice = materialData ? parseFloat(materialData.price || "0") : 0;
-    const tramo = materialData ? materialData.tramo || 1 : 1;
+    const tramo = materialData ? parseFloat(materialData.stretch || "6.1") : 6.1;
+  
     const meterage = calculatePrice(material.formula, {
       PRECIO: 1,
       ALTO: dimensions.height,
       ANCHO: dimensions.width,
       TRAMO: tramo,
     });
+  
     const price = calculatePrice(material.formula, {
       PRECIO: currentPrice,
       ALTO: dimensions.height,
       ANCHO: dimensions.width,
       TRAMO: tramo,
     });
+  
+    console.log("Material:", material.name);
+    console.log("Meterage:", meterage);
+    console.log("Price:", price);
+  
     return {
       price: acc.price + price,
       meterage: acc.meterage + meterage,
     };
   }, { price: 0, meterage: 0 });
+  
+  console.log("Cálculos de materiales (totalMaterialsData):", totalMaterialsData);
 
   // CHAPES: Se consulta el precio a partir de la colección de chapes.
   const totalChapesData = model.chapes.reduce((acc, chape) => {
@@ -400,7 +409,7 @@ const totalGlassMeterage = model.glasses.reduce((acc, glass) => {
   }, { price: 0, meterage: 0 });
 
   // Costo de mano de obra: se multiplica el valor numérico de "manpower" por el total de metraje de materiales.
-  const laborCost = parseFloat(model.manpower || "0") * totalMaterialsData.meterage;
+  const laborCost = parseFloat(model.manpower || "0") * totalMaterialsData.price;
   const totalGeneral = totalMaterialsData.price + totalChapesData.price + totalGlassesData.price + laborCost;
 
   return (
@@ -538,12 +547,12 @@ const totalGlassMeterage = model.glasses.reduce((acc, glass) => {
             {model.materials.map((material, index) => {
               const materialData = materialsOptions.find(m => m.id === material.id);
               const currentPrice = materialData ? parseFloat(materialData.price || "0") : 0;
-              const tramo = materialData ? materialData.tramo || 1 : 1;
+              const tramo = materialData ? parseFloat(materialData.stretch || "6.1") : 6.1;
               const meterage = calculatePrice(material.formula, {
                 PRECIO: 1,
                 ALTO: dimensions.height,
                 ANCHO: dimensions.width,
-                TRAMO: tramo,
+                TRAMO: 1,
               });
               const price = calculatePrice(material.formula, {
                 PRECIO: currentPrice,

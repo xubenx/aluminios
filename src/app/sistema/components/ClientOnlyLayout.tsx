@@ -35,7 +35,7 @@ export default function ClientOnlyLayout({ children }: Props) {
       >
         <Toolbar>
           <Typography variant="h6" noWrap>
-            Aluminios San Francisco
+            Aluminio San Francisco
           </Typography>
         </Toolbar>
         <List>
