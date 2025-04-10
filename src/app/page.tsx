@@ -6,16 +6,23 @@ export default function Home() {
     <>
       <Head>
         {/* SEO Básico */}
-        <title>Aluminios San Francisco - Calidad y Prestigio desde 1990</title>
+        <title>Aluminio San Francisco - Calidad y Prestigio desde 1990</title>
         <meta
           name="description"
-          content="Aluminios San Francisco: Fabricante líder de puertas de aluminio, ventanas, cancelería, manejo de vidrio, cancelería de vidrio, domos y más. Calidad y prestigio desde 1990 en San Francisco del Rincón."
+          content="AluminiosSan Francisco: Fabricante líder de puertas de aluminio, ventanas, cancelería, manejo de vidrio, cancelería de vidrio, domos y más. Calidad y prestigio desde 1990 en San Francisco del Rincón."
         />
         <meta
           name="keywords"
-          content="Aluminios San Francisco, puertas de aluminio, ventanas, cancelería, vidrio, domos, aluminio residencial, aluminio arquitectónico"
+          content="Aluminio San Francisco, puertas de aluminio, ventanas, cancelería, vidrio, domos, aluminio residencial, aluminio arquitectónico"
         />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <link rel="icon" href="/favicon.ico" /> {/* Ruta al favicon */}
+        <meta property="og:title" content="Aluminio San Francisco" />
+        <meta
+          property="og:description"
+          content="Aluminio San Francisco: Fabricante líder de puertas de aluminio, ventanas, cancelería, manejo de vidrio, cancelería de vidrio, domos y más. Calidad y prestigio desde 1990 en San Francisco del Rincón."
+        />
+
       </Head>
 
       {/* Header */}
