@@ -23,10 +23,10 @@ import {
   Chip,
   IconButton,
   Snackbar,
-  Alert,
-  Divider,
+  Alert,  Divider,
   Paper,
-  Autocomplete,  FormControl,
+  Autocomplete,
+  FormControl,
   FormLabel,
   RadioGroup,
   FormControlLabel,
@@ -48,10 +48,10 @@ export default function GlassCalculatorPage() {
   const [selectedGlassOption, setSelectedGlassOption] = useState(null);
   const [dimensions, setDimensions] = useState({ height: "", width: "" });
   const [priceType, setPriceType] = useState("priceInstalled"); // priceInstalled o priceCut
-  const [calculatorItems, setCalculatorItems] = useState([]);
-  const [snackbar, setSnackbar] = useState({ open: false, message: "", severity: "success" });
+  const [calculatorItems, setCalculatorItems] = useState([]);  const [snackbar, setSnackbar] = useState({ open: false, message: "", severity: "success" });
   
-  // Estados para diálogos  const [showSaveProjectDialog, setShowSaveProjectDialog] = useState(false);
+  // Estados para diálogos
+  const [showSaveProjectDialog, setShowSaveProjectDialog] = useState(false);
   const [showHistoryDialog, setShowHistoryDialog] = useState(false);
   const [projectName, setProjectName] = useState("");
   const [history, setHistory] = useState([]);
