@@ -39,26 +39,6 @@ import {
   EditElementDialog,
 } from "./ModelDialogs";
 
-// Función auxiliar que procesa la fórmula de acuerdo a la sección
-const processFormula = (section, formula) => {
-  const trimmed = formula.trim();
-  if (section === "materials") {
-    const prefix = "PRECIO/TRAMO *";
-    if (!trimmed.toUpperCase().startsWith(prefix.toUpperCase())) {
-      return prefix + " (" + trimmed + ")";
-    }
-    return trimmed;
-  } else if (section === "chapes") {
-    const prefix = "PRECIO *";
-    if (!trimmed.toUpperCase().startsWith(prefix.toUpperCase())) {
-      return prefix + " " + trimmed;
-    }
-    return trimmed;
-  }
-  // Para vidrio u otras secciones, no se modifica
-  return trimmed;
-};
-
 export default function ModelDetailsPage({ params }) {
   // Estados principales
   const [id, setId] = useState(null);
@@ -269,21 +249,15 @@ export default function ModelDetailsPage({ params }) {
 
   // Al guardar un elemento, se procesa la fórmula para materiales y chapes.
   const handleSaveSectionConfirmed = async () => {
-    if (!formData.formula.trim()) {
-      setSnackbar({ open: true, message: "La fórmula es obligatoria.", severity: "error" });
+    if (!formData.formula.trim()) {      setSnackbar({ open: true, message: "La fórmula es obligatoria.", severity: "error" });
       return;
     }
-    // Procesa la fórmula solo para materials y chapes
-    let processedFormula = formData.formula;
-    if (currentSection === "materials" || currentSection === "chapes") {
-      processedFormula = processFormula(currentSection, formData.formula);
-    }
-    try {
-      const updatedSection = [...(model[currentSection] || [])];
+    
+    try {      const updatedSection = [...(model[currentSection] || [])];
       if (formData.index !== undefined) {
-        updatedSection[formData.index] = { id: formData.id, formula: processedFormula, name: formData.name };
+        updatedSection[formData.index] = { id: formData.id, formula: formData.formula, name: formData.name };
       } else {
-        updatedSection.push({ id: formData.id, formula: processedFormula, name: formData.name });
+        updatedSection.push({ id: formData.id, formula: formData.formula, name: formData.name });
       }
       await updateDoc(doc(db, "models", id), { [currentSection]: updatedSection });
       setModel({ ...model, [currentSection]: updatedSection });

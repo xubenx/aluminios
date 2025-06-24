@@ -8,17 +8,23 @@ import GlassIcon from "@mui/icons-material/Window"; // Cambia si tienes un ícon
 import PeopleIcon from "@mui/icons-material/People";
 import ArchiveIcon from "@mui/icons-material/Archive";
 import RequestQuoteIcon from "@mui/icons-material/RequestQuote";
+import AssignmentIcon from "@mui/icons-material/Assignment";
+import AccountBalanceWalletIcon from "@mui/icons-material/AccountBalanceWallet";
+import PersonIcon from "@mui/icons-material/Person";
+import NotificationsIcon from "@mui/icons-material/Notifications";
 
-export default function Home() {
-  const sections = [
+export default function Home() {  const sections = [
     { text: "Presupuestos", href: "/sistema/presupuestos", icon: <RequestQuoteIcon sx={{ fontSize: 60 }} /> },
-
+    { text: "Proyectos", href: "/sistema/proyectos", icon: <AssignmentIcon sx={{ fontSize: 60 }} /> },
+    { text: "Clientes", href: "/sistema/clientes", icon: <PersonIcon sx={{ fontSize: 60 }} /> },
+    { text: "Diario", href: "/sistema/diario", icon: <AccountBalanceWalletIcon sx={{ fontSize: 60 }} /> },
+    { text: "Recordatorios", href: "/sistema/recordatorios", icon: <NotificationsIcon sx={{ fontSize: 60 }} /> },
     { text: "Modelos", href: "/sistema/modelos", icon: <WindowIcon sx={{ fontSize: 60 }} /> },
     { text: "Materiales", href: "/sistema/materiales", icon: <ConstructionIcon sx={{ fontSize: 60 }} /> },
     { text: "Herrajes", href: "/sistema/herrajes", icon: <BuildIcon sx={{ fontSize: 60 }} /> },
     { text: "Vidrios", href: "/sistema/vidrios", icon: <GlassIcon sx={{ fontSize: 60 }} /> },
     { text: "Colaboradores", href: "/sistema/colaboradores", icon: <PeopleIcon sx={{ fontSize: 60 }} /> },
-    { text: "Ordenes", href: "/sistema/ordenes", icon: <ArchiveIcon sx={{ fontSize: 60 }} /> },
+    //{ text: "Ordenes", href: "/sistema/ordenes", icon: <ArchiveIcon sx={{ fontSize: 60 }} /> },
   ];
 
   return (

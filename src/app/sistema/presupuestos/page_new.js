@@ -46,12 +46,10 @@ export default function CotizadorApp() {
 
   // Estados para las opciones (de colecciones) y dimensiones para el cotizador
   const [materialsOptions, setMaterialsOptions] = useState([]);
-  const [chapesOptions, setChapesOptions] = useState([]);  const [glassesOptions, setGlassesOptions] = useState([]);
+  const [chapesOptions, setChapesOptions] = useState([]);
+  const [glassesOptions, setGlassesOptions] = useState([]);
   const [dimensions, setDimensions] = useState({ height: "1", width: "1" });
   const [selectedGlass, setSelectedGlass] = useState(null);
-
-  // Estado para caché de imágenes
-  const [imageCache, setImageCache] = useState(new Set());
 
   // Estados para el carrito y proyecto
   const [cart, setCart] = useState([]);
@@ -63,75 +61,9 @@ export default function CotizadorApp() {
   const [newCustomerName, setNewCustomerName] = useState("");
   const [newCustomerPhone, setNewCustomerPhone] = useState("");
   const [createNewCustomer, setCreateNewCustomer] = useState(false);
+
   // Estado para mensajes (snackbar)
   const [snackbar, setSnackbar] = useState({ open: false, message: "", severity: "success" });
-  // Componente de imagen con caché mejorado
-  const CachedImage = ({ modelId, modelName, height = 200, width = "100%" }) => {
-    const [imageLoaded, setImageLoaded] = useState(imageCache.has(modelId));
-    const [imageError, setImageError] = useState(false);
-    const imageSrc = `/images/${modelId}.png`;
-
-    const handleImageLoad = () => {
-      if (!imageLoaded) {
-        setImageLoaded(true);
-        setImageCache(prev => new Set([...prev, modelId]));
-      }
-    };
-
-    const handleImageError = () => {
-      setImageError(true);
-    };
-
-    if (imageError) {
-      return (
-        <Box sx={{ 
-          height, 
-          width, 
-          display: 'flex', 
-          alignItems: 'center', 
-          justifyContent: 'center',
-          backgroundColor: 'grey.100',
-          borderRadius: 1
-        }}>
-          <Typography variant="body2" color="textSecondary">
-            Sin imagen
-          </Typography>
-        </Box>
-      );
-    }
-
-    return (
-      <Box sx={{ position: 'relative', height, width, overflow: 'hidden', borderRadius: 1 }}>
-        <Image
-          src={imageSrc}
-          alt={`Imagen de ${modelName}`}
-          fill
-          style={{ objectFit: 'cover' }}
-          onLoad={handleImageLoad}
-          onError={handleImageError}
-          priority={imageCache.has(modelId)}
-          loading={imageCache.has(modelId) ? "eager" : "lazy"}
-        />
-        {!imageLoaded && !imageCache.has(modelId) && (
-          <Box sx={{ 
-            position: 'absolute',
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            backgroundColor: 'grey.100'
-          }}>
-            <Typography variant="body2" color="textSecondary">
-              Cargando...
-            </Typography>
-          </Box>
-        )}
-      </Box>
-    );
-  };
 
   // ––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––
   // BÚSQUEDA DE MODELOS
@@ -293,65 +225,9 @@ export default function CotizadorApp() {
   const removeFromCart = (itemId) => {
     setCart(prevCart => prevCart.filter(item => item.id !== itemId));
   };
+
   const getCartTotal = () => {
     return cart.reduce((total, item) => total + item.calculations.totalGeneral, 0);
-  };
-
-  // Función para obtener resúmenes de materiales, chapes y vidrios del carrito
-  const getCartSummaries = () => {
-    const materialsSummary = {};
-    const chapesSummary = {};
-    const glassesSummary = {};
-
-    cart.forEach(item => {
-      // Materiales
-      item.calculations.materialsCalc.items.forEach(material => {
-        if (materialsSummary[material.name]) {
-          materialsSummary[material.name].meterage += material.meterage;
-          materialsSummary[material.name].price += material.price;
-        } else {
-          materialsSummary[material.name] = {
-            name: material.name,
-            meterage: material.meterage,
-            price: material.price
-          };
-        }
-      });
-
-      // Chapes (Herrajes)
-      item.calculations.chapesCalc.items.forEach(chape => {
-        if (chapesSummary[chape.name]) {
-          chapesSummary[chape.name].pieces += chape.pieces;
-          chapesSummary[chape.name].price += chape.price;
-        } else {
-          chapesSummary[chape.name] = {
-            name: chape.name,
-            pieces: chape.pieces,
-            price: chape.price
-          };
-        }
-      });
-
-      // Vidrios
-      item.calculations.glassesCalc.items.forEach(glass => {
-        if (glassesSummary[glass.name]) {
-          glassesSummary[glass.name].meterage += glass.meterage;
-          glassesSummary[glass.name].price += glass.price;
-        } else {
-          glassesSummary[glass.name] = {
-            name: glass.name,
-            meterage: glass.meterage,
-            price: glass.price
-          };
-        }
-      });
-    });
-
-    return {
-      materials: Object.values(materialsSummary),
-      chapes: Object.values(chapesSummary),
-      glasses: Object.values(glassesSummary)
-    };
   };
 
   const handleSaveProject = async () => {
@@ -410,7 +286,8 @@ export default function CotizadorApp() {
       const projectData = {
         name: projectName.trim(),
         customerId: finalCustomerId,
-        customerName: createNewCustomer ? newCustomerName.trim() : selectedCustomer.name,        items: cart.map(item => ({
+        customerName: createNewCustomer ? newCustomerName.trim() : selectedCustomer.name,
+        items: cart.map(item => ({
           modelId: item.modelId,
           modelName: item.modelName,
           dimensions: item.dimensions,
@@ -421,15 +298,11 @@ export default function CotizadorApp() {
             chapes: item.calculations.chapesCalc,
             glasses: item.calculations.glassesCalc,
             laborCost: item.calculations.laborCost
-          },
-          laborCostSelected: item.calculations.laborCost, // Costo de mano de obra editable
-          status: "cotizacion", // Estado inicial del modelo
-          area: "", // Área/ubicación del modelo
-          assignedEmployeeId: "" // ID del empleado asignado
+          }
         })),
         total: getCartTotal(),
         createdAt: new Date().toISOString(),
-        status: "quotation"
+        status: "active"
       };
 
       await addDoc(collection(db, "projects"), projectData);
@@ -585,14 +458,17 @@ export default function CotizadorApp() {
           sx={{ mb: 2 }}
         />
         <Grid container spacing={3}>
-          {filteredModels.map((model) => (            <Grid item xs={12} sm={6} md={4} lg={3} key={model.id}>
-              <Card sx={{ maxWidth: 345, boxShadow: 3, height: '100%', display: 'flex', flexDirection: 'column' }}>
-                <CachedImage 
-                  modelId={model.id}
-                  modelName={model.name}
-                  height={200}
+          {filteredModels.map((model) => (
+            <Grid item xs={12} sm={6} md={4} lg={3} key={model.id}>
+              <Card sx={{ maxWidth: 345, boxShadow: 3 }}>
+                <CardMedia
+                  component="img"
+                  height="200"
+                  image={`/images/${model.id}.png`}
+                  alt={`Imagen de ${model.name}`}
+                  onError={(e) => (e.target.style.display = "none")}
                 />
-                <CardContent sx={{ flexGrow: 1, display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+                <CardContent>
                   <Typography
                     gutterBottom
                     variant="h6"
@@ -883,8 +759,9 @@ export default function CotizadorApp() {
   // ––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––
   function renderDialogs() {
     return (
-      <>        {/* Diálogo del Carrito */}
-        <Dialog open={showCart} onClose={() => setShowCart(false)} maxWidth="xl" fullWidth>
+      <>
+        {/* Diálogo del Carrito */}
+        <Dialog open={showCart} onClose={() => setShowCart(false)} maxWidth="lg" fullWidth>
           <DialogTitle>
             Carrito de Cotización
             <Typography variant="subtitle1" color="textSecondary">
@@ -895,165 +772,37 @@ export default function CotizadorApp() {
             {cart.length === 0 ? (
               <Typography>El carrito está vacío</Typography>
             ) : (
-              <>
-                {/* Tabla de modelos */}
-                <Typography variant="h6" sx={{ mb: 2 }}>Modelos en el Carrito</Typography>
-                <TableContainer sx={{ mb: 4 }}>
-                  <Table>
-                    <TableHead>
-                      <TableRow>
-                        <TableCell>Modelo</TableCell>
-                        <TableCell>Dimensiones</TableCell>
-                        <TableCell>Vidrio</TableCell>
-                        <TableCell>Total</TableCell>
-                        <TableCell>Acciones</TableCell>
+              <TableContainer>
+                <Table>
+                  <TableHead>
+                    <TableRow>
+                      <TableCell>Modelo</TableCell>
+                      <TableCell>Dimensiones</TableCell>
+                      <TableCell>Vidrio</TableCell>
+                      <TableCell>Total</TableCell>
+                      <TableCell>Acciones</TableCell>
+                    </TableRow>
+                  </TableHead>
+                  <TableBody>
+                    {cart.map((item) => (
+                      <TableRow key={item.id}>
+                        <TableCell>{item.modelName}</TableCell>
+                        <TableCell>{item.dimensions.height} x {item.dimensions.width}</TableCell>
+                        <TableCell>{item.selectedGlass.name}</TableCell>
+                        <TableCell>${item.calculations.totalGeneral.toFixed(2)}</TableCell>
+                        <TableCell>
+                          <IconButton 
+                            color="error" 
+                            onClick={() => removeFromCart(item.id)}
+                          >
+                            <Delete />
+                          </IconButton>
+                        </TableCell>
                       </TableRow>
-                    </TableHead>
-                    <TableBody>
-                      {cart.map((item) => (
-                        <TableRow key={item.id}>
-                          <TableCell>{item.modelName}</TableCell>
-                          <TableCell>{item.dimensions.height} x {item.dimensions.width}</TableCell>
-                          <TableCell>{item.selectedGlass.name}</TableCell>
-                          <TableCell>${item.calculations.totalGeneral.toFixed(2)}</TableCell>
-                          <TableCell>
-                            <IconButton 
-                              color="error" 
-                              onClick={() => removeFromCart(item.id)}
-                            >
-                              <Delete />
-                            </IconButton>
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                </TableContainer>
-
-                {/* Resúmenes de materiales */}
-                {(() => {
-                  const summaries = getCartSummaries();
-                  return (
-                    <Box>
-                      <Typography variant="h6" sx={{ mb: 2 }}>Resumen de Materiales</Typography>
-                      
-                      {/* Materiales */}
-                      {summaries.materials.length > 0 && (
-                        <Box sx={{ mb: 3 }}>
-                          <Typography variant="subtitle1" sx={{ mb: 1, fontWeight: 'bold' }}>
-                            Materiales:
-                          </Typography>
-                          <TableContainer>
-                            <Table size="small">
-                              <TableHead>
-                                <TableRow>
-                                  <TableCell>Material</TableCell>
-                                  <TableCell align="right">Metraje Total</TableCell>
-                                  <TableCell align="right">Precio Total</TableCell>
-                                </TableRow>
-                              </TableHead>
-                              <TableBody>
-                                {summaries.materials.map((material, index) => (
-                                  <TableRow key={index}>
-                                    <TableCell>{material.name}</TableCell>
-                                    <TableCell align="right">{material.meterage.toFixed(2)} m</TableCell>
-                                    <TableCell align="right">${material.price.toFixed(2)}</TableCell>
-                                  </TableRow>
-                                ))}
-                                <TableRow>
-                                  <TableCell sx={{ fontWeight: 'bold' }}>Total Materiales:</TableCell>
-                                  <TableCell align="right" sx={{ fontWeight: 'bold' }}>
-                                    {summaries.materials.reduce((sum, m) => sum + m.meterage, 0).toFixed(2)} m
-                                  </TableCell>
-                                  <TableCell align="right" sx={{ fontWeight: 'bold' }}>
-                                    ${summaries.materials.reduce((sum, m) => sum + m.price, 0).toFixed(2)}
-                                  </TableCell>
-                                </TableRow>
-                              </TableBody>
-                            </Table>
-                          </TableContainer>
-                        </Box>
-                      )}
-
-                      {/* Herrajes */}
-                      {summaries.chapes.length > 0 && (
-                        <Box sx={{ mb: 3 }}>
-                          <Typography variant="subtitle1" sx={{ mb: 1, fontWeight: 'bold' }}>
-                            Herrajes:
-                          </Typography>
-                          <TableContainer>
-                            <Table size="small">
-                              <TableHead>
-                                <TableRow>
-                                  <TableCell>Herraje</TableCell>
-                                  <TableCell align="right">Piezas Totales</TableCell>
-                                  <TableCell align="right">Precio Total</TableCell>
-                                </TableRow>
-                              </TableHead>
-                              <TableBody>
-                                {summaries.chapes.map((chape, index) => (
-                                  <TableRow key={index}>
-                                    <TableCell>{chape.name}</TableCell>
-                                    <TableCell align="right">{chape.pieces.toFixed(2)}</TableCell>
-                                    <TableCell align="right">${chape.price.toFixed(2)}</TableCell>
-                                  </TableRow>
-                                ))}
-                                <TableRow>
-                                  <TableCell sx={{ fontWeight: 'bold' }}>Total Herrajes:</TableCell>
-                                  <TableCell align="right" sx={{ fontWeight: 'bold' }}>
-                                    {summaries.chapes.reduce((sum, c) => sum + c.pieces, 0).toFixed(2)}
-                                  </TableCell>
-                                  <TableCell align="right" sx={{ fontWeight: 'bold' }}>
-                                    ${summaries.chapes.reduce((sum, c) => sum + c.price, 0).toFixed(2)}
-                                  </TableCell>
-                                </TableRow>
-                              </TableBody>
-                            </Table>
-                          </TableContainer>
-                        </Box>
-                      )}
-
-                      {/* Vidrios */}
-                      {summaries.glasses.length > 0 && (
-                        <Box sx={{ mb: 3 }}>
-                          <Typography variant="subtitle1" sx={{ mb: 1, fontWeight: 'bold' }}>
-                            Vidrios:
-                          </Typography>
-                          <TableContainer>
-                            <Table size="small">
-                              <TableHead>
-                                <TableRow>
-                                  <TableCell>Vidrio</TableCell>
-                                  <TableCell align="right">Metraje Total</TableCell>
-                                  <TableCell align="right">Precio Total</TableCell>
-                                </TableRow>
-                              </TableHead>
-                              <TableBody>
-                                {summaries.glasses.map((glass, index) => (
-                                  <TableRow key={index}>
-                                    <TableCell>{glass.name}</TableCell>
-                                    <TableCell align="right">{glass.meterage.toFixed(2)} m²</TableCell>
-                                    <TableCell align="right">${glass.price.toFixed(2)}</TableCell>
-                                  </TableRow>
-                                ))}
-                                <TableRow>
-                                  <TableCell sx={{ fontWeight: 'bold' }}>Total Vidrios:</TableCell>
-                                  <TableCell align="right" sx={{ fontWeight: 'bold' }}>
-                                    {summaries.glasses.reduce((sum, g) => sum + g.meterage, 0).toFixed(2)} m²
-                                  </TableCell>
-                                  <TableCell align="right" sx={{ fontWeight: 'bold' }}>
-                                    ${summaries.glasses.reduce((sum, g) => sum + g.price, 0).toFixed(2)}
-                                  </TableCell>
-                                </TableRow>
-                              </TableBody>
-                            </Table>
-                          </TableContainer>
-                        </Box>
-                      )}
-                    </Box>
-                  );
-                })()}
-              </>
+                    ))}
+                  </TableBody>
+                </Table>
+              </TableContainer>
             )}
           </DialogContent>
           <DialogActions>

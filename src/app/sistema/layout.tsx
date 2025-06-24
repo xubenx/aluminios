@@ -11,6 +11,11 @@ import BuildIcon from "@mui/icons-material/Key";
 import GlassIcon from "@mui/icons-material/WindowOutlined";
 import PeopleIcon from "@mui/icons-material/People";
 import RequestQuote from "@mui/icons-material/RequestQuote";
+import AssignmentIcon from "@mui/icons-material/Assignment";
+import AccountBalanceWalletIcon from "@mui/icons-material/AccountBalanceWallet";
+import PersonIcon from "@mui/icons-material/Person";
+import NotificationsIcon from "@mui/icons-material/Notifications";
+import ArchiveIcon from "@mui/icons-material/Archive";
 import { useState } from "react";
 import Image from "next/image";
 import theme from './theme';
@@ -21,10 +26,13 @@ export default function RootLayout({ children }: { children: ReactNode }) {
   const toggleDrawer = (open: boolean) => () => {
     setDrawerOpen(open);
   };
-
   const menuItems = [
-    { text: "Presupuestos", href: "/sistema/presupuestos", icon: <RequestQuote /> },
+        { text: "Recordatorios", href: "/sistema/recordatorios", icon: <NotificationsIcon /> },
 
+    { text: "Presupuestos", href: "/sistema/presupuestos", icon: <RequestQuote /> },
+    { text: "Proyectos", href: "/sistema/proyectos", icon: <AssignmentIcon /> },
+    { text: "Clientes", href: "/sistema/clientes", icon: <PersonIcon /> },
+    { text: "Diario", href: "/sistema/diario", icon: <AccountBalanceWalletIcon /> },
     { text: "Modelos", href: "/sistema/modelos", icon: <WindowIcon /> },
     { text: "Materiales", href: "/sistema/materiales", icon: <ConstructionIcon /> },
     { text: "Herrajes", href: "/sistema/herrajes", icon: <BuildIcon /> },
@@ -46,9 +54,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
         sx={{
           background: " #000000", // Degradado de blanco a azul limitado al ancho de la imagen
         }}
-      >
-        <Toolbar>
-          {/* Imagen y texto visibles en todas las pantallas */}
+      >        <Toolbar>          {/* Imagen y texto visibles en todas las pantallas */}
           <Box sx={{ flexGrow: 1, display: "flex", alignItems: "center", gap: 2 }}>
             <Link href="/sistema" style={{ display: "flex", alignItems: "center", textDecoration: "none", color: "inherit" }}>
               <Image
@@ -58,70 +64,149 @@ export default function RootLayout({ children }: { children: ReactNode }) {
                 height={90}
                 style={{ maxWidth: "100%", height: "auto", marginBottom: 15, marginTop: 15 }} // Ajusta el tamaño de la imagen
               />
-              <Typography
-                variant="h6"
-                component="div"
-                sx={{
-                  fontFamily: "'Roboto', sans-serif",
-                  fontSize: { xs: "1.2rem", md: "1.25rem" }, // Ajusta el tamaño del texto según el tamaño de la pantalla
-                  marginLeft: 1,
-                }}
-              >
-                ALUMINIO SAN FRANCISCO
-              </Typography>
             </Link>
+            {/* Texto descriptivo */}
+            <Box sx={{ display: { xs: "none", sm: "block" } }}>
+              <Typography variant="h6" sx={{ fontWeight: 'bold', color: 'white' }}>
+                Sistema de Gestión
+              </Typography>
+              <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.8)' }}>
+                Aluminios San Francisco
+              </Typography>
+            </Box>
           </Box>
 
-          {/* Icono de menú para pantallas pequeñas */}
+          {/* Icono de menú para todas las pantallas */}
           <IconButton
             color="inherit"
             edge="start"
-            sx={{ display: { xs: "block", md: "none" } }}
             onClick={toggleDrawer(true)}
+            sx={{ 
+              display: "flex",
+              '&:hover': {
+                backgroundColor: 'rgba(255, 255, 255, 0.1)'
+              }
+            }}
           >
             <MenuIcon />
           </IconButton>
-
-          {/* Botones para pantallas grandes */}
-          <Box sx={{ display: { xs: "none", md: "flex" }, gap: 3 }}>
-            {menuItems.map((item) => (
-              <Button
-                key={item.text}
-                color="inherit"
-                component={Link}
-                href={item.href}
-                startIcon={item.icon}
-                sx={{ fontSize: "1rem" }}
-              >
-                {item.text}
-              </Button>
-            ))}
-          </Box>
         </Toolbar>
-      </AppBar>
-
-      {/* Drawer para pantallas pequeñas */}
-      <Drawer anchor="left" open={drawerOpen} onClose={toggleDrawer(false)}>
-        <Box sx={{ width: 250 }} role="presentation" onClick={toggleDrawer(false)} onKeyDown={toggleDrawer(false)}>
+      </AppBar>      {/* Drawer mejorado para todas las pantallas */}
+      <Drawer 
+        anchor="left" 
+        open={drawerOpen} 
+        onClose={toggleDrawer(false)}
+        sx={{
+          '& .MuiDrawer-paper': {
+            width: 280,
+            boxSizing: 'border-box',
+          },
+        }}
+      >
+        <Box sx={{ width: 280 }} role="presentation">
           {/* Imagen encima del menú */}
-          <Box sx={{ textAlign: "center", padding: 2 }}>
+          <Box sx={{ 
+            textAlign: "center", 
+            padding: 2, 
+            borderBottom: '1px solid #e0e0e0',
+            backgroundColor: '#f5f5f5'
+          }}>
             <Image
-              src="/logo_aluminos.png" // Cambia esto por la ruta de tu imagen
+              src="/logo_aluminos.png"
               alt="Aluminios San Francisco"
-              width={300}
-              height={200}
+              width={240}
+              height={160}
               style={{ maxWidth: "100%", height: "auto" }}
             />
           </Box>
-          {/* Lista de elementos del menú */}
-          <List>
-            {menuItems.map((item) => (
-              <ListItem key={item.text} component="a" href={item.href} style={{ textDecoration: "none", color: "inherit" }}>
-                <ListItemIcon>{item.icon}</ListItemIcon>
-                <ListItemText primary={item.text} />
-              </ListItem>
-            ))}
-          </List>
+          
+          {/* Sección principal */}
+          <Box sx={{ padding: 1 }}>
+            <Typography variant="overline" sx={{ 
+              px: 2, 
+              py: 1, 
+              color: 'text.secondary',
+              fontWeight: 'bold',
+              fontSize: '0.75rem'
+            }}>
+              GESTIÓN PRINCIPAL
+            </Typography>
+            <List sx={{ py: 0 }}>
+              {menuItems.slice(0, 5).map((item) => (
+                <ListItem 
+                  key={item.text} 
+                  component={Link}
+                  href={item.href}
+                  onClick={toggleDrawer(false)}
+                  sx={{
+                    textDecoration: "none", 
+                    color: "inherit",
+                    borderRadius: 1,
+                    margin: '2px 8px',
+                    '&:hover': {
+                      backgroundColor: 'primary.light',
+                      color: 'primary.contrastText',
+                    }
+                  }}
+                >
+                  <ListItemIcon sx={{ color: 'inherit', minWidth: 40 }}>
+                    {item.icon}
+                  </ListItemIcon>
+                  <ListItemText 
+                    primary={item.text} 
+                    primaryTypographyProps={{ 
+                      fontSize: '0.95rem',
+                      fontWeight: 500
+                    }}
+                  />
+                </ListItem>
+              ))}
+            </List>
+          </Box>
+
+          {/* Sección de inventario */}
+          <Box sx={{ padding: 1 }}>
+            <Typography variant="overline" sx={{ 
+              px: 2, 
+              py: 1, 
+              color: 'text.secondary',
+              fontWeight: 'bold',
+              fontSize: '0.75rem'
+            }}>
+              INVENTARIO
+            </Typography>
+            <List sx={{ py: 0 }}>
+              {menuItems.slice(5).map((item) => (
+                <ListItem 
+                  key={item.text} 
+                  component={Link}
+                  href={item.href}
+                  onClick={toggleDrawer(false)}
+                  sx={{
+                    textDecoration: "none", 
+                    color: "inherit",
+                    borderRadius: 1,
+                    margin: '2px 8px',
+                    '&:hover': {
+                      backgroundColor: 'secondary.light',
+                      color: 'secondary.contrastText',
+                    }
+                  }}
+                >
+                  <ListItemIcon sx={{ color: 'inherit', minWidth: 40 }}>
+                    {item.icon}
+                  </ListItemIcon>
+                  <ListItemText 
+                    primary={item.text}
+                    primaryTypographyProps={{ 
+                      fontSize: '0.95rem',
+                      fontWeight: 500
+                    }}
+                  />
+                </ListItem>
+              ))}
+            </List>
+          </Box>
         </Box>
       </Drawer>
 

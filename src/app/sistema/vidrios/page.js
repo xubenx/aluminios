@@ -22,9 +22,11 @@ import {
   Typography,
   Box,
 } from "@mui/material";
-import { Add, Edit, Delete } from "@mui/icons-material";
+import { Add, Edit, Delete, Calculate } from "@mui/icons-material";
+import { useRouter } from "next/navigation";
 
 export default function GlassesPage() {
+  const router = useRouter();
   const [glasses, setGlasses] = useState([]);
   const [filteredGlasses, setFilteredGlasses] = useState([]);
   const [searchText, setSearchText] = useState("");
@@ -137,12 +139,31 @@ export default function GlassesPage() {
     setOpenConfirmDialog(false);
     setGlassToDelete(null);
   };
-
   return (
     <div style={{ padding: "1rem" }}>
       <Typography variant="h4" align="center" gutterBottom sx={{ color: "black" }}>
         Vidrios
       </Typography>
+
+      {/* Botón de Calculadora */}
+      <Box sx={{ display: 'flex', justifyContent: 'center', mb: 3 }}>
+        <Button
+          variant="contained"
+          size="large"
+          startIcon={<Calculate />}
+          onClick={() => router.push('/sistema/calculadora-vidrios')}
+          sx={{
+            fontSize: '1.2rem',
+            padding: '12px 32px',
+            backgroundColor: 'primary.main',
+            '&:hover': {
+              backgroundColor: 'primary.dark',
+            }
+          }}
+        >
+          Calculadora de Vidrios
+        </Button>
+      </Box>
 
       {/* Buscador */}
       <TextField
