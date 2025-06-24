@@ -1,6 +1,6 @@
 "use client";
 import React, { useState, useEffect } from "react";
-import { collection, getDocs, doc, updateDoc, deleteDoc, getDoc } from "firebase/firestore";
+import { collection, getDocs, doc, updateDoc, getDoc } from "firebase/firestore";
 import { db } from "../../../../firebase";
 import { evaluate } from "mathjs";
 import Image from "next/image";
@@ -21,21 +21,18 @@ import {
   TableHead,
   TableRow,
   TableCell,
-  TableBody,
-  Chip,
+  TableBody,  Chip,
   IconButton,
   Snackbar,
   Alert,
   Divider,
   Paper,
   Collapse,
-  Autocomplete,
-  CardMedia
+  Autocomplete
 } from "@mui/material";
 import {
   Visibility,
   Edit,
-  Delete,
   Person,
   CalendarToday,
   AttachMoney,

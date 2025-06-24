@@ -1,13 +1,12 @@
 "use client";
 import React, { useState, useEffect } from "react";
-import { collection, getDocs, addDoc, updateDoc, deleteDoc, doc } from "firebase/firestore";
+import { collection, getDocs, addDoc, updateDoc, doc } from "firebase/firestore";
 import { db } from "../../../../firebase";
 import {
   Box,
   Button,
   Typography,
-  Card,
-  CardContent,
+  Card,  CardContent,
   Grid,
   TextField,
   Dialog,
@@ -15,10 +14,8 @@ import {
   DialogContent,
   DialogActions,
   Chip,
-  IconButton,
   Snackbar,
   Alert,
-  Paper,
   Fab,
   Select,
   MenuItem,
