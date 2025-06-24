@@ -1,0 +1,19 @@
+# Build outputs
+.next/
+out/
+dist/
+build/
+
+# Dependencies
+node_modules/
+
+# Generated files
+*.d.ts
+next-env.d.ts
+
+# Config files that might have different formatting
+*.config.js
+*.config.mjs
+
+# Other files
+.env*

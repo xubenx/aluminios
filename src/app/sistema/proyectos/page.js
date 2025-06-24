@@ -67,7 +67,7 @@ export default function ProyectosPage() {  const [projects, setProjects] = useSt
   const [showModelEditDialog, setShowModelEditDialog] = useState(false);
     // Estados para filtros de proyectos
   const [showArchived, setShowArchived] = useState(false);
-  const [showInactive, setShowInactive] = useState(false);
+  const [showInactive] = useState(false);
   
   // Estados para agregar modelo a proyecto
   const [showAddModelDialog, setShowAddModelDialog] = useState(false);
@@ -345,7 +345,7 @@ export default function ProyectosPage() {  const [projects, setProjects] = useSt
       });
     }
   };
-  const handleDeleteProject = async (projectId) => {
+  {/*const handleDeleteProject = async (projectId) => {
     if (window.confirm("¿Está seguro de que desea desactivar este proyecto?")) {
       try {
         await updateDoc(doc(db, "projects", projectId), {
@@ -367,7 +367,7 @@ export default function ProyectosPage() {  const [projects, setProjects] = useSt
       }
     }
   };
-
+*/}
   const handleArchiveProject = async (projectId, archive = true) => {
     const action = archive ? "archivar" : "desarchivar";
     if (window.confirm(`¿Está seguro de que desea ${action} este proyecto?`)) {
