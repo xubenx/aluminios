@@ -1,13 +1,10 @@
 "use client";
 import React, { useState, useEffect } from "react";
-import { collection, getDocs, addDoc, updateDoc, deleteDoc, doc } from "firebase/firestore";
+import { collection, getDocs, addDoc, updateDoc, doc } from "firebase/firestore";
 import { db } from "../../../../firebase";
-import {
-  Box,
+import {  Box,
   Button,
   Typography,
-  Card,
-  CardContent,
   Grid,
   TextField,
   Dialog,
@@ -30,14 +27,12 @@ import {
   TableContainer,
   TableHead,
   TableRow,
-  Divider,
   Switch,
   FormControlLabel
 } from "@mui/material";
 import {
   Add,
   Edit,
-  Delete,
   AccountBalanceWallet,
   TrendingDown,
   TrendingUp,

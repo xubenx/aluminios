@@ -1,6 +1,6 @@
 "use client";
 import React, { useState, useEffect } from "react";
-import { collection, getDocs, addDoc, doc } from "firebase/firestore";
+import { collection, getDocs, addDoc } from "firebase/firestore";
 import { db } from "../../../../firebase";
 import {
   Box,
@@ -26,13 +26,11 @@ import {
   Alert,
   Divider,
   Paper,
-  Autocomplete,
-  FormControl,
+  Autocomplete,  FormControl,
   FormLabel,
   RadioGroup,
   FormControlLabel,
-  Radio,
-  Fab
+  Radio
 } from "@mui/material";
 import {
   Add,
@@ -40,7 +38,6 @@ import {
   Save,
   History,
   Calculate,
-  AttachMoney,
   Clear
 } from "@mui/icons-material";
 
@@ -54,11 +51,9 @@ export default function GlassCalculatorPage() {
   const [calculatorItems, setCalculatorItems] = useState([]);
   const [snackbar, setSnackbar] = useState({ open: false, message: "", severity: "success" });
   
-  // Estados para diálogos
-  const [showSaveProjectDialog, setShowSaveProjectDialog] = useState(false);
+  // Estados para diálogos  const [showSaveProjectDialog, setShowSaveProjectDialog] = useState(false);
   const [showHistoryDialog, setShowHistoryDialog] = useState(false);
   const [projectName, setProjectName] = useState("");
-  const [customerName, setCustomerName] = useState("");
   const [history, setHistory] = useState([]);
   
   // Estados para clientes
@@ -153,13 +148,12 @@ export default function GlassCalculatorPage() {
 
     const area = calculateGlassArea();
     const price = calculateGlassPrice();
-    const priceTypeText = priceType === "priceInstalled" ? "Instalado" : "Corte";
-
-    const newItem = {
+    const priceTypeText = priceType === "priceInstalled" ? "Instalado" : "Corte";    const newItem = {
       id: Date.now().toString(),
       glassName: selectedGlass.name,
       thickness: selectedGlassOption.tickness,
       dimensions: { ...dimensions },
+      area: area,
       priceType: priceTypeText,
       pricePerUnit: parseFloat(selectedGlassOption[priceType]) || 0,
       totalPrice: price,

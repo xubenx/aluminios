@@ -2,7 +2,7 @@
 
 import Head from "next/head"; // Importa Head para configurar metaetiquetas
 import type { ReactNode } from "react";
-import { AppBar, Toolbar, Typography, Button, Container, Box, IconButton, Drawer, List, ListItem, ListItemIcon, ListItemText, ThemeProvider } from "@mui/material";
+import { AppBar, Toolbar, Typography, Container, Box, IconButton, Drawer, List, ListItem, ListItemIcon, ListItemText, ThemeProvider } from "@mui/material";
 import MenuIcon from "@mui/icons-material/Menu";
 import Link from "next/link";
 import WindowIcon from "@mui/icons-material/Window";
@@ -15,7 +15,6 @@ import AssignmentIcon from "@mui/icons-material/Assignment";
 import AccountBalanceWalletIcon from "@mui/icons-material/AccountBalanceWallet";
 import PersonIcon from "@mui/icons-material/Person";
 import NotificationsIcon from "@mui/icons-material/Notifications";
-import ArchiveIcon from "@mui/icons-material/Archive";
 import { useState } from "react";
 import Image from "next/image";
 import theme from './theme';
