@@ -26,7 +26,6 @@ import {
   Add,
   Edit,
   Delete,
-  Visibility,
   NotificationImportant,
   Schedule,
   CheckCircle,
