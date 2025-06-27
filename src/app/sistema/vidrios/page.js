@@ -29,6 +29,8 @@ export default function GlassesPage() {
   const router = useRouter();
   const [glasses, setGlasses] = useState([]);
   const [filteredGlasses, setFilteredGlasses] = useState([]);
+  const [inactiveGlasses, setInactiveGlasses] = useState([]);
+  const [showInactive, setShowInactive] = useState(false);
   const [searchText, setSearchText] = useState("");
   const [openDialog, setOpenDialog] = useState(false);
   const [openConfirmDialog, setOpenConfirmDialog] = useState(false); // Confirmación para eliminar
@@ -45,23 +47,70 @@ export default function GlassesPage() {
   }, []);
 
   useEffect(() => {
-    const filtered = glasses.filter((glass) =>
+    const currentList = showInactive ? inactiveGlasses : glasses;
+    const filtered = currentList.filter((glass) =>
       glass.name.toLowerCase().includes(searchText.toLowerCase())
     );
     setFilteredGlasses(filtered);
-  }, [searchText, glasses]);
+  }, [searchText, glasses, inactiveGlasses, showInactive]);
 
   const fetchGlasses = async () => {
     const glassesSnapshot = await getDocs(collection(db, "glasses"));
-    const glassesData = glassesSnapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
-    setGlasses(glassesData);
-    setFilteredGlasses(glassesData);
+    const allGlasses = glassesSnapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
+    
+    const activeGlasses = allGlasses.filter((glass) => glass.status !== "inactive");
+    const inactiveGlasses = allGlasses.filter((glass) => glass.status === "inactive");
+    
+    setGlasses(activeGlasses);
+    setFilteredGlasses(activeGlasses);
+    setInactiveGlasses(inactiveGlasses);
+  };
+
+  // Función para redondear a múltiplos de 5
+  const roundToNearestFive = (number) => {
+    const rounded = Math.round(number);
+    const remainder = rounded % 10;
+    
+    if (remainder <= 2) {
+      return rounded - remainder;
+    } else if (remainder <= 7) {
+      return rounded - remainder + 5;
+    } else {
+      return rounded - remainder + 10;
+    }
+  };
+
+  // Función para calcular precios sugeridos
+  const calculateSuggestedPrices = (costPrice) => {
+    const cost = parseFloat(costPrice) || 0;
+    if (cost <= 0) return { priceCut: "", priceInstalled: "" };
+
+    // Precio al corte: 60% más del costo
+    const cutPrice = cost * 1.6;
+    const roundedCutPrice = roundToNearestFive(cutPrice);
+
+    // Precio instalado: 100% más del costo (doble)
+    const installedPrice = cost * 2;
+    const roundedInstalledPrice = roundToNearestFive(installedPrice);
+
+    return {
+      priceCut: roundedCutPrice.toString(),
+      priceInstalled: roundedInstalledPrice.toString()
+    };
   };
 
   const handleInputChange = (e, index = null, field = null) => {
     if (index !== null && field) {
       const updatedOptions = [...formData.options];
       updatedOptions[index][field] = e.target.value;
+
+      // Si se está editando el precio al costo, calcular automáticamente los otros precios
+      if (field === 'priceCost') {
+        const suggestedPrices = calculateSuggestedPrices(e.target.value);
+        updatedOptions[index].priceCut = suggestedPrices.priceCut;
+        updatedOptions[index].priceInstalled = suggestedPrices.priceInstalled;
+      }
+
       setFormData({ ...formData, options: updatedOptions });
     } else {
       setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -103,11 +152,18 @@ export default function GlassesPage() {
     }
 
     try {
+      const dataToSave = {
+        ...formData,
+        status: "active", // Asegurar que el vidrio esté marcado como activo
+        updatedAt: new Date().toISOString()
+      };
+
       if (currentGlass) {
-        await updateDoc(doc(db, "glasses", currentGlass.id), formData);
+        await updateDoc(doc(db, "glasses", currentGlass.id), dataToSave);
         setSnackbar({ open: true, message: "Vidrio actualizado correctamente.", severity: "success" });
       } else {
-        await addDoc(collection(db, "glasses"), formData);
+        dataToSave.date = new Date().toISOString();
+        await addDoc(collection(db, "glasses"), dataToSave);
         setSnackbar({ open: true, message: "Vidrio agregado correctamente.", severity: "success" });
       }
       fetchGlasses();
@@ -120,13 +176,17 @@ export default function GlassesPage() {
 
   const handleDelete = async () => {
     try {
-      await deleteDoc(doc(db, "glasses", glassToDelete.id));
-      setSnackbar({ open: true, message: "Vidrio eliminado correctamente.", severity: "success" });
+      // En lugar de eliminar, cambiar el status a "inactive"
+      await updateDoc(doc(db, "glasses", glassToDelete.id), { 
+        status: "inactive",
+        deletedAt: new Date().toISOString()
+      });
+      setSnackbar({ open: true, message: "Vidrio desactivado correctamente.", severity: "success" });
       fetchGlasses();
       setOpenConfirmDialog(false);
     } catch (error) {
       console.log(error);
-      setSnackbar({ open: true, message: "Error al eliminar el vidrio.", severity: "error" });
+      setSnackbar({ open: true, message: "Error al desactivar el vidrio.", severity: "error" });
     }
   };
 
@@ -139,6 +199,22 @@ export default function GlassesPage() {
     setOpenConfirmDialog(false);
     setGlassToDelete(null);
   };
+
+  // Función para reactivar un vidrio inactivo
+  const handleReactivate = async (glass) => {
+    try {
+      await updateDoc(doc(db, "glasses", glass.id), { 
+        status: "active",
+        reactivatedAt: new Date().toISOString()
+      });
+      setSnackbar({ open: true, message: "Vidrio reactivado correctamente.", severity: "success" });
+      fetchGlasses();
+    } catch (error) {
+      console.log(error);
+      setSnackbar({ open: true, message: "Error al reactivar el vidrio.", severity: "error" });
+    }
+  };
+
   return (
     <div style={{ padding: "1rem" }}>
       <Typography variant="h4" align="center" gutterBottom sx={{ color: "black" }}>
@@ -165,15 +241,25 @@ export default function GlassesPage() {
         </Button>
       </Box>
 
-      {/* Buscador */}
-      <TextField
-        fullWidth
-        label="Buscar Vidrio"
-        variant="outlined"
-        margin="normal"
-        value={searchText}
-        onChange={(e) => setSearchText(e.target.value)}
-      />
+      {/* Buscador y Toggle para inactivos */}
+      <Box sx={{ display: 'flex', gap: 2, alignItems: 'center', mb: 2 }}>
+        <TextField
+          fullWidth
+          label="Buscar Vidrio"
+          variant="outlined"
+          margin="normal"
+          value={searchText}
+          onChange={(e) => setSearchText(e.target.value)}
+        />
+        <Button
+          variant={showInactive ? "contained" : "outlined"}
+          color={showInactive ? "warning" : "primary"}
+          onClick={() => setShowInactive(!showInactive)}
+          sx={{ minWidth: '180px', height: '56px' }}
+        >
+          {showInactive ? `Inactivos (${inactiveGlasses.length})` : `Activos (${glasses.length})`}
+        </Button>
+      </Box>
 
       <Paper elevation={3} sx={{ padding: "1rem", marginBottom: "1rem" }}>
         <TableContainer>
@@ -187,8 +273,15 @@ export default function GlassesPage() {
             </TableHead>
             <TableBody>
               {filteredGlasses.map((glass) => (
-                <TableRow key={glass.id}>
-                  <TableCell>{glass.name}</TableCell>
+                <TableRow key={glass.id} sx={{ opacity: showInactive ? 0.7 : 1 }}>
+                  <TableCell>
+                    {glass.name}
+                    {showInactive && (
+                      <Typography variant="caption" sx={{ display: 'block', color: 'warning.main' }}>
+                        Desactivado el: {glass.deletedAt ? new Date(glass.deletedAt).toLocaleDateString() : 'N/A'}
+                      </Typography>
+                    )}
+                  </TableCell>
                   <TableCell>
                     <Box
                       sx={{
@@ -226,21 +319,33 @@ export default function GlassesPage() {
                     </Box>
                   </TableCell>
                   <TableCell>
-                    <Button
-                      color="azulote"
-                      startIcon={<Edit />}
-                      onClick={() => handleOpenDialog(glass)}
-                      sx={{ marginRight: "0.5rem" }}
-                    >
-                      Editar
-                    </Button>
-                    <Button
-                      color="secondary"
-                      startIcon={<Delete />}
-                      onClick={() => handleOpenConfirmDialog(glass)}
-                    >
-                      Eliminar
-                    </Button>
+                    {showInactive ? (
+                      <Button
+                        color="success"
+                        startIcon={<Add />}
+                        onClick={() => handleReactivate(glass)}
+                      >
+                        Reactivar
+                      </Button>
+                    ) : (
+                      <>
+                        <Button
+                          color="azulote"
+                          startIcon={<Edit />}
+                          onClick={() => handleOpenDialog(glass)}
+                          sx={{ marginRight: "0.5rem" }}
+                        >
+                          Editar
+                        </Button>
+                        <Button
+                          color="warning"
+                          startIcon={<Delete />}
+                          onClick={() => handleOpenConfirmDialog(glass)}
+                        >
+                          Desactivar
+                        </Button>
+                      </>
+                    )}
                   </TableCell>
                 </TableRow>
               ))}
@@ -278,42 +383,78 @@ export default function GlassesPage() {
             onChange={handleInputChange}
           />
           {formData.options.map((option, index) => (
-            <Box key={index} sx={{ display: "flex", alignItems: "center", marginBottom: "1rem" }}>
-              <TextField
-                margin="dense"
-                label="Grosor (mm)"
-                type="number"
-                value={option.tickness}
-                onChange={(e) => handleInputChange(e, index, "tickness")}
-                sx={{ marginRight: "1rem", flex: 1 }}
-              />
-              <TextField
-                margin="dense"
-                label="Precio al Costo"
-                type="number"
-                value={option.priceCost}
-                onChange={(e) => handleInputChange(e, index, "priceCost")}
-                sx={{ marginRight: "1rem", flex: 1 }}
-              />
-              <TextField
-                margin="dense"
-                label="Precio al Corte"
-                type="number"
-                value={option.priceCut}
-                onChange={(e) => handleInputChange(e, index, "priceCut")}
-                sx={{ marginRight: "1rem", flex: 1 }}
-              />
-              <TextField
-                margin="dense"
-                label="Precio Instalado"
-                type="number"
-                value={option.priceInstalled}
-                onChange={(e) => handleInputChange(e, index, "priceInstalled")}
-                sx={{ flex: 1 }}
-              />
-              <Button color="error" onClick={() => handleRemoveOption(index)} sx={{ marginLeft: "1rem" }}>
-                Eliminar
-              </Button>
+            <Box key={index} sx={{ marginBottom: "2rem", padding: "1rem", border: "1px solid #ddd", borderRadius: "8px" }}>
+              <Typography variant="subtitle2" sx={{ marginBottom: "1rem", color: "primary.main" }}>
+                Variante {index + 1}
+              </Typography>
+              
+              <Box sx={{ display: "flex", alignItems: "center", marginBottom: "1rem" }}>
+                <TextField
+                  margin="dense"
+                  label="Grosor (mm)"
+                  type="number"
+                  value={option.tickness}
+                  onChange={(e) => handleInputChange(e, index, "tickness")}
+                  sx={{ marginRight: "1rem", flex: 1 }}
+                />
+                <TextField
+                  margin="dense"
+                  label="Precio al Costo"
+                  type="number"
+                  value={option.priceCost}
+                  onChange={(e) => handleInputChange(e, index, "priceCost")}
+                  sx={{ marginRight: "1rem", flex: 1 }}
+                  helperText="Los precios de corte e instalado se calculan automáticamente"
+                />
+              </Box>
+
+              <Box sx={{ display: "flex", alignItems: "center", marginBottom: "1rem" }}>
+                <TextField
+                  margin="dense"
+                  label="Precio al Corte (Auto: +60%)"
+                  type="number"
+                  value={option.priceCut}
+                  onChange={(e) => handleInputChange(e, index, "priceCut")}
+                  sx={{ marginRight: "1rem", flex: 1 }}
+                  InputProps={{
+                    style: { backgroundColor: '#f0f8ff' }
+                  }}
+                />
+                <TextField
+                  margin="dense"
+                  label="Precio Instalado (Auto: +100%)"
+                  type="number"
+                  value={option.priceInstalled}
+                  onChange={(e) => handleInputChange(e, index, "priceInstalled")}
+                  sx={{ marginRight: "1rem", flex: 1 }}
+                  InputProps={{
+                    style: { backgroundColor: '#f0f8ff' }
+                  }}
+                />
+                <Button 
+                  variant="outlined" 
+                  size="small"
+                  onClick={() => {
+                    const suggestedPrices = calculateSuggestedPrices(option.priceCost);
+                    const updatedOptions = [...formData.options];
+                    updatedOptions[index].priceCut = suggestedPrices.priceCut;
+                    updatedOptions[index].priceInstalled = suggestedPrices.priceInstalled;
+                    setFormData({ ...formData, options: updatedOptions });
+                  }}
+                  sx={{ marginRight: "1rem", minWidth: "120px" }}
+                >
+                  Recalcular
+                </Button>
+                <Button 
+                  color="error" 
+                  variant="outlined"
+                  size="small"
+                  onClick={() => handleRemoveOption(index)}
+                  sx={{ minWidth: "100px" }}
+                >
+                  Eliminar
+                </Button>
+              </Box>
             </Box>
           ))}
           <Button onClick={handleAddOption} color="azulote">
@@ -330,14 +471,20 @@ export default function GlassesPage() {
 
       {/* Dialog de confirmación */}
       <Dialog open={openConfirmDialog} onClose={handleCloseConfirmDialog}>
-        <DialogTitle>Confirmar Eliminación</DialogTitle>
+        <DialogTitle>Confirmar Desactivación</DialogTitle>
         <DialogContent>
-          <Typography>¿Estás seguro de que deseas eliminar este vidrio?</Typography>
+          <Typography>
+            ¿Estás seguro de que deseas desactivar este vidrio? 
+          </Typography>
+          <Typography variant="body2" sx={{ mt: 1, color: 'text.secondary' }}>
+            El vidrio no se eliminará permanentemente, solo se ocultará de la lista. 
+            Podrás reactivarlo más tarde si es necesario.
+          </Typography>
         </DialogContent>
         <DialogActions>
           <Button onClick={handleCloseConfirmDialog}>Cancelar</Button>
-          <Button onClick={handleDelete} color="secondary">
-            Eliminar
+          <Button onClick={handleDelete} color="warning" variant="contained">
+            Desactivar
           </Button>
         </DialogActions>
       </Dialog>
