@@ -1,6 +1,6 @@
 "use client";
 import React, { useState, useEffect } from "react";
-import { collection, getDocs, addDoc, updateDoc, deleteDoc, doc } from "firebase/firestore";
+import { collection, getDocs, addDoc, updateDoc, doc } from "firebase/firestore";
 import { db } from "../../../../firebase";
 import {
   Button,
@@ -162,7 +162,7 @@ export default function GlassesPage() {
         await updateDoc(doc(db, "glasses", currentGlass.id), dataToSave);
         setSnackbar({ open: true, message: "Vidrio actualizado correctamente.", severity: "success" });
       } else {
-        dataToSave.date = new Date().toISOString();
+        dataToSave.createdAt = new Date().toISOString();
         await addDoc(collection(db, "glasses"), dataToSave);
         setSnackbar({ open: true, message: "Vidrio agregado correctamente.", severity: "success" });
       }

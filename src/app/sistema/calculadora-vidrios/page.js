@@ -6,9 +6,6 @@ import {
   Box,
   Button,
   Typography,
-  Card,
-  CardContent,
-  Grid,
   TextField,
   Dialog,
   DialogTitle,
@@ -23,14 +20,14 @@ import {
   Chip,
   IconButton,
   Snackbar,
-  Alert,  Divider,
+  Alert,
   Paper,
   Autocomplete,
   FormControl,
-  FormLabel,
   RadioGroup,
   FormControlLabel,
-  Radio
+  Radio,
+  Grid
 } from "@mui/material";
 import {
   Add,
@@ -107,23 +104,11 @@ export default function GlassCalculatorPage() {
       console.error("Error fetching history: ", error);
     }
   };
-
-  const handleGlassSelection = (glass, option) => {
-    setSelectedGlass(glass);
-    setSelectedGlassOption(option);
-  };
   const calculateGlassArea = () => {
     const height = parseFloat(dimensions.height) || 0;
     const width = parseFloat(dimensions.width) || 0;
     // Convertir de cm a m² (dividir por 100 para cada dimensión)
     return (height / 100) * (width / 100);
-  };
-
-  const calculateGlassPrice = () => {
-    if (!selectedGlassOption) return 0;
-    const area = calculateGlassArea();
-    const pricePerUnit = parseFloat(selectedGlassOption[priceType]) || 0;
-    return area * pricePerUnit;
   };
 
   const addToCalculator = (glass = selectedGlass, option = selectedGlassOption) => {
