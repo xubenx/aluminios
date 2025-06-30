@@ -35,7 +35,8 @@ import {
   Save,
   History,
   Calculate,
-  Clear
+  Clear,
+  Edit
 } from "@mui/icons-material";
 
 export default function GlassCalculatorPage() {
@@ -43,15 +44,17 @@ export default function GlassCalculatorPage() {
   const [glasses, setGlasses] = useState([]);
   const [selectedGlass, setSelectedGlass] = useState(null);
   const [selectedGlassOption, setSelectedGlassOption] = useState(null);
-  const [dimensions, setDimensions] = useState({ height: "100", width: "100" });
+  const [dimensions, setDimensions] = useState({ height: "", width: "" });
   const [priceType, setPriceType] = useState("priceInstalled"); // priceInstalled o priceCut
   const [calculatorItems, setCalculatorItems] = useState([]);  const [snackbar, setSnackbar] = useState({ open: false, message: "", severity: "success" });
   
   // Estados para diálogos
   const [showSaveProjectDialog, setShowSaveProjectDialog] = useState(false);
   const [showHistoryDialog, setShowHistoryDialog] = useState(false);
+  const [showChangeGlassDialog, setShowChangeGlassDialog] = useState(false);
   const [projectName, setProjectName] = useState("");
   const [history, setHistory] = useState([]);
+  const [itemToEdit, setItemToEdit] = useState(null);
   
   // Estados para clientes
   const [customers, setCustomers] = useState([]);
@@ -160,12 +163,50 @@ export default function GlassCalculatorPage() {
     setCalculatorItems(prev => prev.filter(item => item.id !== itemId));
   };
 
+  // Función para cambiar el vidrio de un elemento existente
+  const openChangeGlassDialog = (item) => {
+    setItemToEdit(item);
+    setShowChangeGlassDialog(true);
+  };
+
+  // Función para actualizar un elemento con nuevo vidrio/opción
+  const updateCalculatorItem = (newGlass, newOption) => {
+    if (!itemToEdit || !newGlass || !newOption) return;
+
+    const area = (parseFloat(itemToEdit.dimensions.height) / 100) * (parseFloat(itemToEdit.dimensions.width) / 100);
+    const price = area * (parseFloat(newOption[priceType]) || 0);
+    const priceTypeText = priceType === "priceInstalled" ? "Instalado" : "Corte";
+
+    const updatedItem = {
+      ...itemToEdit,
+      glassName: newGlass.name,
+      thickness: newOption.tickness,
+      priceType: priceTypeText,
+      pricePerUnit: parseFloat(newOption[priceType]) || 0,
+      totalPrice: price,
+      timestamp: new Date().toISOString()
+    };
+
+    setCalculatorItems(prev => prev.map(item => 
+      item.id === itemToEdit.id ? updatedItem : item
+    ));
+
+    setSnackbar({
+      open: true,
+      message: `Elemento actualizado a ${newGlass.name} ${newOption.tickness}mm.`,
+      severity: "success"
+    });
+
+    setShowChangeGlassDialog(false);
+    setItemToEdit(null);
+  };
+
   const clearCalculator = () => {
     setCalculatorItems([]);
     resetForm();
   };
   const resetForm = () => {
-    setDimensions({ height: "100", width: "100" });
+    setDimensions({ height: "", width: "" });
     setSelectedGlass(null);
     setSelectedGlassOption(null);
   };
@@ -334,14 +375,18 @@ export default function GlassCalculatorPage() {
   };
 
   return (
-    <Box sx={{ padding: 3, maxWidth: "1400px", margin: "0 auto" }}>      <Typography variant="h4" align="center" sx={{ mb: 3, color: "black" }}>
-        <Calculate sx={{ mr: 1, verticalAlign: "middle" }} />
-        Calculadora de Vidrios
-      </Typography>
+    <Box sx={{ height: "100vh", display: "flex", flexDirection: "column", overflow: "hidden" }}>
+      {/* Header fijo */}
+      <Box sx={{ p: 2, borderBottom: 1, borderColor: "divider", bgcolor: "background.paper" }}>
+        <Typography variant="h5" align="center" sx={{ color: "black", display: "flex", alignItems: "center", justifyContent: "center" }}>
+          <Calculate sx={{ mr: 1 }} />
+          Calculadora de Vidrios
+        </Typography>
+      </Box>
 
-      {/* Panel de configuración compacto */}
-      <Paper sx={{ p: 2, mb: 3 }}>
-        <Box sx={{ display: "flex", gap: 3, alignItems: "center", flexWrap: "wrap" }}>
+      {/* Panel de configuración compacto fijo */}
+      <Box sx={{ p: 2, borderBottom: 1, borderColor: "divider", bgcolor: "grey.50" }}>
+        <Box sx={{ display: "flex", gap: 3, alignItems: "center", justifyContent: "center", flexWrap: "wrap" }}>
           {/* Dimensiones */}
           <Box sx={{ display: "flex", gap: 1, alignItems: "center" }}>
             <Typography variant="body2" sx={{ minWidth: "40px" }}>Alto:</Typography>
@@ -392,120 +437,151 @@ export default function GlassCalculatorPage() {
             </RadioGroup>
           </FormControl>
 
-          {/* Área y botón limpiar */}
-          <Box sx={{ ml: "auto", display: "flex", gap: 2, alignItems: "center" }}>
-            <Typography variant="body2" sx={{ color: "text.secondary" }}>
-              Área: {calculateGlassArea().toFixed(2)} m²
-            </Typography>
-            <Button
-              size="small"
-              onClick={clearCalculator}
-              startIcon={<Clear />}
-              variant="outlined"
-            >
-              Limpiar Todo
-            </Button>
-          </Box>
-        </Box>
-      </Paper>
+          {/* Área calculada */}
+          <Typography variant="body2" sx={{ color: "primary.main", fontWeight: "bold" }}>
+            Área: {calculateGlassArea().toFixed(2)} m²
+          </Typography>
 
-      {/* Tabla de vidrios optimizada */}
-      <Paper sx={{ mb: 3 }}>
-        <TableContainer>
-          <Table>
-            <TableHead>
-              <TableRow sx={{ bgcolor: "grey.50" }}>
-                <TableCell><strong>Vidrio</strong></TableCell>
-                <TableCell><strong>Grosor</strong></TableCell>
-                <TableCell><strong>Precio/m²</strong></TableCell>
-                <TableCell><strong>Total</strong></TableCell>
-                <TableCell align="center"><strong>Agregar</strong></TableCell>
-              </TableRow>
-            </TableHead>
-            <TableBody>
-              {glasses.map((glass) => 
-                glass.options.map((option, optionIndex) => {
+          <Button
+            size="small"
+            onClick={clearCalculator}
+            startIcon={<Clear />}
+            variant="outlined"
+            color="error"
+          >
+            Limpiar Todo
+          </Button>
+        </Box>
+      </Box>
+
+      {/* Contenido principal con scroll */}
+      <Box sx={{ flex: 1, display: "flex", overflow: "hidden" }}>
+        {/* Panel izquierdo - Selección de vidrios */}
+        <Box sx={{ 
+          width: "60%", 
+          borderRight: 1, 
+          borderColor: "divider", 
+          display: "flex", 
+          flexDirection: "column",
+          overflow: "hidden"
+        }}>
+          {/* Lista de vidrios */}
+          <Box sx={{ flex: 1, overflow: "auto", p: 2 }}>
+            <Typography variant="h6" sx={{ mb: 2, color: "primary.main", sticky: "top" }}>
+              Seleccionar Vidrio
+            </Typography>
+            
+            {glasses.map((glass) => (
+              <Paper 
+                key={glass.id} 
+                sx={{ 
+                  mb: 2, 
+                  p: 2,
+                  cursor: "pointer",
+                  border: selectedGlass?.id === glass.id ? 2 : 1,
+                  borderColor: selectedGlass?.id === glass.id ? "primary.main" : "divider",
+                  bgcolor: selectedGlass?.id === glass.id ? "primary.light" : "background.paper",
+                  transition: "all 0.2s",
+                  "&:hover": {
+                    bgcolor: selectedGlass?.id === glass.id ? "primary.light" : "grey.50",
+                    transform: "translateY(-1px)",
+                    boxShadow: 2
+                  }
+                }}
+                onClick={() => {
+                  setSelectedGlass(selectedGlass?.id === glass.id ? null : glass);
+                  setSelectedGlassOption(null);
+                }}
+              >
+                <Typography variant="h6" sx={{ color: selectedGlass?.id === glass.id ? "primary.contrastText" : "text.primary" }}>
+                  {glass.name}
+                </Typography>
+                <Typography variant="body2" sx={{ 
+                  color: selectedGlass?.id === glass.id ? "primary.contrastText" : "text.secondary",
+                  opacity: 0.8 
+                }}>
+                  {glass.options.length} opción{glass.options.length !== 1 ? 'es' : ''} disponible{glass.options.length !== 1 ? 's' : ''}
+                </Typography>
+              </Paper>
+            ))}
+          </Box>
+
+          {/* Panel de opciones (solo si hay vidrio seleccionado) */}
+          {selectedGlass && (
+            <Box sx={{ 
+              borderTop: 1, 
+              borderColor: "divider", 
+              p: 2, 
+              bgcolor: "background.paper",
+              maxHeight: "80%",
+              overflow: "auto"
+            }}>
+              <Typography variant="subtitle1" sx={{ mb: 2, color: "primary.main" }}>
+                Opciones de {selectedGlass.name}
+              </Typography>
+              
+              <Box sx={{ display: "flex", flexDirection: "column", gap: 1 }}>
+                {selectedGlass.options.map((option, index) => {
                   const price = parseFloat(option[priceType]) || 0;
                   const totalPrice = calculateGlassArea() * price;
                   const isValidDimensions = parseFloat(dimensions.height) > 0 && parseFloat(dimensions.width) > 0;
                   
                   return (
-                    <TableRow 
-                      key={`${glass.id}-${optionIndex}`}
-                      hover
-                      sx={{ 
-                        cursor: isValidDimensions ? "pointer" : "default",
-                        bgcolor: !isValidDimensions ? "grey.100" : "inherit",
+                    <Paper
+                      key={index}
+                      sx={{
+                        p: 2,
+                        display: "flex",
+                        justifyContent: "space-between",
+                        alignItems: "center",
+                        border: 1,
+                        borderColor: "divider",
+                        bgcolor: !isValidDimensions ? "grey.100" : "background.paper",
                         opacity: !isValidDimensions ? 0.6 : 1
                       }}
                     >
-                      <TableCell>
-                        <Typography variant="body2" sx={{ fontWeight: "medium" }}>
-                          {glass.name}
+                      <Box>
+                        <Typography variant="body1" sx={{ fontWeight: "medium" }}>
+                          Grosor: {option.tickness}mm
                         </Typography>
-                      </TableCell>
-                      <TableCell>
-                        <Chip 
-                          label={`${option.tickness}mm`} 
-                          size="small" 
-                          variant="outlined"
-                        />
-                      </TableCell>
-                      <TableCell>
-                        <Typography variant="body2">
-                          ${price.toFixed(2)}
+                        <Typography variant="body2" color="text.secondary">
+                          ${price.toFixed(2)}/m² = ${isValidDimensions ? totalPrice.toFixed(2) : "0.00"}
                         </Typography>
-                      </TableCell>
-                      <TableCell>
-                        <Typography 
-                          variant="body2" 
-                          sx={{ 
-                            fontWeight: "bold",
-                            color: isValidDimensions ? "primary.main" : "text.disabled"
-                          }}
-                        >
-                          ${isValidDimensions ? totalPrice.toFixed(2) : "0.00"}
-                        </Typography>
-                      </TableCell>
-                      <TableCell align="center">
-                        <IconButton
-                          color="primary"
-                          size="small"
-                          disabled={!isValidDimensions}
-                          onClick={() => {
-                            setSelectedGlass(glass);
-                            setSelectedGlassOption(option);
-                            addToCalculator();
-                          }}
-                          sx={{
-                            bgcolor: isValidDimensions ? "primary.light" : "grey.300",
-                            color: isValidDimensions ? "primary.main" : "grey.500",
-                            "&:hover": {
-                              bgcolor: isValidDimensions ? "primary.main" : "grey.300",
-                              color: isValidDimensions ? "white" : "grey.500"
-                            }
-                          }}
-                        >
-                          <Add />
-                        </IconButton>
-                      </TableCell>
-                    </TableRow>
+                      </Box>
+                      
+                      <Button
+                        variant="contained"
+                        size="small"
+                        disabled={!isValidDimensions}
+                        onClick={() => {
+                          setSelectedGlassOption(option);
+                          addToCalculator(selectedGlass, option);
+                        }}
+                        startIcon={<Add />}
+                        sx={{ minWidth: "100px" }}
+                      >
+                        Agregar
+                      </Button>
+                    </Paper>
                   );
-                })
-              )}
-            </TableBody>
-          </Table>
-        </TableContainer>
-      </Paper>
+                })}
+              </Box>
+            </Box>
+          )}
+        </Box>
 
-      <Grid container spacing={3}>
-
-        {/* Panel de resultados optimizado */}
-        <Grid item xs={12}>
-          <Paper sx={{ p: 3 }}>
-            <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mb: 2 }}>
+        {/* Panel derecho - Sumatoria */}
+        <Box sx={{ 
+          width: "40%", 
+          display: "flex", 
+          flexDirection: "column",
+          overflow: "hidden"
+        }}>
+          {/* Header del panel de sumatoria */}
+          <Box sx={{ p: 2, borderBottom: 1, borderColor: "divider", bgcolor: "background.paper" }}>
+            <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
               <Typography variant="h6" sx={{ color: "primary.main" }}>
-                Cálculos Agregados ({calculatorItems.length})
+                Sumatoria ({calculatorItems.length})
               </Typography>
               <Box sx={{ display: "flex", gap: 1 }}>
                 <Button
@@ -532,107 +608,123 @@ export default function GlassCalculatorPage() {
                       startIcon={<Save />}
                       variant="contained"
                     >
-                      Crear Proyecto
+                      Proyecto
                     </Button>
                   </>
                 )}
               </Box>
             </Box>
+          </Box>
 
+          {/* Lista de elementos agregados */}
+          <Box sx={{ flex: 1, overflow: "auto", p: 2 }}>
             {calculatorItems.length === 0 ? (
               <Box sx={{ 
                 textAlign: "center", 
-                py: 6, 
-                bgcolor: "grey.50", 
-                borderRadius: 2,
+                py: 4, 
+                height: "100%",
+                display: "flex",
+                flexDirection: "column",
+                justifyContent: "center",
+                alignItems: "center",
                 border: "2px dashed",
-                borderColor: "grey.300"
+                borderColor: "grey.300",
+                borderRadius: 2,
+                bgcolor: "grey.50"
               }}>
-                <Typography color="textSecondary" variant="h6">
-                  No hay elementos agregados
+                <Typography color="textSecondary" variant="h6" sx={{ mb: 1 }}>
+                  Sin elementos
                 </Typography>
-                <Typography color="textSecondary" variant="body2" sx={{ mt: 1 }}>
-                  Configura las dimensiones arriba y haz clic en + para agregar vidrios
+                <Typography color="textSecondary" variant="body2">
+                  Selecciona un vidrio y agrégalo para empezar
                 </Typography>
               </Box>
             ) : (
-              <>
-                <TableContainer sx={{ maxHeight: 300, mb: 2 }}>
-                  <Table size="small" stickyHeader>
-                    <TableHead>
-                      <TableRow>
-                        <TableCell><strong>Vidrio</strong></TableCell>
-                        <TableCell><strong>Dimensiones</strong></TableCell>
-                        <TableCell><strong>Área</strong></TableCell>
-                        <TableCell><strong>Precio</strong></TableCell>
-                        <TableCell align="center"><strong>Eliminar</strong></TableCell>
-                      </TableRow>
-                    </TableHead>
-                    <TableBody>
-                      {calculatorItems.map((item) => (
-                        <TableRow key={item.id} hover>
-                          <TableCell>
-                            <Box>
-                              <Typography variant="body2" sx={{ fontWeight: "medium" }}>
-                                {item.glassName}
-                              </Typography>
-                              <Box sx={{ display: "flex", gap: 1, mt: 0.5 }}>
-                                <Chip size="small" label={`${item.thickness}mm`} variant="outlined" />
-                                <Chip size="small" label={item.priceType} color="primary" />
-                              </Box>
-                            </Box>
-                          </TableCell>
-                          <TableCell>
-                            <Typography variant="body2">
-                              {item.dimensions.height} × {item.dimensions.width} cm
-                            </Typography>
-                          </TableCell>
-                          <TableCell>
-                            <Typography variant="body2">
-                              {item.area.toFixed(2)} m²
-                            </Typography>
-                          </TableCell>
-                          <TableCell>
-                            <Typography variant="body2" sx={{ fontWeight: "bold", color: "primary.main" }}>
-                              ${item.totalPrice.toFixed(2)}
-                            </Typography>
-                          </TableCell>
-                          <TableCell align="center">
-                            <IconButton
-                              size="small"
-                              color="error"
-                              onClick={() => removeFromCalculator(item.id)}
-                            >
-                              <Delete />
-                            </IconButton>
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                </TableContainer>
-
-                {/* Totales destacados */}
-                <Paper sx={{ p: 2, bgcolor: "primary.light", color: "primary.contrastText" }}>
-                  <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                    <Box>
-                      <Typography variant="h6">
-                        Área Total: {getTotalArea().toFixed(2)} m²
-                      </Typography>
-                      <Typography variant="body2" sx={{ opacity: 0.8 }}>
-                        {calculatorItems.length} elemento{calculatorItems.length !== 1 ? 's' : ''}
-                      </Typography>
+              <Box sx={{ display: "flex", flexDirection: "column", gap: 1 }}>
+                {calculatorItems.map((item) => (
+                  <Paper
+                    key={item.id}
+                    sx={{
+                      p: 2,
+                      border: 1,
+                      borderColor: "divider",
+                      "&:hover": {
+                        boxShadow: 2
+                      }
+                    }}
+                  >
+                    <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+                      <Box sx={{ flex: 1 }}>
+                        <Typography variant="body1" sx={{ fontWeight: "medium", mb: 0.5 }}>
+                          {item.glassName}
+                        </Typography>
+                        <Box sx={{ display: "flex", gap: 1, mb: 1 }}>
+                          <Chip size="small" label={`${item.thickness}mm`} variant="outlined" />
+                          <Chip size="small" label={item.priceType} color="primary" />
+                        </Box>
+                        <Typography variant="body2" color="text.secondary">
+                          {item.dimensions.height} × {item.dimensions.width} cm
+                        </Typography>
+                        <Typography variant="body2" color="text.secondary">
+                          {item.area.toFixed(2)} m²
+                        </Typography>
+                      </Box>
+                      <Box sx={{ textAlign: "right", ml: 2 }}>
+                        <Typography variant="h6" sx={{ color: "primary.main", fontWeight: "bold" }}>
+                          ${item.totalPrice.toFixed(2)}
+                        </Typography>
+                        <Box sx={{ display: "flex", gap: 0.5, mt: 1 }}>
+                          <IconButton
+                            size="small"
+                            color="primary"
+                            onClick={() => openChangeGlassDialog(item)}
+                            title="Cambiar vidrio"
+                          >
+                            <Edit />
+                          </IconButton>
+                          <IconButton
+                            size="small"
+                            color="error"
+                            onClick={() => removeFromCalculator(item.id)}
+                            title="Eliminar"
+                          >
+                            <Delete />
+                          </IconButton>
+                        </Box>
+                      </Box>
                     </Box>
-                    <Typography variant="h4" sx={{ fontWeight: "bold" }}>
-                      ${getTotalPrice().toFixed(2)}
-                    </Typography>
-                  </Box>
-                </Paper>
-              </>
+                  </Paper>
+                ))}
+              </Box>
             )}
-          </Paper>
-        </Grid>
-      </Grid>
+          </Box>
+
+          {/* Panel de totales fijo en la parte inferior */}
+          {calculatorItems.length > 0 && (
+            <Box sx={{ 
+              p: 2, 
+              borderTop: 1, 
+              borderColor: "divider", 
+              bgcolor: "primary.main",
+              color: "primary.contrastText"
+            }}>
+              <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                <Box>
+                  <Typography variant="h6">
+                    Área Total: {getTotalArea().toFixed(2)} m²
+                  </Typography>
+                  <Typography variant="body2" sx={{ opacity: 0.8 }}>
+                    {calculatorItems.length} elemento{calculatorItems.length !== 1 ? 's' : ''}
+                  </Typography>
+                </Box>
+                <Typography variant="h4" sx={{ fontWeight: "bold" }}>
+                  ${getTotalPrice().toFixed(2)}
+                </Typography>
+              </Box>
+            </Box>
+          )}
+        </Box>
+      </Box>
 
       {/* Diálogo para guardar proyecto */}
       <Dialog open={showSaveProjectDialog} onClose={() => setShowSaveProjectDialog(false)} maxWidth="sm" fullWidth>
@@ -746,6 +838,200 @@ export default function GlassCalculatorPage() {
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setShowHistoryDialog(false)}>Cerrar</Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Diálogo para cambiar vidrio de elemento */}
+      <Dialog open={showChangeGlassDialog} onClose={() => setShowChangeGlassDialog(false)} maxWidth="sm" fullWidth>
+        <DialogTitle>Cambiar Vidrio de Elemento</DialogTitle>
+        <DialogContent>
+          {itemToEdit && (
+            <Box>
+              <Typography variant="subtitle1" sx={{ mb: 2, color: "primary.main" }}>
+                {itemToEdit.glassName} - {itemToEdit.thickness}mm
+              </Typography>
+              
+              <Typography variant="body2" sx={{ mb: 1 }}>
+                Seleccione un nuevo vidrio y opción:
+              </Typography>
+
+              {/* Lista de vidrios disponibles */}
+              <Box sx={{ maxHeight: "300px", overflow: "auto", mb: 2 }}>
+                {glasses.map((glass) => (
+                  <Paper 
+                    key={glass.id} 
+                    sx={{ 
+                      mb: 1, 
+                      p: 2,
+                      cursor: "pointer",
+                      border: selectedGlass?.id === glass.id ? 2 : 1,
+                      borderColor: selectedGlass?.id === glass.id ? "primary.main" : "divider",
+                      bgcolor: selectedGlass?.id === glass.id ? "primary.light" : "background.paper",
+                      transition: "all 0.2s",
+                      "&:hover": {
+                        bgcolor: selectedGlass?.id === glass.id ? "primary.light" : "grey.50",
+                        transform: "translateY(-1px)",
+                        boxShadow: 2
+                      }
+                    }}
+                    onClick={() => {
+                      setSelectedGlass(glass);
+                      setSelectedGlassOption(glass.options[0]); // Seleccionar la primera opción por defecto
+                    }}
+                  >
+                    <Typography variant="h6" sx={{ color: selectedGlass?.id === glass.id ? "primary.contrastText" : "text.primary" }}>
+                      {glass.name}
+                    </Typography>
+                    <Typography variant="body2" sx={{ 
+                      color: selectedGlass?.id === glass.id ? "primary.contrastText" : "text.secondary",
+                      opacity: 0.8 
+                    }}>
+                      {glass.options.length} opción{glass.options.length !== 1 ? 'es' : ''} disponible{glass.options.length !== 1 ? 's' : ''}
+                    </Typography>
+                  </Paper>
+                ))}
+              </Box>
+
+              {/* Opciones del vidrio seleccionado */}
+              {selectedGlass && (
+                <Box sx={{ 
+                  borderTop: 1, 
+                  borderColor: "divider", 
+                  p: 2, 
+                  bgcolor: "background.paper",
+                  maxHeight: "300px",
+                  overflow: "auto"
+                }}>
+                  <Typography variant="subtitle2" sx={{ mb: 2, color: "primary.main" }}>
+                    Opciones de {selectedGlass.name}
+                  </Typography>
+                  
+                  <Box sx={{ display: "flex", flexDirection: "column", gap: 1 }}>
+                    {selectedGlass.options.map((option, index) => {
+                      const price = parseFloat(option[priceType]) || 0;
+                      const totalPrice = calculateGlassArea() * price;
+                      const isValidDimensions = parseFloat(dimensions.height) > 0 && parseFloat(dimensions.width) > 0;
+                      
+                      return (
+                        <Paper
+                          key={index}
+                          sx={{
+                            p: 2,
+                            display: "flex",
+                            justifyContent: "space-between",
+                            alignItems: "center",
+                            border: 1,
+                            borderColor: "divider",
+                            bgcolor: !isValidDimensions ? "grey.100" : "background.paper",
+                            opacity: !isValidDimensions ? 0.6 : 1
+                          }}
+                        >
+                          <Box>
+                            <Typography variant="body1" sx={{ fontWeight: "medium" }}>
+                              Grosor: {option.tickness}mm
+                            </Typography>
+                            <Typography variant="body2" color="text.secondary">
+                              ${price.toFixed(2)}/m² = ${isValidDimensions ? totalPrice.toFixed(2) : "0.00"}
+                            </Typography>
+                          </Box>
+                          
+                          <Button
+                            variant="contained"
+                            size="small"
+                            disabled={!isValidDimensions}
+                            onClick={() => {
+                              setSelectedGlassOption(option);
+                              updateCalculatorItem(selectedGlass, option);
+                            }}
+                            startIcon={<Add />}
+                            sx={{ minWidth: "100px" }}
+                          >
+                            Cambiar
+                          </Button>
+                        </Paper>
+                      );
+                    })}
+                  </Box>
+                </Box>
+              )}
+            </Box>
+          )}
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setShowChangeGlassDialog(false)}>Cancelar</Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Diálogo para cambiar vidrio */}
+      <Dialog open={showChangeGlassDialog} onClose={() => setShowChangeGlassDialog(false)} maxWidth="md" fullWidth>
+        <DialogTitle>
+          Cambiar Vidrio - {itemToEdit?.dimensions.height} × {itemToEdit?.dimensions.width} cm
+        </DialogTitle>
+        <DialogContent>
+          <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+            Elemento actual: {itemToEdit?.glassName} {itemToEdit?.thickness}mm - ${itemToEdit?.totalPrice.toFixed(2)}
+          </Typography>
+          
+          <Box sx={{ display: "flex", flexDirection: "column", gap: 2, maxHeight: "60vh", overflow: "auto" }}>
+            {glasses.map((glass) => (
+              <Paper key={glass.id} sx={{ p: 2, border: 1, borderColor: "divider" }}>
+                <Typography variant="h6" sx={{ mb: 2, color: "primary.main" }}>
+                  {glass.name}
+                </Typography>
+                
+                <Box sx={{ display: "flex", flexDirection: "column", gap: 1 }}>
+                  {glass.options.map((option, index) => {
+                    if (!itemToEdit) return null;
+                    
+                    const area = (parseFloat(itemToEdit.dimensions.height) / 100) * (parseFloat(itemToEdit.dimensions.width) / 100);
+                    const price = parseFloat(option[priceType]) || 0;
+                    const totalPrice = area * price;
+                    const currentSelection = itemToEdit.glassName === glass.name && itemToEdit.thickness === option.tickness;
+                    
+                    return (
+                      <Paper
+                        key={index}
+                        sx={{
+                          p: 2,
+                          display: "flex",
+                          justifyContent: "space-between",
+                          alignItems: "center",
+                          border: 1,
+                          borderColor: currentSelection ? "primary.main" : "divider",
+                          bgcolor: currentSelection ? "primary.light" : "background.paper"
+                        }}
+                      >
+                        <Box>
+                          <Typography variant="body1" sx={{ fontWeight: "medium" }}>
+                            Grosor: {option.tickness}mm
+                          </Typography>
+                          <Typography variant="body2" color="text.secondary">
+                            ${price.toFixed(2)}/m² = ${totalPrice.toFixed(2)}
+                          </Typography>
+                          {currentSelection && (
+                            <Chip size="small" label="Actual" color="primary" sx={{ mt: 0.5 }} />
+                          )}
+                        </Box>
+                        
+                        <Button
+                          variant={currentSelection ? "outlined" : "contained"}
+                          size="small"
+                          disabled={currentSelection}
+                          onClick={() => updateCalculatorItem(glass, option)}
+                          sx={{ minWidth: "100px" }}
+                        >
+                          {currentSelection ? "Actual" : "Cambiar"}
+                        </Button>
+                      </Paper>
+                    );
+                  })}
+                </Box>
+              </Paper>
+            ))}
+          </Box>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setShowChangeGlassDialog(false)}>Cerrar</Button>
         </DialogActions>
       </Dialog>
 

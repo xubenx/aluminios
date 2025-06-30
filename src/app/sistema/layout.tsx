@@ -10,6 +10,7 @@ import ConstructionIcon from "@mui/icons-material/Carpenter";
 import BuildIcon from "@mui/icons-material/Key";
 import GlassIcon from "@mui/icons-material/WindowOutlined";
 import PeopleIcon from "@mui/icons-material/People";
+import PaletteIcon from "@mui/icons-material/Palette";
 import RequestQuote from "@mui/icons-material/RequestQuote";
 import AssignmentIcon from "@mui/icons-material/Assignment";
 import AccountBalanceWalletIcon from "@mui/icons-material/AccountBalanceWallet";
@@ -34,6 +35,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
     { text: "Diario", href: "/sistema/diario", icon: <AccountBalanceWalletIcon /> },
     { text: "Modelos", href: "/sistema/modelos", icon: <WindowIcon /> },
     { text: "Materiales", href: "/sistema/materiales", icon: <ConstructionIcon /> },
+    { text: "Colores", href: "/sistema/colores", icon: <PaletteIcon /> },
     { text: "Herrajes", href: "/sistema/herrajes", icon: <BuildIcon /> },
     { text: "Vidrios", href: "/sistema/vidrios", icon: <GlassIcon /> },
     { text: "Colaboradores", href: "/sistema/colaboradores", icon: <PeopleIcon /> },

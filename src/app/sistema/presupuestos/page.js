@@ -2,6 +2,7 @@
 import React, { useState, useEffect } from "react";
 import { collection, getDocs, getDoc, doc, addDoc } from "firebase/firestore";
 import { db } from "../../../../firebase";
+
 import {
   Box,
   Button,
@@ -11,7 +12,8 @@ import {
   TableHead,
   TableRow,
   TableCell,
-  TableBody,  Typography,
+  TableBody,
+  Typography,
   Snackbar,
   CardContent,
   Alert,
@@ -24,7 +26,16 @@ import {
   DialogActions,
   IconButton,
   Badge,
-  Fab
+  Fab,
+  FormControl,
+  InputLabel,
+  Select,
+  MenuItem,
+  RadioGroup,
+  FormControlLabel,
+  Radio,
+  Chip,
+  Paper
 } from "@mui/material";
 import Image from "next/image";
 import { evaluate } from "mathjs";
@@ -44,8 +55,10 @@ export default function CotizadorApp() {
   // Estados para las opciones (de colecciones) y dimensiones para el cotizador
   const [materialsOptions, setMaterialsOptions] = useState([]);
   const [chapesOptions, setChapesOptions] = useState([]);  const [glassesOptions, setGlassesOptions] = useState([]);
-  const [dimensions, setDimensions] = useState({ height: "1", width: "1" });
+  const [colorsOptions, setColorsOptions] = useState([]);
+  const [dimensions, setDimensions] = useState({ height: "100", width: "100" }); // Ahora en centímetros para la UI
   const [selectedGlass, setSelectedGlass] = useState(null);
+  const [selectedColor, setSelectedColor] = useState(null);
 
   // Estado para caché de imágenes
   const [imageCache, setImageCache] = useState(new Set());
@@ -60,6 +73,17 @@ export default function CotizadorApp() {
   const [newCustomerName, setNewCustomerName] = useState("");
   const [newCustomerPhone, setNewCustomerPhone] = useState("");
   const [createNewCustomer, setCreateNewCustomer] = useState(false);
+
+  // Estados para agregar elementos individuales
+  const [showAddItemDialog, setShowAddItemDialog] = useState(false);
+  const [addItemType, setAddItemType] = useState("material"); // material, herraje, vidrio
+  const [selectedMaterial, setSelectedMaterial] = useState(null);
+  const [selectedHerraje, setSelectedHerraje] = useState(null);
+  const [selectedVidrio, setSelectedVidrio] = useState(null);
+  const [itemQuantity, setItemQuantity] = useState(1);
+  const [itemQuantityType, setItemQuantityType] = useState("metros"); // metros, tramos, piezas, m2
+  const [itemDimensions, setItemDimensions] = useState({ height: "", width: "" });
+
   // Estado para mensajes (snackbar)
   const [snackbar, setSnackbar] = useState({ open: false, message: "", severity: "success" });
   // Componente de imagen con caché mejorado
@@ -172,14 +196,18 @@ export default function CotizadorApp() {
       // Para vidrio: se recorren las "options" internas de cada documento
       const glassesList = glassesSnap.docs.flatMap((doc) => {
         const data = doc.data();
-        return data.options.map((option) => ({
-          id: doc.id,
+        return data.options.map((option, index) => ({
+          id: `${doc.id}_${option.tickness}`, // Clave única combinando ID del documento y espesor
+          originalId: doc.id, // ID original del documento para referencia
           name: `${data.name} ${option.tickness}mm`,
           tickness: option.tickness,
           priceInstalled: option.priceInstalled,
         }));
       });
       setGlassesOptions(glassesList);
+
+      const colorsSnap = await getDocs(collection(db, "colors"));
+      setColorsOptions(colorsSnap.docs.map((doc) => ({ id: doc.id, ...doc.data() })));
     } catch (error) {
       console.error("Error fetching options: ", error);
     }
@@ -276,6 +304,7 @@ export default function CotizadorApp() {
       dimensions: { ...dimensions },
       selectedGlass: { ...selectedGlass },
       calculations: { ...calculations },
+      m2: modelData.m2 || 100, // Costo por m² de vidrio del modelo
       timestamp: new Date().toISOString()
     };
 
@@ -290,8 +319,165 @@ export default function CotizadorApp() {
   const removeFromCart = (itemId) => {
     setCart(prevCart => prevCart.filter(item => item.id !== itemId));
   };
+
+  // Funciones para agregar elementos individuales
+  const handleOpenAddItemDialog = (type) => {
+    setAddItemType(type);
+    setShowAddItemDialog(true);
+    setSelectedMaterial(null);
+    setSelectedHerraje(null);
+    setSelectedVidrio(null);
+    setItemQuantity(1);
+    setItemDimensions({ height: "", width: "" });
+    
+    // Establecer tipo de cantidad por defecto según el tipo de elemento
+    switch(type) {
+      case "material":
+        setItemQuantityType("metros");
+        break;
+      case "herraje":
+        setItemQuantityType("piezas");
+        break;
+      case "vidrio":
+        setItemQuantityType("dimensiones"); // Cambiar default a dimensiones
+        break;
+      default:
+        setItemQuantityType("metros");
+    }
+  };
+
+  const addIndividualItemToCart = () => {
+    let selectedItem = null;
+    let itemData = {};
+
+    // Validaciones según el tipo de elemento
+    switch(addItemType) {
+      case "material":
+        if (!selectedMaterial) {
+          setSnackbar({ 
+            open: true, 
+            message: "Debe seleccionar un material.", 
+            severity: "error" 
+          });
+          return;
+        }
+        selectedItem = selectedMaterial;
+        
+        if (itemQuantityType === "tramos") {
+          const tramo = parseFloat(selectedMaterial.stretch || 6.1);
+          itemData = {
+            name: selectedMaterial.name,
+            quantity: itemQuantity,
+            quantityType: "tramos",
+            unitPrice: parseFloat(selectedMaterial.price || 0),
+            meters: itemQuantity * tramo,
+            totalPrice: itemQuantity * parseFloat(selectedMaterial.price || 0),
+            tramo: tramo
+          };
+        } else {
+          // Por metros
+          const tramo = parseFloat(selectedMaterial.stretch || 6.1);
+          const tramosCost = (itemQuantity / tramo) * parseFloat(selectedMaterial.price || 0);
+          itemData = {
+            name: selectedMaterial.name,
+            quantity: itemQuantity,
+            quantityType: "metros",
+            unitPrice: parseFloat(selectedMaterial.price || 0) / tramo,
+            meters: itemQuantity,
+            totalPrice: tramosCost,
+            tramo: tramo
+          };
+        }
+        break;
+
+      case "herraje":
+        if (!selectedHerraje) {
+          setSnackbar({ 
+            open: true, 
+            message: "Debe seleccionar un herraje.", 
+            severity: "error" 
+          });
+          return;
+        }
+        selectedItem = selectedHerraje;
+        itemData = {
+          name: selectedHerraje.name,
+          quantity: itemQuantity,
+          quantityType: "piezas",
+          unitPrice: parseFloat(selectedHerraje.price || 0),
+          totalPrice: itemQuantity * parseFloat(selectedHerraje.price || 0)
+        };
+        break;
+
+      case "vidrio":
+        if (!selectedVidrio) {
+          setSnackbar({ 
+            open: true, 
+            message: "Debe seleccionar un vidrio.", 
+            severity: "error" 
+          });
+          return;
+        }
+        
+        let area = 0;
+        if (itemQuantityType === "m2") {
+          area = itemQuantity;
+        } else if (itemQuantityType === "dimensiones") {
+          if (!itemDimensions.height || !itemDimensions.width || 
+              parseFloat(itemDimensions.height) <= 0 || parseFloat(itemDimensions.width) <= 0) {
+            setSnackbar({ 
+              open: true, 
+              message: "Debe ingresar dimensiones válidas.", 
+              severity: "error" 
+            });
+            return;
+          }
+          area = (parseFloat(itemDimensions.height) / 100) * (parseFloat(itemDimensions.width) / 100);
+        }
+
+        selectedItem = selectedVidrio;
+        itemData = {
+          name: selectedVidrio.name,
+          quantity: area,
+          quantityType: itemQuantityType,
+          unitPrice: parseFloat(selectedVidrio.price || 0),
+          totalPrice: area * parseFloat(selectedVidrio.price || 0),
+          dimensions: itemQuantityType === "dimensiones" ? { ...itemDimensions } : null,
+          area: area
+        };
+        break;
+
+      default:
+        return;
+    }
+
+    const cartItem = {
+      id: Date.now().toString(),
+      type: "individual", // Para distinguir de modelos
+      itemType: addItemType,
+      itemId: selectedItem.id,
+      itemData: itemData,
+      timestamp: new Date().toISOString()
+    };
+
+    setCart(prevCart => [...prevCart, cartItem]);
+    setSnackbar({ 
+      open: true, 
+      message: `${itemData.name} agregado al carrito exitosamente.`, 
+      severity: "success" 
+    });
+
+    setShowAddItemDialog(false);
+  };
   const getCartTotal = () => {
-    return cart.reduce((total, item) => total + item.calculations.totalGeneral, 0);
+    return cart.reduce((total, item) => {
+      if (item.type === "individual") {
+        return total + item.itemData.totalPrice;
+      } else {
+        // Elementos de modelo
+        return total + item.calculations.totalGeneral;
+      }
+    }, 0);
   };
 
   // Función para obtener resúmenes de materiales, chapes y vidrios del carrito
@@ -301,47 +487,95 @@ export default function CotizadorApp() {
     const glassesSummary = {};
 
     cart.forEach(item => {
-      // Materiales
-      item.calculations.materialsCalc.items.forEach(material => {
-        if (materialsSummary[material.name]) {
-          materialsSummary[material.name].meterage += material.meterage;
-          materialsSummary[material.name].price += material.price;
-        } else {
-          materialsSummary[material.name] = {
-            name: material.name,
-            meterage: material.meterage,
-            price: material.price
-          };
+      if (item.type === "individual") {
+        // Elementos individuales
+        switch(item.itemType) {
+          case "material":
+            if (materialsSummary[item.itemData.name]) {
+              materialsSummary[item.itemData.name].meterage += item.itemData.meters;
+              materialsSummary[item.itemData.name].price += item.itemData.totalPrice;
+            } else {
+              materialsSummary[item.itemData.name] = {
+                name: item.itemData.name,
+                meterage: item.itemData.meters,
+                price: item.itemData.totalPrice,
+                isIndividual: true
+              };
+            }
+            break;
+          case "herraje":
+            if (chapesSummary[item.itemData.name]) {
+              chapesSummary[item.itemData.name].pieces += item.itemData.quantity;
+              chapesSummary[item.itemData.name].price += item.itemData.totalPrice;
+            } else {
+              chapesSummary[item.itemData.name] = {
+                name: item.itemData.name,
+                pieces: item.itemData.quantity,
+                price: item.itemData.totalPrice,
+                isIndividual: true
+              };
+            }
+            break;
+          case "vidrio":
+            if (glassesSummary[item.itemData.name]) {
+              glassesSummary[item.itemData.name].meterage += item.itemData.area;
+              glassesSummary[item.itemData.name].price += item.itemData.totalPrice;
+            } else {
+              glassesSummary[item.itemData.name] = {
+                name: item.itemData.name,
+                meterage: item.itemData.area,
+                price: item.itemData.totalPrice,
+                isIndividual: true
+              };
+            }
+            break;
         }
-      });
+      } else {
+        // Elementos de modelo
+        item.calculations.materialsCalc.items.forEach(material => {
+          if (materialsSummary[material.name]) {
+            materialsSummary[material.name].meterage += material.meterage;
+            materialsSummary[material.name].price += material.price;
+          } else {
+            materialsSummary[material.name] = {
+              name: material.name,
+              meterage: material.meterage,
+              price: material.price,
+              isIndividual: false
+            };
+          }
+        });
 
-      // Chapes (Herrajes)
-      item.calculations.chapesCalc.items.forEach(chape => {
-        if (chapesSummary[chape.name]) {
-          chapesSummary[chape.name].pieces += chape.pieces;
-          chapesSummary[chape.name].price += chape.price;
-        } else {
-          chapesSummary[chape.name] = {
-            name: chape.name,
-            pieces: chape.pieces,
-            price: chape.price
-          };
-        }
-      });
+        // Chapes (Herrajes)
+        item.calculations.chapesCalc.items.forEach(chape => {
+          if (chapesSummary[chape.name]) {
+            chapesSummary[chape.name].pieces += chape.pieces;
+            chapesSummary[chape.name].price += chape.price;
+          } else {
+            chapesSummary[chape.name] = {
+              name: chape.name,
+              pieces: chape.pieces,
+              price: chape.price,
+              isIndividual: false
+            };
+          }
+        });
 
-      // Vidrios
-      item.calculations.glassesCalc.items.forEach(glass => {
-        if (glassesSummary[glass.name]) {
-          glassesSummary[glass.name].meterage += glass.meterage;
-          glassesSummary[glass.name].price += glass.price;
-        } else {
-          glassesSummary[glass.name] = {
-            name: glass.name,
-            meterage: glass.meterage,
-            price: glass.price
-          };
-        }
-      });
+        // Vidrios
+        item.calculations.glassesCalc.items.forEach(glass => {
+          if (glassesSummary[glass.name]) {
+            glassesSummary[glass.name].meterage += glass.meterage;
+            glassesSummary[glass.name].price += glass.price;
+          } else {
+            glassesSummary[glass.name] = {
+              name: glass.name,
+              meterage: glass.meterage,
+              price: glass.price,
+              isIndividual: false
+            };
+          }
+        });
+      }
     });
 
     return {
@@ -407,23 +641,55 @@ export default function CotizadorApp() {
       const projectData = {
         name: projectName.trim(),
         customerId: finalCustomerId,
-        customerName: createNewCustomer ? newCustomerName.trim() : selectedCustomer.name,        items: cart.map(item => ({
-          modelId: item.modelId,
-          modelName: item.modelName,
-          dimensions: item.dimensions,
-          selectedGlass: item.selectedGlass,
-          total: item.calculations.totalGeneral,
-          details: {
-            materials: item.calculations.materialsCalc,
-            chapes: item.calculations.chapesCalc,
-            glasses: item.calculations.glassesCalc,
-            laborCost: item.calculations.laborCost
-          },
-          laborCostSelected: item.calculations.laborCost, // Costo de mano de obra editable
-          status: "cotizacion", // Estado inicial del modelo
-          area: "", // Área/ubicación del modelo
-          assignedEmployeeId: "" // ID del empleado asignado
-        })),
+        customerName: createNewCustomer ? newCustomerName.trim() : selectedCustomer.name,
+        items: cart.map(item => {
+          if (item.type === "individual") {
+            // Elemento individual
+            return {
+              type: "individual",
+              itemType: item.itemType,
+              itemId: item.itemId,
+              itemName: item.itemData.name,
+              quantity: item.itemData.quantity,
+              quantityType: item.itemData.quantityType,
+              unitPrice: item.itemData.unitPrice,
+              total: item.itemData.totalPrice,
+              dimensions: item.itemData.dimensions || null,
+              area: item.itemData.area || null,
+              meters: item.itemData.meters || null,
+              tramo: item.itemData.tramo || null,
+              status: "cotizacion",
+              assignedEmployeeId: ""
+            };
+          } else {
+            // Elemento de modelo
+            return {
+              type: "model",
+              modelId: item.modelId,
+              modelName: item.modelName,
+              dimensions: item.dimensions,
+              selectedGlass: item.selectedGlass,
+              total: item.calculations.totalGeneral,
+              m2: item.m2 || 100, // Costo por m² de vidrio del modelo
+              details: {
+                materials: item.calculations.materialsCalc,
+                chapes: item.calculations.chapesCalc,
+                glasses: item.calculations.glassesCalc,
+                laborCost: item.calculations.laborCost,
+                laborCostActual: item.calculations.laborCostActual,
+                glassLaborCost: item.calculations.glassLaborCost,
+                totalLaborActual: item.calculations.totalLaborActual
+              },
+              laborCostSelected: item.calculations.laborCost,
+              laborCostActual: item.calculations.laborCostActual,
+              glassLaborCost: item.calculations.glassLaborCost,
+              totalLaborActual: item.calculations.totalLaborActual,
+              status: "cotizacion",
+              area: "",
+              assignedEmployeeId: ""
+            };
+          }
+        }),
         total: getCartTotal(),
         createdAt: new Date().toISOString(),
         status: "quotation"
@@ -473,35 +739,58 @@ export default function CotizadorApp() {
   const getCalculations = () => {
     if (!modelData) return null;
   
+    // Convertir dimensiones de cm a metros para los cálculos internos
+    const heightInMeters = parseFloat(dimensions.height) / 100;
+    const widthInMeters = parseFloat(dimensions.width) / 100;
+  
     // MATERIALS
     const materialsCalc = modelData.materials?.reduce(
       (acc, material) => {
         const matOption = materialsOptions.find((m) => m.id === material.id);
-        const currentPrice = matOption ? parseFloat(matOption.price || "0") : 0;
+        const basePrice = matOption ? parseFloat(matOption.price || "0") : 0;
         const tramo = matOption ? parseFloat(matOption.stretch || "6.1") : 6.1;
+
+        // Aplicar incremento por color
+        const colorIncrement = selectedColor ? parseFloat(selectedColor.percentage || "0") : 0;
+        const currentPrice = basePrice * (1 + colorIncrement / 100);
   
         const meterage = calculatePrice(material.formula, {
           PRECIO: 1,
-          ALTO: dimensions.height,
-          ANCHO: dimensions.width,
+          ALTO: heightInMeters,
+          ANCHO: widthInMeters,
           TRAMO: 1,
         });
   
-        const price = calculatePrice(material.formula, {
+        const basePriceTotal = calculatePrice(material.formula, {
+          PRECIO: basePrice,
+          ALTO: heightInMeters,
+          ANCHO: widthInMeters,
+          TRAMO: tramo,
+        });
+
+        const priceWithColor = calculatePrice(material.formula, {
           PRECIO: currentPrice,
-          ALTO: dimensions.height,
-          ANCHO: dimensions.width,
+          ALTO: heightInMeters,
+          ANCHO: widthInMeters,
           TRAMO: tramo,
         });
   
         return {
-          price: acc.price + price,
+          price: acc.price + priceWithColor,
+          basePrice: acc.basePrice + basePriceTotal, // Precio base para cálculo de mano de obra
           meterage: acc.meterage + meterage,
-          items: [...acc.items, { name: material.name, meterage, price }],
+          items: [...acc.items, { 
+            name: material.name, 
+            meterage, 
+            price: priceWithColor,
+            basePrice: basePriceTotal,
+            colorName: selectedColor?.name || "Natural",
+            colorPercentage: colorIncrement
+          }],
         };
       },
-      { price: 0, meterage: 0, items: [] }
-    ) || { price: 0, meterage: 0, items: [] };
+      { price: 0, basePrice: 0, meterage: 0, items: [] }
+    ) || { price: 0, basePrice: 0, meterage: 0, items: [] };
   
     // CHAPES (herrajes)
     const chapesCalc = modelData.chapes?.reduce(
@@ -511,15 +800,15 @@ export default function CotizadorApp() {
   
         const pieces = calculatePrice(chape.formula, {
           PRECIO: 1,
-          ALTO: dimensions.height,
-          ANCHO: dimensions.width,
+          ALTO: heightInMeters,
+          ANCHO: widthInMeters,
           TRAMO: 1,
         });
   
         const price = calculatePrice(chape.formula, {
           PRECIO: currentPrice,
-          ALTO: dimensions.height,
-          ANCHO: dimensions.width,
+          ALTO: heightInMeters,
+          ANCHO: widthInMeters,
           TRAMO: 1,
         });
   
@@ -537,11 +826,11 @@ export default function CotizadorApp() {
       (acc, glass) => {
         const meterage = calculatePrice(glass.formula, {
           PRECIO: 1,
-          ALTO: dimensions.height,
-          ANCHO: dimensions.width,
+          ALTO: heightInMeters,
+          ANCHO: widthInMeters,
         });
   
-        const glassPrice = selectedGlass ? parseFloat(selectedGlass.priceInstalled || "0") : 0;
+        const glassPrice = selectedGlass ? parseFloat(selectedGlass.priceInstalled || selectedGlass.price || "0") : 0;
         const price = meterage * glassPrice;
   
         return {
@@ -552,14 +841,31 @@ export default function CotizadorApp() {
       },
       { price: 0, meterage: 0, items: [] }
     ) || { price: 0, meterage: 0, items: [] };
-  
-    // Mano de obra
-    const laborCost = parseFloat(modelData.manpower || "0") * materialsCalc.price;
-  
-    // Total general
+    // Mano de obra para aluminio (independiente del vidrio)
+    // IMPORTANTE: Se usa basePrice (precio natural) para el cálculo de mano de obra, NO el precio con color
+    const laborCost = parseFloat(modelData.manpower || "0") * materialsCalc.basePrice;
+    const laborCostActual = Math.round(parseFloat(modelData.manpowerActual || "0")); // Entero
+
+    // Mano de obra para vidrio (por m² - independiente del aluminio)
+    const glassLaborCostPerM2 = modelData.m2 || 100; // Usar el valor del modelo o default 100
+    const glassLaborCost = Math.round(glassesCalc.meterage * glassLaborCostPerM2); // Entero
+    
+    // Total de mano de obra real que se pagará al trabajador
+    const totalLaborActual = laborCostActual + glassLaborCost;
+
+    // Total general (solo para cotización - no incluye mano de obra de vidrio)
     const totalGeneral = materialsCalc.price + chapesCalc.price + glassesCalc.price + laborCost;
-  
-    return { materialsCalc, chapesCalc, glassesCalc, laborCost, totalGeneral };
+
+    return { 
+      materialsCalc, 
+      chapesCalc, 
+      glassesCalc, 
+      laborCost, 
+      laborCostActual, 
+      glassLaborCost,
+      totalLaborActual,
+      totalGeneral 
+    };
   };
 
   // ––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––
@@ -611,6 +917,55 @@ export default function CotizadorApp() {
             </Grid>
           ))}
         </Grid>
+        
+        {/* Botones flotantes para agregar elementos individuales */}
+        <Box sx={{
+          position: "fixed",
+          bottom: "2rem",
+          left: "2rem",
+          display: "flex",
+          flexDirection: "column",
+          gap: 1
+        }}>
+          <Fab
+            color="secondary"
+            size="medium"
+            aria-label="add material"
+            onClick={() => handleOpenAddItemDialog("material")}
+            sx={{ backgroundColor: "#4caf50", "&:hover": { backgroundColor: "#45a049" } }}
+          >
+            <Add />
+          </Fab>
+          <Typography variant="caption" sx={{ textAlign: "center", color: "text.secondary" }}>
+            Material
+          </Typography>
+          
+          <Fab
+            color="secondary"
+            size="medium"
+            aria-label="add herraje"
+            onClick={() => handleOpenAddItemDialog("herraje")}
+            sx={{ backgroundColor: "#ff9800", "&:hover": { backgroundColor: "#f57c00" } }}
+          >
+            <Add />
+          </Fab>
+          <Typography variant="caption" sx={{ textAlign: "center", color: "text.secondary" }}>
+            Herraje
+          </Typography>
+          
+          <Fab
+            color="secondary"
+            size="medium"
+            aria-label="add vidrio"
+            onClick={() => handleOpenAddItemDialog("vidrio")}
+            sx={{ backgroundColor: "#2196f3", "&:hover": { backgroundColor: "#1976d2" } }}
+          >
+            <Add />
+          </Fab>
+          <Typography variant="caption" sx={{ textAlign: "center", color: "text.secondary" }}>
+            Vidrio
+          </Typography>
+        </Box>
         
         {/* Botón flotante del carrito */}
         <Fab
@@ -688,7 +1043,7 @@ export default function CotizadorApp() {
         {/* Campos para modificar dimensiones */}
         <Box sx={{ display: "flex", gap: 2, justifyContent: "center", mb: 2 }}>
           <TextField
-            label="Alto"
+            label="Alto (cm)"
             type="text"
             value={dimensions.height}
             onChange={(e) =>
@@ -699,7 +1054,7 @@ export default function CotizadorApp() {
             }
           />
           <TextField
-            label="Ancho"
+            label="Ancho (cm)"
             type="text"
             value={dimensions.width}
             onChange={(e) =>
@@ -712,17 +1067,65 @@ export default function CotizadorApp() {
         </Box>
         
         {/* Selección de vidrio */}
+        {/* SELECCIÓN DE COLOR */}
+        <Typography variant="h6" gutterBottom sx={{ textAlign: "center", mt: 4, color: "black" }}>
+          Seleccionar Color del Material
+        </Typography>
+        <Box sx={{ mb: 4, width: "300px", margin: "0 auto" }}>
+          <Autocomplete
+            options={colorsOptions}
+            getOptionLabel={(option) => `${option.name} ${option.percentage > 0 ? `(+${option.percentage}%)` : option.percentage < 0 ? `(${option.percentage}%)` : '(Base)'}`}
+            isOptionEqualToValue={(option, value) => option.id === value.id}
+            value={selectedColor}
+            onChange={(event, newValue) => setSelectedColor(newValue)}
+            renderOption={(props, option) => (
+              <li {...props}>
+                <Box>
+                  <Typography variant="body2">{option.name}</Typography>
+                  <Typography variant="caption" color="textSecondary">
+                    {option.percentage === 0 ? 'Precio base' : 
+                     option.percentage > 0 ? `+${option.percentage}% sobre precio base` : 
+                     `${option.percentage}% sobre precio base`}
+                  </Typography>
+                </Box>
+              </li>
+            )}
+            renderInput={(params) => (
+              <TextField {...params} label="Seleccionar Color" variant="outlined" />
+            )}
+          />
+        </Box>
+
+        {/* SELECCIÓN DE VIDRIO */}
+        <Typography variant="h6" gutterBottom sx={{ textAlign: "center", mt: 4, color: "black" }}>
+          Seleccionar Vidrio
+        </Typography>
         <Box sx={{ mb: 4, width: "300px", margin: "0 auto" }}>
           <Autocomplete
             options={glassesOptions}
-            getOptionLabel={(option) => option.name || ""}
+            getOptionLabel={(option) => `${option.name} - $${option.priceInstalled || option.price || 0}/m²`}
             isOptionEqualToValue={(option, value) => option.id === value.id}
             value={selectedGlass}
             onChange={(event, newValue) => handleSelectGlass(newValue)}
+            renderOption={(props, option) => (
+              <li {...props}>
+                <Box>
+                  <Typography variant="body2">{option.name}</Typography>
+                  <Typography variant="caption" color="textSecondary">
+                    ${option.priceInstalled || option.price || 0}/m²
+                  </Typography>
+                </Box>
+              </li>
+            )}
             renderInput={(params) => (
               <TextField {...params} label="Seleccionar Vidrio" variant="outlined" />
             )}
           />
+          {selectedGlass && (selectedGlass.priceInstalled === 0 || selectedGlass.price === 0) && (
+            <Alert severity="warning" sx={{ mt: 1 }}>
+              ⚠️ El vidrio seleccionado tiene precio $0. Esto causará que el total sea incorrecto.
+            </Alert>
+          )}
         </Box>
         
         <Box sx={{ mt: 4, textAlign: "right" }}>
@@ -831,12 +1234,14 @@ export default function CotizadorApp() {
                 </TableHead>
                 <TableBody>
                   {modelData.glasses.map((glass, index) => {
+                    const heightInMeters = parseFloat(dimensions.height) / 100;
+                    const widthInMeters = parseFloat(dimensions.width) / 100;
                     const meterage = calculatePrice(glass.formula, {
                       PRECIO: 1,
-                      ALTO: dimensions.height,
-                      ANCHO: dimensions.width,
+                      ALTO: heightInMeters,
+                      ANCHO: widthInMeters,
                     });
-                    const glassPrice = selectedGlass ? parseFloat(selectedGlass.priceInstalled || "0") : 0;
+                    const glassPrice = selectedGlass ? parseFloat(selectedGlass.priceInstalled || selectedGlass.price || "0") : 0;
                     const price = meterage * glassPrice;
                     return (
                       <TableRow key={index}>
@@ -852,6 +1257,45 @@ export default function CotizadorApp() {
             <Typography variant="subtitle1" align="right" sx={{ color: "black" }}>
               Total Vidrios: ${calculations.glassesCalc.price.toFixed(2)}
             </Typography>
+
+            {/* Mano de Obra */}
+            <Typography variant="h5" sx={{ mt: 4, color: "black" }}>
+              Mano de Obra
+            </Typography>
+            <TableContainer sx={{ mb: 2 }}>
+              <Table>
+                <TableHead>
+                  <TableRow>
+                    <TableCell>Concepto</TableCell>
+                    <TableCell>Detalle</TableCell>
+                    <TableCell>Costo Para Cotización ($)</TableCell>
+                    <TableCell>Costo Real Para Trabajador ($)</TableCell>
+                  </TableRow>
+                </TableHead>
+                <TableBody>
+                  <TableRow>
+                    <TableCell>Mano de Obra - Aluminio</TableCell>
+                    <TableCell>{modelData.manpower}% sobre materiales</TableCell>
+                    <TableCell>${calculations.laborCost.toFixed(2)}</TableCell>
+                    <TableCell>${calculations.laborCostActual}</TableCell>
+                  </TableRow>
+                  {calculations.glassesCalc.meterage > 0 && (
+                    <TableRow>
+                      <TableCell>Mano de Obra - Vidrio</TableCell>
+                      <TableCell>{calculations.glassesCalc.meterage.toFixed(2)} m² × $${modelData.m2 || 100}/m²</TableCell>
+                      <TableCell>Incluido en precio del vidrio</TableCell>
+                      <TableCell>${calculations.glassLaborCost}</TableCell>
+                    </TableRow>
+                  )}
+                  <TableRow sx={{ backgroundColor: '#f5f5f5' }}>
+                    <TableCell sx={{ fontWeight: 'bold' }}>TOTAL MANO DE OBRA</TableCell>
+                    <TableCell sx={{ fontWeight: 'bold' }}>Para orden de trabajo</TableCell>
+                    <TableCell sx={{ fontWeight: 'bold' }}>-</TableCell>
+                    <TableCell sx={{ fontWeight: 'bold' }}>${calculations.totalLaborActual}</TableCell>
+                  </TableRow>
+                </TableBody>
+              </Table>
+            </TableContainer>
           </>
         )}
 
@@ -884,24 +1328,37 @@ export default function CotizadorApp() {
         <Dialog open={showCart} onClose={() => setShowCart(false)} maxWidth="xl" fullWidth>
           <DialogTitle>
             Carrito de Cotización
-            <Typography variant="subtitle1" color="textSecondary">
-              Total del Proyecto: ${getCartTotal().toFixed(2)}
-            </Typography>
           </DialogTitle>
           <DialogContent>
+            {/* Total del Proyecto - Prominente */}
+            <Paper sx={{ p: 3, mb: 3, backgroundColor: '#e8f5e8', border: '2px solid #4caf50' }}>
+              <Box sx={{ textAlign: 'center' }}>
+                <Typography variant="h4" sx={{ color: '#2e7d32', fontWeight: 'bold', mb: 1 }}>
+                  TOTAL DEL PROYECTO
+                </Typography>
+                <Typography variant="h3" sx={{ color: '#1b5e20', fontWeight: 'bold' }}>
+                  ${getCartTotal().toFixed(2)}
+                </Typography>
+                <Typography variant="subtitle1" sx={{ color: '#4caf50', mt: 1 }}>
+                  {cart.length} elemento{cart.length !== 1 ? 's' : ''} en el carrito
+                </Typography>
+              </Box>
+            </Paper>
             {cart.length === 0 ? (
               <Typography>El carrito está vacío</Typography>
             ) : (
               <>
-                {/* Tabla de modelos */}
-                <Typography variant="h6" sx={{ mb: 2 }}>Modelos en el Carrito</Typography>
+                {/* Tabla de elementos del carrito */}
+                <Typography variant="h6" sx={{ mb: 2 }}>
+                  Elementos en el Carrito ({cart.length})
+                </Typography>
                 <TableContainer sx={{ mb: 4 }}>
                   <Table>
                     <TableHead>
                       <TableRow>
-                        <TableCell>Modelo</TableCell>
-                        <TableCell>Dimensiones</TableCell>
-                        <TableCell>Vidrio</TableCell>
+                        <TableCell>Tipo</TableCell>
+                        <TableCell>Nombre</TableCell>
+                        <TableCell>Detalles</TableCell>
                         <TableCell>Total</TableCell>
                         <TableCell>Acciones</TableCell>
                       </TableRow>
@@ -909,10 +1366,48 @@ export default function CotizadorApp() {
                     <TableBody>
                       {cart.map((item) => (
                         <TableRow key={item.id}>
-                          <TableCell>{item.modelName}</TableCell>
-                          <TableCell>{item.dimensions.height} x {item.dimensions.width}</TableCell>
-                          <TableCell>{item.selectedGlass.name}</TableCell>
-                          <TableCell>${item.calculations.totalGeneral.toFixed(2)}</TableCell>
+                          <TableCell>
+                            <Chip 
+                              label={item.type === "individual" ? item.itemType : "modelo"} 
+                              color={item.type === "individual" ? "secondary" : "primary"}
+                              size="small"
+                            />
+                          </TableCell>
+                          <TableCell>
+                            {item.type === "individual" ? item.itemData.name : item.modelName}
+                          </TableCell>
+                          <TableCell>
+                            {item.type === "individual" ? (
+                              <Box>
+                                <Typography variant="body2">
+                                  {item.itemData.quantity} {item.itemData.quantityType}
+                                </Typography>
+                                {item.itemData.dimensions && (
+                                  <Typography variant="caption" color="textSecondary">
+                                    {item.itemData.dimensions.height} x {item.itemData.dimensions.width} cm
+                                  </Typography>
+                                )}
+                              </Box>
+                            ) : (
+                              <Box>
+                                <Typography variant="body2">
+                                  {item.dimensions.height} x {item.dimensions.width} cm
+                                </Typography>
+                                <Typography variant="caption" color="textSecondary">
+                                  Vidrio: {item.selectedGlass.name} (${item.selectedGlass.priceInstalled || item.selectedGlass.price || 0}/m²)
+                                </Typography>
+                                <Typography variant="caption" color="textSecondary" sx={{ display: 'block' }}>
+                                  Mat: ${item.calculations.materialsCalc.price.toFixed(2)} | 
+                                  Her: ${item.calculations.chapesCalc.price.toFixed(2)} | 
+                                  Vid: ${item.calculations.glassesCalc.price.toFixed(2)} | 
+                                  M.O.: ${item.calculations.laborCost.toFixed(2)}
+                                </Typography>
+                              </Box>
+                            )}
+                          </TableCell>
+                          <TableCell>
+                            ${(item.type === "individual" ? item.itemData.totalPrice : item.calculations.totalGeneral).toFixed(2)}
+                          </TableCell>
                           <TableCell>
                             <IconButton 
                               color="error" 
@@ -1137,6 +1632,255 @@ export default function CotizadorApp() {
             </Button>
           </DialogActions>
         </Dialog>
+
+        {/* Diálogo para Agregar Elementos Individuales */}
+        <Dialog open={showAddItemDialog} onClose={() => setShowAddItemDialog(false)} maxWidth="md" fullWidth>
+          <DialogTitle>
+            Agregar {addItemType === "material" ? "Material" : addItemType === "herraje" ? "Herraje" : "Vidrio"}
+          </DialogTitle>
+          <DialogContent>
+            <Box sx={{ mt: 2 }}>
+              {addItemType === "material" && (
+                <>
+                  <Autocomplete
+                    options={materialsOptions}
+                    getOptionLabel={(option) => `${option.name} - $${option.price}/tramo`}
+                    isOptionEqualToValue={(option, value) => option.id === value.id}
+                    value={selectedMaterial}
+                    onChange={(event, newValue) => setSelectedMaterial(newValue)}
+                    renderOption={(props, option) => (
+                      <li {...props}>
+                        {option.name} - ${option.price}/tramo
+                      </li>
+                    )}
+                    renderInput={(params) => (
+                      <TextField {...params} label="Seleccionar Material" variant="outlined" sx={{ mb: 2 }} />
+                    )}
+                  />
+                  
+                  <FormControl fullWidth sx={{ mb: 2 }}>
+                    <InputLabel>Tipo de Cantidad</InputLabel>
+                    <Select
+                      value={itemQuantityType}
+                      label="Tipo de Cantidad"
+                      onChange={(e) => setItemQuantityType(e.target.value)}
+                    >
+                      <MenuItem value="metros">Por metros</MenuItem>
+                      <MenuItem value="tramos">Por tramos</MenuItem>
+                    </Select>
+                  </FormControl>
+
+                  <TextField
+                    fullWidth
+                    label={itemQuantityType === "metros" ? "Cantidad (metros)" : "Cantidad (tramos)"}
+                    type="number"
+                    value={itemQuantity}
+                    onChange={(e) => setItemQuantity(parseFloat(e.target.value) || 1)}
+                    inputProps={{ min: 0.1, step: 0.1 }}
+                    sx={{ mb: 2 }}
+                  />
+
+                  {selectedMaterial && (
+                    <Box sx={{ p: 2, bgcolor: "grey.100", borderRadius: 1 }}>
+                      <Typography variant="subtitle2">Resumen:</Typography>
+                      <Typography variant="body2">
+                        Material: {selectedMaterial.name}
+                      </Typography>
+                      <Typography variant="body2">
+                        Tramo estándar: {selectedMaterial.stretch || 6.1} metros
+                      </Typography>
+                      {itemQuantityType === "metros" ? (
+                        <>
+                          <Typography variant="body2">
+                            Cantidad: {itemQuantity} metros
+                          </Typography>
+                          <Typography variant="body2">
+                            Equivale a: {(itemQuantity / (selectedMaterial.stretch || 6.1)).toFixed(2)} tramos
+                          </Typography>
+                          <Typography variant="body2" sx={{ fontWeight: "bold" }}>
+                            Precio total: ${((itemQuantity / (selectedMaterial.stretch || 6.1)) * parseFloat(selectedMaterial.price || 0)).toFixed(2)}
+                          </Typography>
+                        </>
+                      ) : (
+                        <>
+                          <Typography variant="body2">
+                            Cantidad: {itemQuantity} tramos
+                          </Typography>
+                          <Typography variant="body2">
+                            Equivale a: {itemQuantity * (selectedMaterial.stretch || 6.1)} metros
+                          </Typography>
+                          <Typography variant="body2" sx={{ fontWeight: "bold" }}>
+                            Precio total: ${(itemQuantity * parseFloat(selectedMaterial.price || 0)).toFixed(2)}
+                          </Typography>
+                        </>
+                      )}
+                    </Box>
+                  )}
+                </>
+              )}
+
+              {addItemType === "herraje" && (
+                <>
+                  <Autocomplete
+                    options={chapesOptions}
+                    getOptionLabel={(option) => `${option.name} - $${option.price}/pieza`}
+                    isOptionEqualToValue={(option, value) => option.id === value.id}
+                    value={selectedHerraje}
+                    onChange={(event, newValue) => setSelectedHerraje(newValue)}
+                    renderOption={(props, option) => (
+                      <li {...props} key={option.id}>
+                        {option.name} - ${option.price}/pieza
+                      </li>
+                    )}
+                    renderInput={(params) => (
+                      <TextField {...params} label="Seleccionar Herraje" variant="outlined" sx={{ mb: 2 }} />
+                    )}
+                  />
+
+                  <TextField
+                    fullWidth
+                    label="Cantidad (piezas)"
+                    type="number"
+                    value={itemQuantity}
+                    onChange={(e) => setItemQuantity(parseFloat(e.target.value) || 1)}
+                    inputProps={{ min: 1, step: 1 }}
+                    sx={{ mb: 2 }}
+                  />
+
+                  {selectedHerraje && (
+                    <Box sx={{ p: 2, bgcolor: "grey.100", borderRadius: 1 }}>
+                      <Typography variant="subtitle2">Resumen:</Typography>
+                      <Typography variant="body2">
+                        Herraje: {selectedHerraje.name}
+                      </Typography>
+                      <Typography variant="body2">
+                        Cantidad: {itemQuantity} piezas
+                      </Typography>
+                      <Typography variant="body2" sx={{ fontWeight: "bold" }}>
+                        Precio total: ${(itemQuantity * parseFloat(selectedHerraje.price || 0)).toFixed(2)}
+                      </Typography>
+                    </Box>
+                  )}
+                </>
+              )}
+
+              {addItemType === "vidrio" && (
+                <>
+                  <Autocomplete
+                    options={glassesOptions.filter(glass => glass.status !== "inactive")}
+                    getOptionLabel={(option) => `${option.name} - $${option.price || option.priceInstalled}/m²`}
+                    isOptionEqualToValue={(option, value) => option.id === value.id}
+                    value={selectedVidrio}
+                    onChange={(event, newValue) => setSelectedVidrio(newValue)}
+                    renderOption={(props, option) => (
+                      <li {...props}>
+                        {option.name} - ${option.price || option.priceInstalled}/m²
+                      </li>
+                    )}
+                    renderInput={(params) => (
+                      <TextField {...params} label="Seleccionar Vidrio" variant="outlined" sx={{ mb: 2 }} />
+                    )}
+                  />
+
+                  <FormControl component="fieldset" sx={{ mb: 2 }}>
+                    <RadioGroup
+                      value={itemQuantityType}
+                      onChange={(e) => setItemQuantityType(e.target.value)}
+                    >
+                      <FormControlLabel 
+                        value="m2" 
+                        control={<Radio />} 
+                        label="Especificar metros cuadrados directamente" 
+                      />
+                      <FormControlLabel 
+                        value="dimensiones" 
+                        control={<Radio />} 
+                        label="Calcular por dimensiones" 
+                      />
+                    </RadioGroup>
+                  </FormControl>
+
+                  {itemQuantityType === "m2" ? (
+                    <TextField
+                      fullWidth
+                      label="Área (m²)"
+                      type="number"
+                      value={itemQuantity}
+                      onChange={(e) => setItemQuantity(parseFloat(e.target.value) || 1)}
+                      inputProps={{ min: 0.1, step: 0.1 }}
+                      sx={{ mb: 2 }}
+                    />
+                  ) : (
+                    <Box sx={{ display: "flex", gap: 2, mb: 2 }}>
+                      <TextField
+                        fullWidth
+                        label="Alto (cm)"
+                        type="number"
+                        value={itemDimensions.height}
+                        onChange={(e) => setItemDimensions({ ...itemDimensions, height: e.target.value })}
+                        inputProps={{ min: 1, step: 0.1 }}
+                      />
+                      <TextField
+                        fullWidth
+                        label="Ancho (cm)"
+                        type="number"
+                        value={itemDimensions.width}
+                        onChange={(e) => setItemDimensions({ ...itemDimensions, width: e.target.value })}
+                        inputProps={{ min: 1, step: 0.1 }}
+                      />
+                    </Box>
+                  )}
+
+                  {selectedVidrio && (
+                    <Box sx={{ p: 2, bgcolor: "grey.100", borderRadius: 1 }}>
+                      <Typography variant="subtitle2">Resumen:</Typography>
+                      <Typography variant="body2">
+                        Vidrio: {selectedVidrio.name}
+                      </Typography>
+                      {itemQuantityType === "dimensiones" && itemDimensions.height && itemDimensions.width ? (
+                        <>
+                          <Typography variant="body2">
+                            Dimensiones: {itemDimensions.height} x {itemDimensions.width} cm
+                          </Typography>
+                          <Typography variant="body2">
+                            Área: {((parseFloat(itemDimensions.height) / 100) * (parseFloat(itemDimensions.width) / 100)).toFixed(2)} m²
+                          </Typography>
+                          <Typography variant="body2" sx={{ fontWeight: "bold" }}>
+                            Precio total: ${(((parseFloat(itemDimensions.height) / 100) * (parseFloat(itemDimensions.width) / 100)) * parseFloat(selectedVidrio.price || selectedVidrio.priceInstalled || 0)).toFixed(2)}
+                          </Typography>
+                        </>
+                      ) : itemQuantityType === "m2" ? (
+                        <>
+                          <Typography variant="body2">
+                            Área: {itemQuantity} m²
+                          </Typography>
+                          <Typography variant="body2" sx={{ fontWeight: "bold" }}>
+                            Precio total: ${(itemQuantity * parseFloat(selectedVidrio.price || selectedVidrio.priceInstalled || 0)).toFixed(2)}
+                          </Typography>
+                        </>
+                      ) : null}
+                    </Box>
+                  )}
+                </>
+              )}
+            </Box>
+          </DialogContent>
+          <DialogActions>
+            <Button onClick={() => setShowAddItemDialog(false)}>Cancelar</Button>
+            <Button 
+              variant="contained" 
+              onClick={addIndividualItemToCart}
+              disabled={
+                (addItemType === "material" && !selectedMaterial) ||
+                (addItemType === "herraje" && !selectedHerraje) ||
+                (addItemType === "vidrio" && !selectedVidrio)
+              }
+            >
+              Agregar al Carrito
+            </Button>
+          </DialogActions>
+        </Dialog>
+
       </>
     );
   }

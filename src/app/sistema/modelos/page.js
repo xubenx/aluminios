@@ -37,6 +37,8 @@ export default function ModelsPage() {
   const [formData, setFormData] = useState({
     name: "",
     manpower: "",
+    manpowerActual: "",
+    m2: 100, // Costo por m² de mano de obra de vidrio
     imageFile: null,
     previewImage: "",
   });
@@ -70,6 +72,90 @@ export default function ModelsPage() {
     setFilteredModels(modelsData);
   };
 
+  const updateModelsWithoutManpowerActual = async () => {
+    try {
+      const modelsWithoutManpowerActual = models.filter(
+        model => !model.manpowerActual || model.manpowerActual === "" || model.manpowerActual === "0"
+      );
+
+      if (modelsWithoutManpowerActual.length === 0) {
+        setSnackbar({
+          open: true,
+          message: "Todos los modelos ya tienen configurada la mano de obra real.",
+          severity: "info",
+        });
+        return;
+      }
+
+      // Actualizar cada modelo
+      const updatePromises = modelsWithoutManpowerActual.map(model =>
+        updateDoc(doc(db, "models", model.id), {
+          manpowerActual: 0
+        })
+      );
+
+      await Promise.all(updatePromises);
+
+      setSnackbar({
+        open: true,
+        message: `Se actualizaron ${modelsWithoutManpowerActual.length} modelos con mano de obra real = 0`,
+        severity: "success",
+      });
+
+      // Recargar modelos
+      fetchModels();
+    } catch (error) {
+      console.error("Error updating models:", error);
+      setSnackbar({
+        open: true,
+        message: "Error al actualizar los modelos.",
+        severity: "error",
+      });
+    }
+  };
+
+  const updateModelsWithoutM2 = async () => {
+    try {
+      const modelsWithoutM2 = models.filter(
+        model => !model.m2 || model.m2 === "" || model.m2 === 0
+      );
+
+      if (modelsWithoutM2.length === 0) {
+        setSnackbar({
+          open: true,
+          message: "Todos los modelos ya tienen configurado el costo por m² de vidrio.",
+          severity: "info",
+        });
+        return;
+      }
+
+      // Actualizar cada modelo
+      const updatePromises = modelsWithoutM2.map(model =>
+        updateDoc(doc(db, "models", model.id), {
+          m2: 100
+        })
+      );
+
+      await Promise.all(updatePromises);
+
+      setSnackbar({
+        open: true,
+        message: `Se actualizaron ${modelsWithoutM2.length} modelos con costo por m² de vidrio = 100`,
+        severity: "success",
+      });
+
+      // Recargar modelos
+      fetchModels();
+    } catch (error) {
+      console.error("Error updating models:", error);
+      setSnackbar({
+        open: true,
+        message: "Error al actualizar los modelos.",
+        severity: "error",
+      });
+    }
+  };
+
   const handleInputChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
@@ -90,12 +176,14 @@ export default function ModelsPage() {
     if (model) {
       setFormData({
         name: model.name,
-        manpower: model.manpower,
+        manpower: model.manpower || "",
+        manpowerActual: model.manpowerActual || "",
+        m2: model.m2 || 100,
         imageFile: null,
         previewImage: "",
       });
     } else {
-      setFormData({ name: "", manpower: "", imageFile: null, previewImage: "" });
+      setFormData({ name: "", manpower: "", manpowerActual: "", m2: 100, imageFile: null, previewImage: "" });
     }
     setOpenDialog(true);
   };
@@ -103,25 +191,48 @@ export default function ModelsPage() {
   const handleCloseDialog = () => {
     setOpenDialog(false);
     setCurrentModel(null);
-    setFormData({ name: "", manpower: "", imageFile: null, previewImage: "" });
+    setFormData({ name: "", manpower: "", manpowerActual: "", m2: 100, imageFile: null, previewImage: "" });
   };
 
   const handleSave = async () => {
     if (!formData.name.trim() || !formData.manpower.trim() || isNaN(formData.manpower)) {
       setSnackbar({
         open: true,
-        message: "El nombre y la mano de obra son obligatorios y válidos.",
+        message: "El nombre y la mano de obra (porcentaje) son obligatorios y válidos.",
         severity: "error",
       });
       return;
     }
+
+    if (formData.manpowerActual && isNaN(formData.manpowerActual)) {
+      setSnackbar({
+        open: true,
+        message: "La mano de obra real debe ser un número válido.",
+        severity: "error",
+      });
+      return;
+    }
+
+    if (formData.m2 && isNaN(formData.m2)) {
+      setSnackbar({
+        open: true,
+        message: "El costo por m² de vidrio debe ser un número válido.",
+        severity: "error",
+      });
+      return;
+    }
+
     try {
       let docRef;
+      const modelData = {
+        name: formData.name,
+        manpower: formData.manpower,
+        manpowerActual: formData.manpowerActual ? parseInt(formData.manpowerActual) : 0, // Convertir a entero
+        m2: formData.m2 ? parseInt(formData.m2) : 100, // Costo por m² de vidrio, default 100
+      };
+
       if (currentModel) {
-        await updateDoc(doc(db, "models", currentModel.id), {
-          name: formData.name,
-          manpower: formData.manpower,
-        });
+        await updateDoc(doc(db, "models", currentModel.id), modelData);
         setSnackbar({
           open: true,
           message: "Modelo actualizado correctamente.",
@@ -129,10 +240,7 @@ export default function ModelsPage() {
         });
         docRef = { id: currentModel.id };
       } else {
-        docRef = await addDoc(collection(db, "models"), {
-          name: formData.name,
-          manpower: formData.manpower,
-        });
+        docRef = await addDoc(collection(db, "models"), modelData);
         setSnackbar({
           open: true,
           message: "Modelo agregado correctamente.",
@@ -140,8 +248,31 @@ export default function ModelsPage() {
         });
       }
 
+      // Subir imagen si se seleccionó una
       if (formData.imageFile) {
-        console.log("Subir imagen con nombre:", docRef.id);
+        try {
+          const imageFormData = new FormData();
+          imageFormData.append('file', formData.imageFile);
+          imageFormData.append('modelId', docRef.id);
+
+          const uploadResponse = await fetch('/api/upload-image', {
+            method: 'POST',
+            body: imageFormData,
+          });
+
+          if (!uploadResponse.ok) {
+            throw new Error('Failed to upload image');
+          }
+
+          console.log("Imagen subida correctamente para modelo:", docRef.id);
+        } catch (imageError) {
+          console.error("Error al subir imagen:", imageError);
+          setSnackbar({
+            open: true,
+            message: "Modelo guardado, pero hubo un error al subir la imagen.",
+            severity: "warning",
+          });
+        }
       }
 
       fetchModels();
@@ -163,7 +294,7 @@ export default function ModelsPage() {
                     Modelos
                   </Typography>
       {/* Searchbox */}
-      <Box sx={{ marginBottom: 2 }}>
+      <Box sx={{ marginBottom: 2, display: "flex", gap: 2, alignItems: "center" }}>
         <TextField
           fullWidth
           label="Buscar modelos"
@@ -171,6 +302,22 @@ export default function ModelsPage() {
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
         />
+        <Button
+          variant="outlined"
+          color="warning"
+          onClick={updateModelsWithoutManpowerActual}
+          sx={{ minWidth: "200px" }}
+        >
+          Actualizar Modelos Sin M.O. Real
+        </Button>
+        <Button
+          variant="outlined"
+          color="info"
+          onClick={updateModelsWithoutM2}
+          sx={{ minWidth: "200px" }}
+        >
+          Actualizar Modelos Sin Costo m² Vidrio
+        </Button>
       </Box>
 
       {/* Grid de Modelos */}
@@ -194,13 +341,43 @@ export default function ModelsPage() {
                 >
                   {model.name}
                 </Typography>
+                
+                {/* Información de mano de obra */}
+                <Box sx={{ mb: 2 }}>
+                  <Typography variant="body2" color="textSecondary">
+                    M.O. Cotización: {model.manpower || "No definido"}%
+                  </Typography>
+                  <Typography 
+                    variant="body2" 
+                    color={model.manpowerActual && model.manpowerActual !== "0" ? "success.main" : "warning.main"}
+                  >
+                    M.O. Real: {model.manpowerActual && model.manpowerActual !== "0" ? `$${model.manpowerActual}` : "No configurado"}
+                  </Typography>
+                  <Typography 
+                    variant="body2" 
+                    color={model.m2 && model.m2 !== 0 ? "primary.main" : "warning.main"}
+                  >
+                    Costo m² Vidrio: ${model.m2 || 100}/m²
+                  </Typography>
+                </Box>
+                
                 <Button
                   color="info"
                   variant="outlined"
                   onClick={() => router.push(`/sistema/modelos/${model.id}`)}
-                  sx={{ color: "black", borderColor: "black" }}
+                  sx={{ color: "black", borderColor: "black", mr: 1 }}
                 >
                   Ver Detalles
+                </Button>
+                
+                <Button
+                  color="primary"
+                  variant="contained"
+                  size="small"
+                  onClick={() => handleOpenDialog(model)}
+                  sx={{ mt: 1 }}
+                >
+                  Editar
                 </Button>
               </CardContent>
             </Card>
@@ -209,8 +386,10 @@ export default function ModelsPage() {
       </Grid>
 
       {/* Dialogo para Agregar/Editar Modelo */}
-      <Dialog open={openDialog} onClose={handleCloseDialog}>
-        <DialogTitle>{currentModel ? "Editar Modelo" : "Agregar Modelo"}</DialogTitle>
+      <Dialog open={openDialog} onClose={handleCloseDialog} maxWidth="sm" fullWidth>
+        <DialogTitle>
+          {currentModel ? `Editar Modelo: ${currentModel.name}` : "Agregar Modelo"}
+        </DialogTitle>
         <DialogContent>
           <TextField
             autoFocus
@@ -222,15 +401,65 @@ export default function ModelsPage() {
             value={formData.name}
             onChange={handleInputChange}
           />
+          
           <TextField
             margin="dense"
             name="manpower"
-            label="Mano de Obra"
+            label="Mano de Obra (% sobre materiales)"
             type="number"
             fullWidth
             value={formData.manpower}
             onChange={handleInputChange}
+            helperText="Porcentaje que se aplicará sobre el costo de materiales para la cotización"
+            inputProps={{ step: "0.01", min: "0" }}
           />
+          
+          <TextField
+            margin="dense"
+            name="manpowerActual"
+            label="Mano de Obra Real (Costo Fijo - Entero)"
+            type="number"
+            fullWidth
+            value={formData.manpowerActual}
+            onChange={handleInputChange}
+            helperText="Costo real entero que se pagará al trabajador (solo para órdenes de trabajo). Ej: 450"
+            inputProps={{ step: "1", min: "0" }}
+            placeholder="0"
+          />
+          
+          <TextField
+            margin="dense"
+            name="m2"
+            label="Costo por m² de Vidrio (Entero)"
+            type="number"
+            fullWidth
+            value={formData.m2}
+            onChange={handleInputChange}
+            helperText="Costo por metro cuadrado de mano de obra de vidrio. Default: 100"
+            inputProps={{ step: "1", min: "0" }}
+            placeholder="100"
+          />
+          
+          {/* Información actual si está editando */}
+          {currentModel && (
+            <Box sx={{ mt: 2, p: 2, backgroundColor: "grey.100", borderRadius: 1 }}>
+              <Typography variant="subtitle2" gutterBottom>
+                Valores Actuales:
+              </Typography>
+              <Typography variant="body2">
+                • M.O. Cotización: {currentModel.manpower || "No definido"}%
+              </Typography>
+              <Typography variant="body2">
+                • M.O. Real: {currentModel.manpowerActual && currentModel.manpowerActual !== "0" 
+                  ? `$${currentModel.manpowerActual}` 
+                  : "No configurado (se usará 0)"}
+              </Typography>
+              <Typography variant="body2">
+                • Costo por m² Vidrio: ${currentModel.m2 || 100}/m²
+              </Typography>
+            </Box>
+          )}
+          
           <Box sx={{ mt: 2 }}>
             <Button variant="outlined" component="label">
               Seleccionar Imagen
