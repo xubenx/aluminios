@@ -297,7 +297,7 @@ const analyzeSystemData = (data: SystemData): Stats => {
   });
 
   const topCustomers = Object.entries(customerProjects)
-    .map(([id, data]) => ({ name: data.name, projectCount: data.count, totalValue: data.value }))
+    .map(([, data]) => ({ name: data.name, projectCount: data.count, totalValue: data.value }))
     .sort((a, b) => b.totalValue - a.totalValue)
     .slice(0, 5);
 
