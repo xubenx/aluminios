@@ -367,7 +367,7 @@ export default function ClientesPage() {
         totalDebt,
         projectsByStatus,
         projects: customerProjects.sort((a, b) => {
-          const getTimestamp = (timestamp: any) => {
+          const getTimestamp = (timestamp: { seconds?: number; toDate?: () => Date } | Date | string | null | undefined) => {
             if (timestamp && typeof timestamp === 'object' && 'seconds' in timestamp) {
               return timestamp.seconds;
             }
