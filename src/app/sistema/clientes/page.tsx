@@ -1,5 +1,7 @@
 "use client";
 import React, { useState, useEffect } from "react";
+import Image from "next/image";
+import { evaluate } from "mathjs";
 import { collection, getDocs, addDoc, updateDoc, doc } from "firebase/firestore";
 import { db } from "../../../../firebase";
 import {
@@ -140,8 +142,6 @@ export default function ClientesPage() {
   // Estados para opciones de materiales
   const [models, setModels] = useState<Model[]>([]);
   const [materials, setMaterials] = useState<Material[]>([]);
-  const [chapes, setChapes] = useState<Chape[]>([]);
-  const [glasses, setGlasses] = useState<Glass[]>([]);
   
   // Estados para agregar modelo a proyecto
   const [showAddModelDialog, setShowAddModelDialog] = useState(false);
@@ -149,9 +149,11 @@ export default function ClientesPage() {
   const [filteredModels, setFilteredModels] = useState<Model[]>([]);
   const [modelSearchQuery, setModelSearchQuery] = useState("");
   const [selectedModelToAdd, setSelectedModelToAdd] = useState<Model | null>(null);
-  const [modelData, setModelData] = useState<any>(null);
-  const [materialsOptions, setMaterialsOptions] = useState<Material[]>([]);
-  const [chapesOptions, setChapesOptions] = useState<Chape[]>([]);
+  const [modelData, setModelData] = useState<{
+    materials?: Material[];
+    chapes?: Chape[];
+    glasses?: Glass[];
+  } | null>(null);
   const [glassesOptions, setGlassesOptions] = useState<Glass[]>([]);
   const [dimensions, setDimensions] = useState({ height: "1", width: "1" });
   const [selectedGlass, setSelectedGlass] = useState<Glass | null>(null);
@@ -185,10 +187,6 @@ export default function ClientesPage() {
       
       setModels(modelsData);
       setMaterials(materialsData);
-      setChapes(chapesData);
-      setGlasses(glassesData);
-      setMaterialsOptions(materialsData);
-      setChapesOptions(chapesData);
       setGlassesOptions(glassesData);
     } catch (error) {
       console.error("Error loading data:", error);
@@ -261,9 +259,11 @@ export default function ClientesPage() {
     return (
       <Box sx={{ position: 'relative', width, height }}>
         {imageUrl && (
-          <img
+          <Image
             src={imageUrl}
             alt={modelName}
+            width={typeof width === 'number' ? width : 200}
+            height={typeof height === 'number' ? height : 200}
             style={{
               width: '100%',
               height: '100%',
@@ -272,6 +272,7 @@ export default function ClientesPage() {
               opacity: imageLoaded ? 1 : 0,
               transition: 'opacity 0.3s'
             }}
+            unoptimized
           />
         )}
         {!imageLoaded && (
@@ -384,7 +385,8 @@ export default function ClientesPage() {
       setSelectedCustomerBalance(balance);
       setCurrentCustomer(customer);
       setOpenBalanceDialog(true);
-    } catch (error) {
+    } catch (err) {
+      console.error("Error loading customer balance:", err);
       setSnackbar({ open: true, message: "Error al cargar el balance del cliente.", severity: "error" });
     }
   };
@@ -528,7 +530,7 @@ export default function ClientesPage() {
     setSelectedGlass(null);
   };
 
-  const resolveNames = async (items: any[], collectionName: string) => {
+  const resolveNames = async (items: (string | { id: string; name: string })[], collectionName: string) => {
     const resolvedItems = await Promise.all(
       items.map(async (item) => {
         if (typeof item === 'string') {
@@ -536,7 +538,8 @@ export default function ClientesPage() {
             const snapshot = await getDocs(collection(db, collectionName));
             const doc = snapshot.docs.find(d => d.id === item);
             return doc ? { id: doc.id, name: doc.data().name } : { id: item, name: 'Desconocido' };
-          } catch (error) {
+          } catch (err) {
+            console.error("Error loading item:", err);
             return { id: item, name: 'Error al cargar' };
           }
         }
@@ -566,24 +569,21 @@ export default function ClientesPage() {
     }
   };
 
-  const calculatePrice = (formula: string, variables: any) => {
+  const calculatePrice = (formula: string, variables: Record<string, number>) => {
     try {
-      // Importar evaluate de mathjs
-      const { evaluate } = require('mathjs');
-      
       let processedFormula = formula;
       
       // Reemplazar variables en la fórmula
       Object.keys(variables).forEach(key => {
         const regex = new RegExp(`\\b${key}\\b`, 'g');
-        processedFormula = processedFormula.replace(regex, variables[key]);
+        processedFormula = processedFormula.replace(regex, variables[key].toString());
       });
       
       // Evaluar la fórmula
       const result = evaluate(processedFormula);
-      return isNaN(result) ? 0 : result;
-    } catch (error) {
-      console.error('Error calculating price:', error);
+      return typeof result === 'number' && !isNaN(result) ? result : 0;
+    } catch (err) {
+      console.error('Error calculating price:', err);
       return 0;
     }
   };
@@ -674,7 +674,7 @@ export default function ClientesPage() {
   // Función para validar si un proyecto puede ser completado
   const canCompleteProject = (project: Project) => {
     if (!project.items || project.items.length === 0) return false;
-    return project.items.every((item: any) => item.status === 'revisado');
+    return project.items.every((item: ProjectItem) => item.status === 'revisado');
   };
 
   // Funciones de utilidad para modelos
@@ -736,13 +736,13 @@ export default function ClientesPage() {
     }).format(amount);
   };
 
-  const formatDate = (timestamp: any): string => {
+  const formatDate = (timestamp: { toDate?: () => Date; seconds?: number } | Date | string | null | undefined): string => {
     if (!timestamp) return 'Fecha no disponible';
     
     let date: Date;
-    if (timestamp.toDate) {
+    if (typeof timestamp === 'object' && timestamp !== null && 'toDate' in timestamp && timestamp.toDate) {
       date = timestamp.toDate();
-    } else if (timestamp.seconds) {
+    } else if (typeof timestamp === 'object' && timestamp !== null && 'seconds' in timestamp && timestamp.seconds) {
       date = new Date(timestamp.seconds * 1000);
     } else {
       date = new Date(timestamp);
@@ -1190,7 +1190,7 @@ export default function ClientesPage() {
                               <Typography variant="subtitle1" gutterBottom color="primary">
                                 Modelos/Elementos del Proyecto:
                               </Typography>
-                              {project.items.map((item: any, itemIndex: number) => (
+                              {project.items.map((item: ProjectItem, itemIndex: number) => (
                                 <Card key={itemIndex} variant="outlined" sx={{ mb: 1 }}>
                                   <CardContent sx={{ py: 1 }}>
                                     <Box display="flex" justifyContent="space-between" alignItems="center">
