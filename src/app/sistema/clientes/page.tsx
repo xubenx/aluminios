@@ -34,16 +34,12 @@ import {
   FormControl,
   InputLabel,
 } from "@mui/material";
-import { Add, Edit, Delete, Restore, Visibility, ExpandMore, ExpandLess, Payment as PaymentIcon, Build, AttachMoney, Person, CheckCircle } from "@mui/icons-material";
+import { Add, Edit, Delete, Restore, Visibility, ExpandMore, ExpandLess, Payment as PaymentIcon, Person } from "@mui/icons-material";
 import { 
   updateProject, 
   addPaymentToProject, 
   updateProjectStatus,
   activateProject,
-  formatCurrency as projectFormatCurrency,
-  formatDate as projectFormatDate,
-  getStatusColor as projectGetStatusColor,
-  getStatusText as projectGetStatusText,
   loadEmployees,
   loadModels,
   loadMaterials,
@@ -74,9 +70,9 @@ interface Project {
   total: number;
   debt?: number;
   payments?: Array<{ date: string; amount: number; method: 'efectivo' | 'transferencia' | 'tarjeta' | 'cheque'; description: string }>;
-  createdAt?: any;
-  date?: any;
-  items?: any[]; // Agregar items para compatibilidad
+  createdAt?: { seconds?: number; toDate?: () => Date } | Date | string;
+  date?: { seconds?: number; toDate?: () => Date } | Date | string;
+  items?: ProjectItem[];
 }
 
 interface CustomerBalance {
@@ -133,7 +129,7 @@ export default function ClientesPage() {
   
   // Estados para gestión detallada de proyectos
   const [expandedModels, setExpandedModels] = useState<{[key: string]: boolean}>({});
-  const [editingModel, setEditingModel] = useState<any>(null);
+  const [editingModel, setEditingModel] = useState<ProjectItem | null>(null);
   const [showModelEditDialog, setShowModelEditDialog] = useState(false);
   const [showActivateDialog, setShowActivateDialog] = useState(false);
   const [activatingProject, setActivatingProject] = useState<Project | null>(null);
@@ -141,7 +137,6 @@ export default function ClientesPage() {
   
   // Estados para opciones de materiales
   const [models, setModels] = useState<Model[]>([]);
-  const [materials, setMaterials] = useState<Material[]>([]);
   
   // Estados para agregar modelo a proyecto
   const [showAddModelDialog, setShowAddModelDialog] = useState(false);
@@ -178,7 +173,7 @@ export default function ClientesPage() {
 
   const fetchAllData = async () => {
     try {
-      const [modelsData, materialsData, chapesData, glassesData] = await Promise.all([
+      const [modelsData, , , glassesData] = await Promise.all([
         loadModels(),
         loadMaterials(),
         loadChapes(),
@@ -186,7 +181,6 @@ export default function ClientesPage() {
       ]);
       
       setModels(modelsData);
-      setMaterials(materialsData);
       setGlassesOptions(glassesData);
     } catch (error) {
       console.error("Error loading data:", error);
