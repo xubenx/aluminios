@@ -1,6 +1,6 @@
 "use client";
 import React, { useState, useEffect } from "react";
-import { collection, getDocs, doc, updateDoc, getDoc, serverTimestamp } from "firebase/firestore";
+import { doc, updateDoc, getDoc } from "firebase/firestore";
 import { db } from "../../../../firebase";
 import { evaluate } from "mathjs";
 import {
@@ -14,13 +14,11 @@ import {
   updateProject,
   activateProject,
   addPaymentToProject,
-  addModelToProject,
   formatCurrency,
   formatDate,
   getStatusColor,
   getStatusText,
-  filterProjects,
-  calculateProjectTotal
+  filterProjects
 } from "./projectController";
 
 import Image from "next/image";
@@ -49,10 +47,7 @@ import {
   Divider,
   Paper,
   Collapse,
-  Autocomplete,
-  Accordion,
-  AccordionSummary,
-  AccordionDetails
+  Autocomplete
 } from "@mui/material";
 import {
   Visibility,
@@ -67,8 +62,7 @@ import {
   LocationOn,
   FilterList,
   Add,
-  Block,
-  Delete
+  Block
 } from "@mui/icons-material";
 
 export default function ProyectosPage() {  const [projects, setProjects] = useState([]);

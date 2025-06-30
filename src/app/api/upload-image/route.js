@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 import { writeFile, mkdir } from 'fs/promises';
 import path from 'path';
 
@@ -26,7 +26,7 @@ export async function POST(request) {
     // Crear el directorio si no existe
     try {
       await mkdir(publicPath, { recursive: true });
-    } catch (error) {
+    } catch {
       // El directorio ya existe, continuar
     }
 

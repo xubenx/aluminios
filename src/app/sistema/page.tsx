@@ -4,8 +4,6 @@ import {
   loadDashboardData,
   formatCurrency,
   formatDate,
-  getStatusColor,
-  getStatusLabel,
   type Stats
 } from "./dashboardController";
 
@@ -381,7 +379,7 @@ export default function ExecutiveDashboard() {
                     </div>
                   ) : (
                     <ul style={{ margin: 0, padding: '0 0 0 20px' }}>
-                      {duplicates.slice(0, 5).map((dup: any, index: number) => (
+                      {duplicates.slice(0, 5).map((dup: { name: string; count: number; ids: string[] }, index: number) => (
                         <li key={index} style={{ marginBottom: '8px' }}>
                           <strong>{dup.name}</strong> ({dup.count} veces)
                           <div style={{ color: '#666', fontSize: '0.9rem' }}>

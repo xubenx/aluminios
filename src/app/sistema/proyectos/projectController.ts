@@ -1,4 +1,4 @@
-import { collection, getDocs, doc, updateDoc, addDoc, serverTimestamp, query, orderBy } from "firebase/firestore";
+import { collection, getDocs, doc, updateDoc, serverTimestamp, query, orderBy } from "firebase/firestore";
 import { db } from "../../../../firebase";
 
 export interface Payment {
@@ -23,9 +23,9 @@ export interface ProjectItem {
   laborCostActual?: number;
   m2?: number;
   details?: {
-    materials?: any;
-    chapes?: any;
-    glasses?: any;
+    materials?: ItemDetails;
+    chapes?: ItemDetails;
+    glasses?: ItemDetails;
     laborCost?: number;
     laborCostActual?: number;
   };
@@ -39,17 +39,30 @@ export interface ProjectItem {
   };
 }
 
+export interface ItemDetails {
+  price: number;
+  meterage?: number;
+  pieces?: number;
+  items?: unknown[];
+}
+
 export interface Project {
   id: string;
   name: string;
   customerName: string;
   status: 'quotation' | 'active' | 'completed' | 'cancelled' | 'inactive';
-  createdAt: any;
-  date: any;
+  createdAt: FirebaseTimestamp;
+  date: FirebaseTimestamp;
   total: number;
   debt?: number;
   payments?: Payment[];
   items: ProjectItem[];
+}
+
+export interface FirebaseTimestamp {
+  seconds: number;
+  nanoseconds: number;
+  toDate(): Date;
 }
 
 export const loadProjects = async (): Promise<Project[]> => {
@@ -58,7 +71,7 @@ export const loadProjects = async (): Promise<Project[]> => {
     const querySnapshot = await getDocs(q);
     return querySnapshot.docs.map(doc => ({
       id: doc.id,
-      ...doc.data()
+      ...(doc.data() as Omit<Project, 'id'>)
     } as Project));
   } catch (error) {
     console.error("Error loading projects:", error);
@@ -66,73 +79,104 @@ export const loadProjects = async (): Promise<Project[]> => {
   }
 };
 
-export const loadEmployees = async () => {
+export const loadEmployees = async (): Promise<Employee[]> => {
   try {
     const querySnapshot = await getDocs(collection(db, "employees"));
     return querySnapshot.docs.map(doc => ({
       id: doc.id,
-      ...doc.data()
-    }));
+      ...(doc.data() as Omit<Employee, 'id'>)
+    } as Employee));
   } catch (error) {
     console.error("Error loading employees:", error);
     return [];
   }
 };
 
-export const loadModels = async () => {
+export interface Employee {
+  id: string;
+  name: string;
+  [key: string]: unknown;
+}
+
+export const loadModels = async (): Promise<Model[]> => {
   try {
     const querySnapshot = await getDocs(collection(db, "models"));
     return querySnapshot.docs.map(doc => ({
       id: doc.id,
-      ...doc.data()
-    }));
+      ...(doc.data() as Omit<Model, 'id'>)
+    } as Model));
   } catch (error) {
     console.error("Error loading models:", error);
     return [];
   }
 };
 
-export const loadGlasses = async () => {
+export interface Model {
+  id: string;
+  name: string;
+  [key: string]: unknown;
+}
+
+export const loadGlasses = async (): Promise<Glass[]> => {
   try {
     const querySnapshot = await getDocs(collection(db, "glasses"));
     return querySnapshot.docs
-      .map(doc => ({ id: doc.id, ...doc.data() }))
-      .filter((glass: any) => glass.status !== "inactive");
+      .map(doc => ({ id: doc.id, ...(doc.data() as Omit<Glass, 'id'>) } as Glass))
+      .filter((glass: Glass) => glass.status !== "inactive");
   } catch (error) {
     console.error("Error loading glasses:", error);
     return [];
   }
 };
 
-export const loadMaterials = async () => {
+export interface Glass {
+  id: string;
+  name: string;
+  status?: string;
+  [key: string]: unknown;
+}
+
+export const loadMaterials = async (): Promise<Material[]> => {
   try {
     const querySnapshot = await getDocs(collection(db, "materials"));
     return querySnapshot.docs.map(doc => ({
       id: doc.id,
-      ...doc.data()
-    }));
+      ...(doc.data() as Omit<Material, 'id'>)
+    } as Material));
   } catch (error) {
     console.error("Error loading materials:", error);
     return [];
   }
 };
 
-export const loadChapes = async () => {
+export interface Material {
+  id: string;
+  name: string;
+  [key: string]: unknown;
+}
+
+export const loadChapes = async (): Promise<Chape[]> => {
   try {
     const querySnapshot = await getDocs(collection(db, "chapes"));
     return querySnapshot.docs.map(doc => ({
       id: doc.id,
-      ...doc.data()
-    }));
+      ...(doc.data() as Omit<Chape, 'id'>)
+    } as Chape));
   } catch (error) {
     console.error("Error loading chapes:", error);
     return [];
   }
 };
 
-export const updateProjectStatus = async (projectId: string, newStatus: string) => {
+export interface Chape {
+  id: string;
+  name: string;
+  [key: string]: unknown;
+}
+
+export const updateProjectStatus = async (projectId: string, newStatus: string): Promise<void> => {
   try {
-    const updateData: any = { 
+    const updateData = { 
       status: newStatus,
       date: serverTimestamp()
     };
@@ -148,7 +192,7 @@ export const updateProjectStatus = async (projectId: string, newStatus: string) 
   }
 };
 
-export const updateProject = async (projectId: string, projectData: Partial<Project>) => {
+export const updateProject = async (projectId: string, projectData: Partial<Project>): Promise<void> => {
   try {
     const updateData = {
       ...projectData,
@@ -161,13 +205,13 @@ export const updateProject = async (projectId: string, projectData: Partial<Proj
   }
 };
 
-export const activateProject = async (projectId: string, project: Project, initialPayment?: number) => {
+export const activateProject = async (projectId: string, project: Project, initialPayment?: number): Promise<void> => {
   try {
-    const updateData: any = {
+    const updateData = {
       status: 'active',
       date: serverTimestamp(),
       debt: project.total,
-      payments: []
+      payments: [] as Payment[]
     };
 
     if (initialPayment && initialPayment > 0) {
@@ -191,7 +235,7 @@ export const addPaymentToProject = async (
   projectId: string, 
   project: Project, 
   payment: Payment
-) => {
+): Promise<void> => {
   try {
     const newDebt = Math.max(0, (project.debt || project.total) - payment.amount);
     const updatedPayments = [...(project.payments || []), payment];
@@ -207,39 +251,6 @@ export const addPaymentToProject = async (
   }
 };
 
-export const addModelToProject = async (projectId: string, modelData: any) => {
-  try {
-    const projectRef = doc(db, "projects", projectId);
-    const projectDoc = await getDocs(query(collection(db, "projects")));
-    const project = projectDoc.docs.find(doc => doc.id === projectId);
-    
-    if (project) {
-      const currentItems = project.data().items || [];
-      const updatedItems = [...currentItems, modelData];
-      const newTotal = updatedItems.reduce((sum, item) => {
-        if (item.type === 'model') {
-          return sum + (item.details?.materials?.price || 0) + 
-                     (item.details?.chapes?.price || 0) + 
-                     (item.details?.glasses?.price || 0) + 
-                     (item.laborCostSelected || 0);
-        } else if (item.type === 'individual') {
-          return sum + (item.totalPrice || 0);
-        }
-        return sum;
-      }, 0);
-
-      await updateDoc(projectRef, {
-        items: updatedItems,
-        total: newTotal,
-        date: serverTimestamp()
-      });
-    }
-  } catch (error) {
-    console.error("Error adding model to project:", error);
-    throw error;
-  }
-};
-
 export const formatCurrency = (amount: number): string => {
   return new Intl.NumberFormat('es-MX', {
     style: 'currency',
@@ -247,16 +258,16 @@ export const formatCurrency = (amount: number): string => {
   }).format(amount);
 };
 
-export const formatDate = (date: any): string => {
+export const formatDate = (date: FirebaseTimestamp | string | Date | null | undefined): string => {
   if (!date) return 'Fecha no disponible';
   
-  let dateObj;
-  if (date.toDate) {
+  let dateObj: Date;
+  if (typeof date === 'object' && date !== null && 'toDate' in date) {
     dateObj = date.toDate();
-  } else if (date.seconds) {
-    dateObj = new Date(date.seconds * 1000);
+  } else if (typeof date === 'object' && date !== null && 'seconds' in date) {
+    dateObj = new Date((date as any).seconds * 1000);
   } else {
-    dateObj = new Date(date);
+    dateObj = new Date(date as string | Date);
   }
   
   return dateObj.toLocaleDateString('es-ES', {

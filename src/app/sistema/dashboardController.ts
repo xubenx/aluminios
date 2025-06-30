@@ -1,6 +1,30 @@
 import { collection, getDocs } from "firebase/firestore";
 import { db } from "../../../firebase";
 
+// Interfaces for data types
+interface BaseItem {
+  id: string;
+  name: string;
+  [key: string]: unknown;
+}
+
+interface Project extends BaseItem {
+  status: string;
+  total: number;
+  payments?: Array<{ amount: number }>;
+}
+
+interface SystemData {
+  projects: Project[];
+  customers: BaseItem[];
+  models: BaseItem[];
+  materials: BaseItem[];
+  chapes: BaseItem[];
+  glasses: BaseItem[];
+  employees: BaseItem[];
+  journal: Array<{ monto: number; tipo: string; activo: boolean }>;
+}
+
 // Interfaces
 export interface Stats {
   totalProjects: number;
@@ -87,15 +111,55 @@ export const loadDashboardData = async (): Promise<Stats> => {
       getDocs(collection(db, "journal"))
     ]);
 
-    // Convertir a arrays
-    const projects = projectsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-    const customers = customersSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-    const models = modelsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-    const materials = materialsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-    const chapes = chapesSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-    const glasses = glassesSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-    const employees = employeesSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-    const journal = journalSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    // Convertir a arrays con tipos apropiados
+    const projects = projectsSnapshot.docs.map(doc => ({ 
+      id: doc.id, 
+      ...doc.data() 
+    })) as Project[];
+    
+    const customers = customersSnapshot.docs.map(doc => ({ 
+      id: doc.id, 
+      name: doc.data().name || '', 
+      ...doc.data() 
+    })) as BaseItem[];
+    
+    const models = modelsSnapshot.docs.map(doc => ({ 
+      id: doc.id, 
+      name: doc.data().name || '', 
+      ...doc.data() 
+    })) as BaseItem[];
+    
+    const materials = materialsSnapshot.docs.map(doc => ({ 
+      id: doc.id, 
+      name: doc.data().name || '', 
+      ...doc.data() 
+    })) as BaseItem[];
+    
+    const chapes = chapesSnapshot.docs.map(doc => ({ 
+      id: doc.id, 
+      name: doc.data().name || '', 
+      ...doc.data() 
+    })) as BaseItem[];
+    
+    const glasses = glassesSnapshot.docs.map(doc => ({ 
+      id: doc.id, 
+      name: doc.data().name || '', 
+      ...doc.data() 
+    })) as BaseItem[];
+    
+    const employees = employeesSnapshot.docs.map(doc => ({ 
+      id: doc.id, 
+      name: doc.data().name || '', 
+      ...doc.data() 
+    })) as BaseItem[];
+    
+    const journal = journalSnapshot.docs.map(doc => ({ 
+      id: doc.id, 
+      monto: doc.data().monto || 0,
+      tipo: doc.data().tipo || '',
+      activo: doc.data().activo !== false,
+      ...doc.data() 
+    })) as { monto: number; tipo: string; activo: boolean; id: string; [key: string]: any }[];
 
     // Realizar análisis
     return analyzeSystemData({
@@ -115,11 +179,11 @@ export const loadDashboardData = async (): Promise<Stats> => {
 };
 
 // Función para encontrar duplicados
-const findDuplicates = (items: any[], field: string) => {
+const findDuplicates = (items: BaseItem[], field: string) => {
   const counts: { [key: string]: { count: number; ids: string[] } } = {};
   
   items.forEach(item => {
-    const value = item[field]?.toLowerCase().trim();
+    const value = item[field]?.toString().toLowerCase().trim();
     if (value) {
       if (!counts[value]) {
         counts[value] = { count: 0, ids: [] };
@@ -130,13 +194,13 @@ const findDuplicates = (items: any[], field: string) => {
   });
 
   return Object.entries(counts)
-    .filter(([_, data]) => data.count > 1)
+    .filter(([, data]) => data.count > 1)
     .map(([name, data]) => ({ name, count: data.count, ids: data.ids }))
     .sort((a, b) => b.count - a.count);
 };
 
 // Función principal de análisis
-const analyzeSystemData = (data: any): Stats => {
+const analyzeSystemData = (data: SystemData): Stats => {
   const { projects, customers, models, materials, chapes, glasses, employees, journal } = data;
 
   // Filtrar proyectos activos (excluir inactivos)

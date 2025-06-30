@@ -196,7 +196,7 @@ export default function CotizadorApp() {
       // Para vidrio: se recorren las "options" internas de cada documento
       const glassesList = glassesSnap.docs.flatMap((doc) => {
         const data = doc.data();
-        return data.options.map((option, index) => ({
+        return data.options.map((option) => ({
           id: `${doc.id}_${option.tickness}`, // Clave única combinando ID del documento y espesor
           originalId: doc.id, // ID original del documento para referencia
           name: `${data.name} ${option.tickness}mm`,
