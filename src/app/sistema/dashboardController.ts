@@ -159,7 +159,7 @@ export const loadDashboardData = async (): Promise<Stats> => {
       tipo: doc.data().tipo || '',
       activo: doc.data().activo !== false,
       ...doc.data() 
-    })) as { monto: number; tipo: string; activo: boolean; id: string; [key: string]: any }[];
+    })) as { monto: number; tipo: string; activo: boolean; id: string; [key: string]: unknown }[];
 
     // Realizar análisis
     return analyzeSystemData({
@@ -204,40 +204,40 @@ const analyzeSystemData = (data: SystemData): Stats => {
   const { projects, customers, models, materials, chapes, glasses, employees, journal } = data;
 
   // Filtrar proyectos activos (excluir inactivos)
-  const activeProjects = projects.filter((p: any) => p.status !== "inactive");
+  const activeProjects = projects.filter((p: Project) => p.status !== "inactive");
 
   // Calcular ingresos de payments de proyectos
-  const projectPaymentsIncome = activeProjects.reduce((total: number, project: any) => {
+  const projectPaymentsIncome = activeProjects.reduce((total: number, project: Project) => {
     if (project.payments && Array.isArray(project.payments)) {
-      return total + project.payments.reduce((sum: number, payment: any) => sum + (payment.amount || 0), 0);
+      return total + project.payments.reduce((sum: number, payment: { amount: number }) => sum + (payment.amount || 0), 0);
     }
     return total;
   }, 0);
 
   // Análisis financiero del diario
-  const activeJournal = journal.filter((entry: any) => entry.activo !== false);
+  const activeJournal = journal.filter((entry: { monto: number; tipo: string; activo: boolean }) => entry.activo !== false);
   const journalIncome = activeJournal
-    .filter((entry: any) => entry.tipo === "pago")
-    .reduce((sum: number, entry: any) => sum + (entry.monto || 0), 0);
+    .filter((entry: { monto: number; tipo: string; activo: boolean }) => entry.tipo === "pago")
+    .reduce((sum: number, entry: { monto: number; tipo: string; activo: boolean }) => sum + (entry.monto || 0), 0);
   
   const totalExpenses = activeJournal
-    .filter((entry: any) => entry.tipo === "gasto")
-    .reduce((sum: number, entry: any) => sum + (entry.monto || 0), 0);
+    .filter((entry: { monto: number; tipo: string; activo: boolean }) => entry.tipo === "gasto")
+    .reduce((sum: number, entry: { monto: number; tipo: string; activo: boolean }) => sum + (entry.monto || 0), 0);
 
   // Total de ingresos combinados
   const totalIncome = journalIncome + projectPaymentsIncome;
 
   // Análisis de proyectos (solo activos)
   const projectsValue = {
-    total: activeProjects.reduce((sum: number, p: any) => sum + (p.total || 0), 0),
-    quotation: activeProjects.filter((p: any) => p.status === "quotation").reduce((sum: number, p: any) => sum + (p.total || 0), 0),
-    active: activeProjects.filter((p: any) => p.status === "active").reduce((sum: number, p: any) => sum + (p.total || 0), 0),
-    completed: activeProjects.filter((p: any) => p.status === "completed").reduce((sum: number, p: any) => sum + (p.total || 0), 0)
+    total: activeProjects.reduce((sum: number, p: Project) => sum + (p.total || 0), 0),
+    quotation: activeProjects.filter((p: Project) => p.status === "quotation").reduce((sum: number, p: Project) => sum + (p.total || 0), 0),
+    active: activeProjects.filter((p: Project) => p.status === "active").reduce((sum: number, p: Project) => sum + (p.total || 0), 0),
+    completed: activeProjects.filter((p: Project) => p.status === "completed").reduce((sum: number, p: Project) => sum + (p.total || 0), 0)
   };
 
   const projectsStatus = {
-    quotation: activeProjects.filter((p: any) => p.status === "quotation").length,
-    active: activeProjects.filter((p: any) => p.status === "active").length,
+    quotation: activeProjects.filter((p: Project) => p.status === "quotation").length,
+    active: activeProjects.filter((p: Project) => p.status === "active").length,
     completed: activeProjects.filter((p: any) => p.status === "completed").length,
     cancelled: activeProjects.filter((p: any) => p.status === "cancelled").length,
     inactive: projects.filter((p: any) => p.status === "inactive").length
