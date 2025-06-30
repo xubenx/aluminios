@@ -130,7 +130,12 @@ export default function ClientesPage() {
   
   // Estados para gestión detallada de proyectos
   const [expandedModels, setExpandedModels] = useState<{[key: string]: boolean}>({});
-  const [editingModel, setEditingModel] = useState<ProjectItem | null>(null);
+  const [editingModel, setEditingModel] = useState<(ProjectItem & { 
+    projectId?: string; 
+    modelIndex?: number;
+    price?: number;
+    laborPrice?: number;
+  }) | null>(null);
   const [showModelEditDialog, setShowModelEditDialog] = useState(false);
   const [showActivateDialog, setShowActivateDialog] = useState(false);
   const [activatingProject, setActivatingProject] = useState<Project | null>(null);
@@ -218,7 +223,7 @@ export default function ClientesPage() {
         return;
       }
 
-      const img = new Image();
+      const img = document.createElement('img');
       img.onload = () => {
         setImageCache(prev => new Set([...prev, modelId]));
         setImageLoaded(true);
@@ -362,8 +367,21 @@ export default function ClientesPage() {
         totalDebt,
         projectsByStatus,
         projects: customerProjects.sort((a, b) => {
-          const dateA = a.createdAt?.seconds || a.date?.seconds || 0;
-          const dateB = b.createdAt?.seconds || b.date?.seconds || 0;
+          const getTimestamp = (timestamp: any) => {
+            if (timestamp && typeof timestamp === 'object' && 'seconds' in timestamp) {
+              return timestamp.seconds;
+            }
+            if (timestamp instanceof Date) {
+              return timestamp.getTime() / 1000;
+            }
+            if (typeof timestamp === 'string') {
+              return new Date(timestamp).getTime() / 1000;
+            }
+            return 0;
+          };
+          
+          const dateA = getTimestamp(a.createdAt) || getTimestamp(a.date) || 0;
+          const dateB = getTimestamp(b.createdAt) || getTimestamp(b.date) || 0;
           return dateB - dateA; // Más recientes primero
         })
       };
@@ -490,7 +508,7 @@ export default function ClientesPage() {
   };
 
   const handleSaveModelEdit = async () => {
-    if (!editingModel || !selectedCustomerBalance) return;
+    if (!editingModel || !selectedCustomerBalance || !editingModel.projectId || editingModel.modelIndex === undefined) return;
 
     try {
       const project = selectedCustomerBalance.projects.find(p => p.id === editingModel.projectId);
@@ -594,7 +612,7 @@ export default function ClientesPage() {
       area: area,
       height: height,
       width: width,
-      glassPrice: selectedGlass.price || 0
+      glassPrice: typeof selectedGlass.price === 'number' ? selectedGlass.price : 0
     };
     
     const totalPrice = calculatePrice(typeof selectedModelToAdd.formula === 'string' ? selectedModelToAdd.formula : '0', variables);
@@ -739,8 +757,12 @@ export default function ClientesPage() {
       date = timestamp.toDate();
     } else if (typeof timestamp === 'object' && timestamp !== null && 'seconds' in timestamp && timestamp.seconds) {
       date = new Date(timestamp.seconds * 1000);
-    } else {
+    } else if (timestamp instanceof Date) {
+      date = timestamp;
+    } else if (typeof timestamp === 'string') {
       date = new Date(timestamp);
+    } else {
+      return 'Fecha no disponible';
     }
     
     return date.toLocaleDateString('es-ES', {
@@ -1195,7 +1217,7 @@ export default function ClientesPage() {
                                           {item.type === 'model' && item.modelId && (
                                             <CachedImage
                                               modelId={item.modelId}
-                                              modelName={item.modelName}
+                                              modelName={item.modelName || 'Sin nombre'}
                                               height={60}
                                               width={80}
                                             />
@@ -1229,7 +1251,7 @@ export default function ClientesPage() {
                                                 </Typography>
                                               )}
                                               <Typography variant="caption" color="primary">
-                                                <strong>Precio: {formatCurrency(item.price || item.totalPrice || 0)}</strong>
+                                                <strong>Precio: {formatCurrency(item.totalPrice || 0)}</strong>
                                               </Typography>
                                             </Box>
                                           </Box>
@@ -1545,7 +1567,7 @@ export default function ClientesPage() {
                 <Box sx={{ display: 'flex', justifyContent: 'center', mb: 2 }}>
                   <CachedImage
                     modelId={editingModel.modelId}
-                    modelName={editingModel.modelName}
+                    modelName={editingModel.modelName || 'Sin nombre'}
                     height={150}
                     width={200}
                   />
@@ -1558,7 +1580,7 @@ export default function ClientesPage() {
                   <Select
                     value={editingModel.status || 'pendiente'}
                     label="Estado"
-                    onChange={(e) => setEditingModel({ ...editingModel, status: e.target.value })}
+                    onChange={(e) => setEditingModel({ ...editingModel, status: e.target.value as ProjectItem['status'] })}
                   >
                     <MenuItem value="pendiente">Pendiente</MenuItem>
                     <MenuItem value="enProceso">En Proceso</MenuItem>
@@ -1592,7 +1614,10 @@ export default function ClientesPage() {
                     value={editingModel.dimensions.height || 1}
                     onChange={(e) => setEditingModel({
                       ...editingModel,
-                      dimensions: { ...editingModel.dimensions, height: e.target.value }
+                      dimensions: { 
+                        height: parseFloat(e.target.value) || 0,
+                        width: editingModel.dimensions?.width || 0
+                      }
                     })}
                     inputProps={{ min: 0, step: 0.01 }}
                   />
@@ -1603,7 +1628,10 @@ export default function ClientesPage() {
                     value={editingModel.dimensions.width || 1}
                     onChange={(e) => setEditingModel({
                       ...editingModel,
-                      dimensions: { ...editingModel.dimensions, width: e.target.value }
+                      dimensions: { 
+                        height: editingModel.dimensions?.height || 0,
+                        width: parseFloat(e.target.value) || 0
+                      }
                     })}
                     inputProps={{ min: 0, step: 0.01 }}
                   />
@@ -1612,7 +1640,7 @@ export default function ClientesPage() {
                     label="Área (m²)"
                     type="number"
                     value={editingModel.area || 0}
-                    onChange={(e) => setEditingModel({ ...editingModel, area: parseFloat(e.target.value) || 0 })}
+                    onChange={(e) => setEditingModel({ ...editingModel, area: e.target.value })}
                     inputProps={{ min: 0, step: 0.01 }}
                   />
                 </Box>
