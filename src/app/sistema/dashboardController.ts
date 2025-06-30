@@ -5,6 +5,11 @@ import { db } from "../../../firebase";
 interface BaseItem {
   id: string;
   name: string;
+  price?: number;
+  category?: string;
+  image?: string;
+  manpower?: number;
+  materials?: Array<{ name: string }>;
   [key: string]: unknown;
 }
 
@@ -12,6 +17,22 @@ interface Project extends BaseItem {
   status: string;
   total: number;
   payments?: Array<{ amount: number }>;
+  customerId?: string;
+  customerName?: string;
+  createdAt?: string;
+  updatedAt?: string;
+  image?: string;
+  manpower?: number;
+  materials?: Array<{ name: string }>;
+}
+
+interface JournalEntry {
+  id: string;
+  monto: number;
+  tipo: string;
+  activo: boolean;
+  descripcion?: string;
+  fecha?: string;
 }
 
 interface SystemData {
@@ -22,7 +43,7 @@ interface SystemData {
   chapes: BaseItem[];
   glasses: BaseItem[];
   employees: BaseItem[];
-  journal: Array<{ monto: number; tipo: string; activo: boolean }>;
+  journal: JournalEntry[];
 }
 
 // Interfaces
@@ -158,8 +179,10 @@ export const loadDashboardData = async (): Promise<Stats> => {
       monto: doc.data().monto || 0,
       tipo: doc.data().tipo || '',
       activo: doc.data().activo !== false,
+      descripcion: doc.data().descripcion || '',
+      fecha: doc.data().fecha || '',
       ...doc.data() 
-    })) as { monto: number; tipo: string; activo: boolean; id: string; [key: string]: unknown }[];
+    })) as JournalEntry[];
 
     // Realizar análisis
     return analyzeSystemData({
@@ -238,18 +261,18 @@ const analyzeSystemData = (data: SystemData): Stats => {
   const projectsStatus = {
     quotation: activeProjects.filter((p: Project) => p.status === "quotation").length,
     active: activeProjects.filter((p: Project) => p.status === "active").length,
-    completed: activeProjects.filter((p: any) => p.status === "completed").length,
-    cancelled: activeProjects.filter((p: any) => p.status === "cancelled").length,
-    inactive: projects.filter((p: any) => p.status === "inactive").length
+    completed: activeProjects.filter((p: Project) => p.status === "completed").length,
+    cancelled: activeProjects.filter((p: Project) => p.status === "cancelled").length,
+    inactive: projects.filter((p: Project) => p.status === "inactive").length
   };
 
   // Análisis de calidad de datos
-  const modelsWithoutImage = models.filter((m: any) => !m.image || m.image === "").length;
-  const modelsIncomplete = models.filter((m: any) => 
+  const modelsWithoutImage = models.filter((m: BaseItem) => !m.image || m.image === "").length;
+  const modelsIncomplete = models.filter((m: BaseItem) => 
     !m.name || !m.manpower || (!m.materials || m.materials.length === 0)
   ).length;
-  const materialsWithoutPrice = materials.filter((m: any) => !m.price || m.price <= 0).length;
-  const projectsWithoutTotal = projects.filter((p: any) => !p.total || p.total <= 0).length;
+  const materialsWithoutPrice = materials.filter((m: BaseItem) => !m.price || m.price <= 0).length;
+  const projectsWithoutTotal = projects.filter((p: Project) => !p.total || p.total <= 0).length;
 
   const totalFields = (models.length * 3) + materials.length + projects.length;
   const completeFields = totalFields - (modelsIncomplete + materialsWithoutPrice + projectsWithoutTotal);
@@ -257,14 +280,14 @@ const analyzeSystemData = (data: SystemData): Stats => {
 
   // Análisis de inventario
   const materialCategories: { [key: string]: number } = {};
-  materials.forEach((m: any) => {
+  materials.forEach((m: BaseItem) => {
     const category = m.category || "Sin categoría";
     materialCategories[category] = (materialCategories[category] || 0) + 1;
   });
 
   // Top customers
   const customerProjects: { [key: string]: { count: number; value: number; name: string } } = {};
-  projects.forEach((p: any) => {
+  projects.forEach((p: Project) => {
     const customerId = p.customerId || p.customerName || "Desconocido";
     if (!customerProjects[customerId]) {
       customerProjects[customerId] = { count: 0, value: 0, name: p.customerName || "Cliente desconocido" };
@@ -280,9 +303,9 @@ const analyzeSystemData = (data: SystemData): Stats => {
 
   // Materiales más usados
   const materialUsage: { [key: string]: number } = {};
-  models.forEach((model: any) => {
+  models.forEach((model: BaseItem) => {
     if (model.materials) {
-      model.materials.forEach((mat: any) => {
+      model.materials.forEach((mat: { name: string }) => {
         const matName = mat.name || "Material desconocido";
         materialUsage[matName] = (materialUsage[matName] || 0) + 1;
       });
@@ -296,42 +319,42 @@ const analyzeSystemData = (data: SystemData): Stats => {
 
   // Actividad reciente
   const recentActivity = [
-    ...projects.slice(-3).map((p: any) => ({
+    ...projects.slice(-3).map((p: Project) => ({
       type: "Proyecto",
       description: `Proyecto "${p.name}" - ${p.status}`,
       date: p.createdAt || p.updatedAt || new Date().toISOString()
     })),
-    ...journal.slice(-3).map((j: any) => ({
+    ...journal.slice(-3).map((j: JournalEntry) => ({
       type: j.tipo === "gasto" ? "Gasto" : "Ingreso",
-      description: j.descripcion,
+      description: j.descripcion || 'Sin descripción',
       date: j.fecha || new Date().toISOString()
     }))
   ].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()).slice(0, 8);
 
   // Predicciones
-  const completedProjects = projects.filter((p: any) => p.status === "completed");
+  const completedProjects = projects.filter((p: Project) => p.status === "completed");
   const averageProjectValue = completedProjects.length > 0 
-    ? completedProjects.reduce((sum: number, p: any) => sum + (p.total || 0), 0) / completedProjects.length
+    ? completedProjects.reduce((sum: number, p: Project) => sum + (p.total || 0), 0) / completedProjects.length
     : 0;
 
   const activeProjectsValue = projects
-    .filter((p: any) => p.status === "active")
-    .reduce((sum: number, p: any) => sum + (p.total || 0), 0);
+    .filter((p: Project) => p.status === "active")
+    .reduce((sum: number, p: Project) => sum + (p.total || 0), 0);
 
   const quotationProjectsValue = projects
-    .filter((p: any) => p.status === "quotation")
-    .reduce((sum: number, p: any) => sum + (p.total || 0), 0);
+    .filter((p: Project) => p.status === "quotation")
+    .reduce((sum: number, p: Project) => sum + (p.total || 0), 0);
 
   const expectedRevenue = activeProjectsValue + (quotationProjectsValue * 0.3);
 
   // Tasa de crecimiento
-  const thisMonthProjects = projects.filter((p: any) => {
+  const thisMonthProjects = projects.filter((p: Project) => {
     const date = new Date(p.createdAt || p.updatedAt || 0);
     const now = new Date();
     return date.getMonth() === now.getMonth() && date.getFullYear() === now.getFullYear();
   }).length;
 
-  const lastMonthProjects = projects.filter((p: any) => {
+  const lastMonthProjects = projects.filter((p: Project) => {
     const date = new Date(p.createdAt || p.updatedAt || 0);
     const lastMonth = new Date();
     lastMonth.setMonth(lastMonth.getMonth() - 1);
@@ -361,7 +384,7 @@ const analyzeSystemData = (data: SystemData): Stats => {
     totalModels: models.length,
     totalMaterials: materials.length,
     totalChapes: chapes.length,
-    totalGlasses: glasses.filter((g: any) => g.status !== "inactive").length,
+    totalGlasses: glasses.filter((g: BaseItem) => g.status !== "inactive").length,
     totalEmployees: employees.length,
     totalJournalEntries: activeJournal.length,
     projectsValue,

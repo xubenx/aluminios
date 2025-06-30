@@ -265,7 +265,8 @@ export const formatDate = (date: FirebaseTimestamp | string | Date | null | unde
   if (typeof date === 'object' && date !== null && 'toDate' in date) {
     dateObj = date.toDate();
   } else if (typeof date === 'object' && date !== null && 'seconds' in date) {
-    dateObj = new Date((date as any).seconds * 1000);
+    const timestampObj = date as unknown as { seconds: number; nanoseconds: number };
+    dateObj = new Date(timestampObj.seconds * 1000);
   } else {
     dateObj = new Date(date as string | Date);
   }

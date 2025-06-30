@@ -1,4 +1,4 @@
-import { collection, getDocs, addDoc, updateDoc, doc, serverTimestamp } from "firebase/firestore";
+import { collection, getDocs, addDoc, updateDoc, doc, serverTimestamp, Timestamp } from "firebase/firestore";
 import { db } from "../../../../firebase";
 
 export interface DiaryEntry {
@@ -15,8 +15,8 @@ export interface DiaryEntry {
   projectName?: string;
   customerName?: string;
   metodo?: string;
-  createdAt?: any;
-  updatedAt?: any;
+  createdAt?: Timestamp;
+  updatedAt?: Timestamp;
 }
 
 export interface ProjectPayment {
@@ -57,11 +57,17 @@ export const loadProjectPayments = async (): Promise<ProjectPayment[]> => {
     const paymentsData: ProjectPayment[] = [];
     
     projectsSnapshot.docs.forEach(doc => {
-      const project = { id: doc.id, ...doc.data() };
+      const project = { id: doc.id, ...doc.data() } as {
+        id: string;
+        name: string;
+        customerName: string;
+        status: string;
+        payments?: Array<{ date: string; amount: number; method: string; description?: string }>;
+      };
       
       // Solo considerar proyectos activos (no inactivos)
       if (project.status !== "inactive" && project.payments && Array.isArray(project.payments)) {
-        project.payments.forEach((payment: any, index: number) => {
+        project.payments.forEach((payment: { date: string; amount: number; method: string; description?: string }, index: number) => {
           paymentsData.push({
             id: `${project.id}_${payment.date}_${index}`,
             projectId: project.id,
