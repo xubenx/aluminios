@@ -9,7 +9,6 @@ import {
   Typography,
   TextField,
   Autocomplete,
-  Box
 } from "@mui/material";
 
 // Diálogo para confirmar la eliminación del modelo
