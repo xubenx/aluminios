@@ -211,7 +211,7 @@ export default function ModelDetailsPage({ params }) {
       await deleteDoc(doc(db, "models", id));
       setSnackbar({ open: true, message: "Modelo eliminado correctamente.", severity: "success" });
       setConfirmDelete(false);
-      router.push("sistema/modelos/");
+      router.push("/sistema/modelos");
     } catch (error) {
       console.log(error);
       setSnackbar({ open: true, message: "Error al eliminar el modelo.", severity: "error" });
