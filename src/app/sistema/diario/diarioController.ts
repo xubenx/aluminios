@@ -7,7 +7,7 @@ export interface DiaryEntry {
   tipo: 'gasto' | 'pago';
   categoria: string;
   descripcion: string;
-  monto: number;
+  amount?: number; // Para compatibilidad con pagos de proyectos
   observaciones?: string;
   activo: boolean;
   source?: 'diary' | 'project';
@@ -16,6 +16,7 @@ export interface DiaryEntry {
   customerName?: string;
   metodo?: string;
   createdAt?: Timestamp;
+  date?: Timestamp; // Para compatibilidad con proyectos
   updatedAt?: Timestamp;
 }
 
@@ -28,7 +29,7 @@ export interface ProjectPayment {
   tipo: 'pago';
   categoria: string;
   descripcion: string;
-  monto: number;
+  amount: number;
   metodo: string;
   observaciones: string;
   source: 'project';
@@ -77,7 +78,7 @@ export const loadProjectPayments = async (): Promise<ProjectPayment[]> => {
             tipo: "pago",
             categoria: "Pagos de Proyectos",
             descripcion: `Pago proyecto: ${project.name} - ${project.customerName}`,
-            monto: payment.amount,
+            amount: payment.amount,
             metodo: payment.method,
             observaciones: payment.description || "",
             source: "project",
@@ -148,20 +149,20 @@ export const calculateTotals = (entries: DiaryEntry[]) => {
   
   const totalGastos = activeEntries
     .filter(entry => entry.tipo === "gasto")
-    .reduce((total, entry) => total + entry.monto, 0);
+    .reduce((total, entry) => total + entry.amount, 0);
   
   const totalIngresos = activeEntries
     .filter(entry => entry.tipo === "pago")
-    .reduce((total, entry) => total + entry.monto, 0);
+    .reduce((total, entry) => total + entry.amount, 0);
   
   // Desglose de ingresos por fuente
   const ingresosDiario = activeEntries
     .filter(entry => entry.tipo === "pago" && entry.source === "diary")
-    .reduce((total, entry) => total + entry.monto, 0);
+    .reduce((total, entry) => total + entry.amount, 0);
   
   const ingresosProyectos = activeEntries
     .filter(entry => entry.tipo === "pago" && entry.source === "project")
-    .reduce((total, entry) => total + entry.monto, 0);
+    .reduce((total, entry) => total + entry.amount, 0);
   
   const balance = totalIngresos - totalGastos;
   
