@@ -26,6 +26,8 @@ import { Add, Edit, Delete } from "@mui/icons-material";
 export default function MaterialsPage() {
   const [materials, setMaterials] = useState([]);
   const [filteredMaterials, setFilteredMaterials] = useState([]);
+  const [models, setModels] = useState([]);
+  const [materialUsageCount, setMaterialUsageCount] = useState({});
   const [searchText, setSearchText] = useState("");
   const [editingPriceId, setEditingPriceId] = useState(null); // ID del material en edición
   const [editingPriceValue, setEditingPriceValue] = useState(""); // Valor del precio en edición
@@ -36,6 +38,7 @@ export default function MaterialsPage() {
 
   useEffect(() => {
     fetchMaterials();
+    fetchModels();
   }, []);
 
   useEffect(() => {
@@ -44,6 +47,44 @@ export default function MaterialsPage() {
     );
     setFilteredMaterials(filtered);
   }, [searchText, materials]);
+
+  useEffect(() => {
+    calculateMaterialUsage();
+  }, [materials, models]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const fetchModels = async () => {
+    try {
+      const modelsSnapshot = await getDocs(collection(db, "models"));
+      const modelsData = modelsSnapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
+      setModels(modelsData);
+    } catch (error) {
+      console.error("Error fetching models:", error);
+    }
+  };
+
+  const calculateMaterialUsage = () => {
+    const usageCount = {};
+    
+    // Inicializar contador para todos los materiales
+    materials.forEach(material => {
+      usageCount[material.id] = 0;
+    });
+
+    // Contar en cuántos modelos aparece cada material
+    models.forEach(model => {
+      if (model.materials && Array.isArray(model.materials)) {
+        model.materials.forEach(materialRef => {
+          // materialRef puede ser un string (ID) o un objeto con id
+          const materialId = typeof materialRef === 'string' ? materialRef : materialRef.id;
+          if (materialId && usageCount.hasOwnProperty(materialId)) {
+            usageCount[materialId]++;
+          }
+        });
+      }
+    });
+
+    setMaterialUsageCount(usageCount);
+  };
 
   const fetchMaterials = async () => {
     const materialsSnapshot = await getDocs(collection(db, "materials"));
@@ -129,6 +170,7 @@ export default function MaterialsPage() {
         setSnackbar({ open: true, message: "Material agregado correctamente.", severity: "success" });
       }
       fetchMaterials();
+      fetchModels(); // Actualizar modelos también por si hay cambios
       handleCloseDialog();
     } catch (error) {
       console.log(error);
@@ -142,6 +184,7 @@ export default function MaterialsPage() {
         await deleteDoc(doc(db, "materials", id));
         setSnackbar({ open: true, message: "Material eliminado correctamente.", severity: "success" });
         fetchMaterials();
+        fetchModels(); // Actualizar modelos también
       } catch (error) {
         console.log(error);
         setSnackbar({ open: true, message: "Error al eliminar el material.", severity: "error" });
@@ -174,6 +217,7 @@ export default function MaterialsPage() {
                 <TableCell><strong>Nombre</strong></TableCell>
                 <TableCell><strong>Precio</strong></TableCell>
                 <TableCell><strong>Longitud</strong></TableCell>
+                <TableCell><strong>Usado en Modelos</strong></TableCell>
                 <TableCell><strong>Acciones</strong></TableCell>
               </TableRow>
             </TableHead>
@@ -197,6 +241,17 @@ export default function MaterialsPage() {
                     )}
                   </TableCell>
                   <TableCell>{material.stretch} m</TableCell>
+                  <TableCell>
+                    <span style={{ 
+                      backgroundColor: materialUsageCount[material.id] > 0 ? '#e3f2fd' : '#fff3e0', 
+                      padding: '4px 8px', 
+                      borderRadius: '4px',
+                      color: materialUsageCount[material.id] > 0 ? '#1976d2' : '#f57c00',
+                      fontWeight: 'bold'
+                    }}>
+                      {materialUsageCount[material.id] || 0} modelo{materialUsageCount[material.id] !== 1 ? 's' : ''}
+                    </span>
+                  </TableCell>
                   <TableCell>
                     <Button
                       color="azulote"

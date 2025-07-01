@@ -26,6 +26,8 @@ import { Add, Edit, Delete } from "@mui/icons-material";
 export default function ChapesPage() {
   const [chapes, setChapes] = useState([]);
   const [filteredChapes, setFilteredChapes] = useState([]); // Para herrajes filtrados
+  const [models, setModels] = useState([]);
+  const [chapeUsageCount, setChapeUsageCount] = useState({});
   const [searchText, setSearchText] = useState(""); // Texto de búsqueda
   const [editingPriceId, setEditingPriceId] = useState(null); // ID del herraje en edición
   const [editingPriceValue, setEditingPriceValue] = useState(""); // Valor del precio en edición
@@ -36,6 +38,7 @@ export default function ChapesPage() {
 
   useEffect(() => {
     fetchChapes();
+    fetchModels();
   }, []);
 
   useEffect(() => {
@@ -45,6 +48,44 @@ export default function ChapesPage() {
     );
     setFilteredChapes(filtered);
   }, [searchText, chapes]);
+
+  useEffect(() => {
+    calculateChapeUsage();
+  }, [chapes, models]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const fetchModels = async () => {
+    try {
+      const modelsSnapshot = await getDocs(collection(db, "models"));
+      const modelsData = modelsSnapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
+      setModels(modelsData);
+    } catch (error) {
+      console.error("Error fetching models:", error);
+    }
+  };
+
+  const calculateChapeUsage = () => {
+    const usageCount = {};
+    
+    // Inicializar contador para todos los herrajes
+    chapes.forEach(chape => {
+      usageCount[chape.id] = 0;
+    });
+
+    // Contar en cuántos modelos aparece cada herraje
+    models.forEach(model => {
+      if (model.chapes && Array.isArray(model.chapes)) {
+        model.chapes.forEach(chapeRef => {
+          // chapeRef puede ser un string (ID) o un objeto con id
+          const chapeId = typeof chapeRef === 'string' ? chapeRef : chapeRef.id;
+          if (chapeId && usageCount.hasOwnProperty(chapeId)) {
+            usageCount[chapeId]++;
+          }
+        });
+      }
+    });
+
+    setChapeUsageCount(usageCount);
+  };
 
   const fetchChapes = async () => {
     const chapesSnapshot = await getDocs(collection(db, "chapes"));
@@ -159,6 +200,7 @@ export default function ChapesPage() {
               <TableRow>
                 <TableCell><strong>Nombre</strong></TableCell>
                 <TableCell><strong>Precio</strong></TableCell>
+                <TableCell><strong>Usado en Modelos</strong></TableCell>
                 <TableCell><strong>Acciones</strong></TableCell>
               </TableRow>
             </TableHead>
@@ -180,6 +222,17 @@ export default function ChapesPage() {
                     ) : (
                       `$${chape.price}`
                     )}
+                  </TableCell>
+                  <TableCell>
+                    <span style={{ 
+                      backgroundColor: chapeUsageCount[chape.id] > 0 ? '#e8f5e8' : '#fff3e0', 
+                      padding: '4px 8px', 
+                      borderRadius: '4px',
+                      color: chapeUsageCount[chape.id] > 0 ? '#2e7d32' : '#f57c00',
+                      fontWeight: 'bold'
+                    }}>
+                      {chapeUsageCount[chape.id] || 0} modelo{chapeUsageCount[chape.id] !== 1 ? 's' : ''}
+                    </span>
                   </TableCell>
                   <TableCell>
                     <Button
