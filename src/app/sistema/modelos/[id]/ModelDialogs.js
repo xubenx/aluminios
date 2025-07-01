@@ -8,7 +8,8 @@ import {
   Button,
   Typography,
   TextField,
-  Autocomplete
+  Autocomplete,
+  Box
 } from "@mui/material";
 
 // Diálogo para confirmar la eliminación del modelo
@@ -75,17 +76,60 @@ export function ConfirmDeleteItemDialog({ open, onCancel, onConfirm }) {
   );
 }
 
-// Diálogo para confirmar el cambio de imagen del modelo
-export function ConfirmChangeImageDialog({ open, onCancel, onConfirm }) {
+// Diálogo para seleccionar y cambiar la imagen del modelo
+export function ChangeImageDialog({ open, onCancel, onConfirm, onImageChange, previewImage }) {
+  const handleFileChange = (e) => {
+    if (e.target.files && e.target.files[0]) {
+      const file = e.target.files[0];
+      onImageChange(file);
+    }
+  };
+
   return (
-    <Dialog open={open} onClose={onCancel}>
-      <DialogTitle>Cambiar Imagen</DialogTitle>
+    <Dialog open={open} onClose={onCancel} maxWidth="sm" fullWidth>
+      <DialogTitle>Cambiar Imagen del Modelo</DialogTitle>
       <DialogContent>
-        <Typography>¿Estás seguro de que deseas cambiar la imagen del modelo?</Typography>
+        <Typography sx={{ mb: 2 }}>
+          Selecciona una nueva imagen para el modelo:
+        </Typography>
+        
+        <Button variant="outlined" component="label" sx={{ mb: 2 }}>
+          Seleccionar Imagen
+          <input
+            type="file"
+            accept="image/*"
+            hidden
+            onChange={handleFileChange}
+          />
+        </Button>
+
+        {previewImage && (
+          <div style={{ textAlign: 'center', marginTop: '16px' }}>
+            <Typography variant="subtitle2" sx={{ mb: 1 }}>Vista previa:</Typography>
+            <img
+              src={previewImage}
+              alt="Vista previa"
+              style={{
+                maxWidth: '100%',
+                maxHeight: '300px',
+                objectFit: 'contain',
+                borderRadius: '8px',
+                border: '1px solid #ddd'
+              }}
+            />
+          </div>
+        )}
       </DialogContent>
       <DialogActions>
         <Button onClick={onCancel}>Cancelar</Button>
-        <Button onClick={onConfirm} color="info">Cambiar Imagen</Button>
+        <Button 
+          onClick={onConfirm} 
+          color="primary" 
+          variant="contained"
+          disabled={!previewImage}
+        >
+          Cambiar Imagen
+        </Button>
       </DialogActions>
     </Dialog>
   );

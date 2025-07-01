@@ -35,7 +35,7 @@ import {
   ConfirmUpdateModelDialog,
   ConfirmUpdateSectionDialog,
   ConfirmDeleteItemDialog,
-  ConfirmChangeImageDialog,
+  ChangeImageDialog,
   EditElementDialog,
 } from "./ModelDialogs";
 
@@ -54,7 +54,11 @@ export default function ModelDetailsPage({ params }) {
   const [confirmUpdateModel, setConfirmUpdateModel] = useState(false);
   const [confirmUpdateSection, setConfirmUpdateSection] = useState(false);
   const [deleteItemConfirmation, setDeleteItemConfirmation] = useState({ open: false, section: "", index: null });
-  const [confirmImageChange, setConfirmImageChange] = useState(false);
+  const [changeImageDialog, setChangeImageDialog] = useState(false);
+  // Estados para el cambio de imagen
+  const [imageFile, setImageFile] = useState(null);
+  const [previewImage, setPreviewImage] = useState("");
+  const [imageTimestamp, setImageTimestamp] = useState(Date.now());
   // Opciones para Autocomplete (para materials y chapes)
   const [materialsOptions, setMaterialsOptions] = useState([]);
   const [chapesOptions, setChapesOptions] = useState([]);
@@ -123,7 +127,10 @@ export default function ModelDetailsPage({ params }) {
   // Evalúa la fórmula con mathjs, usando las variables que se le pasen
   const calculatePrice = (formula, variables) => {
     try {
-      return evaluate(formula, variables);
+      const result = evaluate(formula, variables);
+      // Asegurar que el resultado sea un número válido
+      const numericResult = parseFloat(result);
+      return isNaN(numericResult) ? 0 : numericResult;
     } catch (error) {
       console.error("Error al calcular la fórmula:", error);
       return 0;
@@ -224,9 +231,74 @@ export default function ModelDetailsPage({ params }) {
     return formattedValue;
   };
 
-  const handleChangeImage = async () => {
-    setSnackbar({ open: true, message: "Funcionalidad para cambiar la imagen aún no implementada.", severity: "info" });
-    setConfirmImageChange(false);
+  const handleChangeImage = () => {
+    setChangeImageDialog(true);
+  };
+
+  const handleImageFileChange = (file) => {
+    setImageFile(file);
+    setPreviewImage(URL.createObjectURL(file));
+  };
+
+  const handleConfirmImageChange = async () => {
+    if (!imageFile) {
+      setSnackbar({ open: true, message: "Por favor selecciona una imagen.", severity: "error" });
+      return;
+    }
+
+    try {
+      // Primero eliminar la imagen anterior si existe
+      try {
+        await fetch(`/api/delete-image?modelId=${id}`, {
+          method: 'DELETE',
+        });
+        // No necesitamos manejar errores aquí ya que es normal que no exista imagen anterior
+      } catch (deleteError) {
+        console.log("No se pudo eliminar la imagen anterior (probablemente no existía):", deleteError);
+      }
+
+      // Subir la nueva imagen
+      const imageFormData = new FormData();
+      imageFormData.append('file', imageFile);
+      imageFormData.append('modelId', id);
+
+      const uploadResponse = await fetch('/api/upload-image', {
+        method: 'POST',
+        body: imageFormData,
+      });
+
+      if (!uploadResponse.ok) {
+        throw new Error('Failed to upload image');
+      }
+
+      setSnackbar({ 
+        open: true, 
+        message: "Imagen cambiada correctamente.", 
+        severity: "success" 
+      });
+      
+      // Limpiar estados
+      setChangeImageDialog(false);
+      setImageFile(null);
+      setPreviewImage("");
+      
+      // Actualizar timestamp para forzar recarga de la imagen
+      setImageTimestamp(Date.now());
+      
+    } catch (error) {
+      console.error("Error al cambiar imagen:", error);
+      setSnackbar({ 
+        open: true, 
+        message: "Error al cambiar la imagen.", 
+        severity: "error" 
+      });
+    }
+  };
+
+  const handleCancelImageChange = () => {
+    setChangeImageDialog(false);
+    setImageFile(null);
+    setPreviewImage("");
   };
 
   // Para abrir el diálogo de edición/creación:
@@ -430,7 +502,7 @@ const totalGlassMeterage = model.glasses.reduce((acc, glass) => {
         </Button>
         <Box sx={{ display: "flex", justifyContent: "center", alignItems: "center", height: { xs: "300px", sm: "400px", md: "500px" }, mb: 2 }}>
           <Image
-            src={`/images/${model.id}.png`}
+            src={`/images/${model.id}.png?t=${imageTimestamp}`}
             alt={`Imagen de ${model.name}`}
             width={500}
             height={500}
@@ -534,12 +606,15 @@ const totalGlassMeterage = model.glasses.reduce((acc, glass) => {
                 ANCHO: dimensions.width,
                 TRAMO: tramo,
               });
+              // Asegurar que meterage sea un número válido
+              const safeMeterage = isNaN(meterage) ? 0 : meterage;
+              const safePrice = isNaN(price) ? 0 : price;
               return (
                 <TableRow key={index}>
                   <TableCell>{material.name}</TableCell>
                   <TableCell>{material.formula}</TableCell>
-                  <TableCell>{meterage.toFixed(2)} mts</TableCell>
-                  <TableCell>${price.toFixed(2)}</TableCell>
+                  <TableCell>{safeMeterage.toFixed(2)} mts</TableCell>
+                  <TableCell>${safePrice.toFixed(2)}</TableCell>
                   <TableCell>
                     <Button color="azulote" startIcon={<Edit />} onClick={() => handleOpenDialog("materials", { ...material, index })}>
                       Editar
@@ -644,12 +719,15 @@ const totalGlassMeterage = model.glasses.reduce((acc, glass) => {
               // Se usa el priceInstalled del vidrio seleccionado (del combobox independiente)
               const glassPrice = selectedGlass ? parseFloat(selectedGlass.priceInstalled || "0") : 0;
               const price = meterage * glassPrice;
+              // Asegurar que meterage y price sean números válidos
+              const safeMeterage = isNaN(meterage) ? 0 : meterage;
+              const safePrice = isNaN(price) ? 0 : price;
               return (
                 <TableRow key={index}>
                   <TableCell>{glass.name}</TableCell>
                   <TableCell>{glass.formula}</TableCell>
-                  <TableCell>{meterage.toFixed(2)} mts</TableCell>
-                  <TableCell>${price.toFixed(2)}</TableCell>
+                  <TableCell>{safeMeterage.toFixed(2)} mts</TableCell>
+                  <TableCell>${safePrice.toFixed(2)}</TableCell>
                   <TableCell>
                     <Button color="azulote" startIcon={<Edit />} onClick={() => handleOpenDialog("glasses", { ...glass, index })}>
                       Editar
@@ -721,10 +799,12 @@ const totalGlassMeterage = model.glasses.reduce((acc, glass) => {
         }}
       />
 
-      <ConfirmChangeImageDialog
-        open={confirmImageChange}
-        onCancel={() => setConfirmImageChange(false)}
-        onConfirm={handleChangeImage}
+      <ChangeImageDialog
+        open={changeImageDialog}
+        onCancel={handleCancelImageChange}
+        onConfirm={handleConfirmImageChange}
+        onImageChange={handleImageFileChange}
+        previewImage={previewImage}
       />
 
       <Snackbar
