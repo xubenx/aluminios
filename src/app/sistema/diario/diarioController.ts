@@ -7,7 +7,7 @@ export interface DiaryEntry {
   tipo: 'gasto' | 'pago';
   categoria: string;
   descripcion: string;
-  amount?: number; // Para compatibilidad con pagos de proyectos
+  amount: number; // Para compatibilidad con pagos de proyectos
   observaciones?: string;
   activo: boolean;
   source?: 'diary' | 'project';
