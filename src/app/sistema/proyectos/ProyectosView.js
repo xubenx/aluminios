@@ -181,6 +181,7 @@ const ProyectosView = ({
 
   recalcIndividualPriceType,
   setRecalcIndividualPriceType,
+  recalcIndividualPreview,
   showAddIndividualItemDialog,
   setShowAddIndividualItemDialog,
   individualItemType,
@@ -1664,16 +1665,13 @@ const ProyectosView = ({
                       Vista Previa del Re-cálculo
                     </Typography>
                     <Typography variant="body2" color="textSecondary" sx={{ mb: 1 }}>
-                      {recalcIndividualItem.itemType === 'material' && recalcIndividualQuantityType === 'metros' && 
-                        `${recalcIndividualQuantity}m ÷ 6.1m/tramo × precio por tramo`}
-                      {recalcIndividualItem.itemType === 'material' && recalcIndividualQuantityType === 'tramos' && 
-                        `${recalcIndividualQuantity} tramos × precio por tramo`}
-                      {recalcIndividualItem.itemType === 'herraje' && 
-                        `${recalcIndividualQuantity} piezas × precio por pieza`}
-                      {recalcIndividualItem.itemType === 'vidrio' && recalcIndividualDimensions.height && recalcIndividualDimensions.width &&
-                        `${recalcIndividualDimensions.height}cm × ${recalcIndividualDimensions.width}cm = ${((parseFloat(recalcIndividualDimensions.height) / 100) * (parseFloat(recalcIndividualDimensions.width) / 100)).toFixed(2)}m² × precio por m²`}
-                      {recalcIndividualItem.itemType === 'vidrio' && (!recalcIndividualDimensions.height || !recalcIndividualDimensions.width) &&
-                        `${recalcIndividualQuantity}m² × precio por m²`}
+                      {recalcIndividualPreview.calculation || "Calculando..."}
+                    </Typography>
+                    <Typography variant="h6" color="primary">
+                      Total: {formatCurrency(recalcIndividualPreview.total)}
+                    </Typography>
+                    <Typography variant="body2" color="textSecondary">
+                      Precio unitario: {formatCurrency(recalcIndividualPreview.unitPrice)}
                     </Typography>
                   </Paper>
                 </Grid>
@@ -1687,8 +1685,9 @@ const ProyectosView = ({
             variant="contained" 
             onClick={confirmRecalcIndividualItem}
             disabled={recalcIndividualQuantity <= 0}
+            color="primary"
           >
-            Re-cotizar Elemento
+            Re-cotizar Elemento ({formatCurrency(recalcIndividualPreview.total)})
           </Button>
         </DialogActions>
       </Dialog>

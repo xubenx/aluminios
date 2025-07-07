@@ -185,6 +185,7 @@ const updateProjectWithRecalculatedTotal = async (projectId, updatedItems) => {
 // Additional helper functions needed
 const updateProjectItem = async (projectId, itemIndex, updatedData) => {
   try {
+    console.log("Updating project item with data:", updatedData); // Debug log
     const projectDoc = await getDoc(doc(db, "projects", projectId));
     if (!projectDoc.exists()) {
       throw new Error("Project not found");
@@ -192,13 +193,25 @@ const updateProjectItem = async (projectId, itemIndex, updatedData) => {
 
     const projectData = projectDoc.data();
     const updatedItems = [...(projectData.items || [])];
-    updatedItems[itemIndex] = { ...updatedItems[itemIndex], ...updatedData };
+    
+    // Ensure we don't pass undefined values to Firestore
+    const cleanedData = {};
+    Object.keys(updatedData).forEach(key => {
+      if (updatedData[key] !== undefined) {
+        cleanedData[key] = updatedData[key];
+      }
+    });
+    
+    updatedItems[itemIndex] = { ...updatedItems[itemIndex], ...cleanedData };
+    console.log("Updated item:", updatedItems[itemIndex]); // Debug log
 
     const newTotal = calculateProjectTotal(updatedItems);
     await updateDoc(doc(db, "projects", projectId), {
       items: updatedItems,
       total: newTotal
     });
+    
+    console.log("Project updated successfully"); // Debug log
   } catch (error) {
     console.error("Error updating project item:", error);
     throw error;
@@ -426,6 +439,8 @@ export const useProyectosController = () => {
   const [recalcIndividualSelectedHerraje, setRecalcIndividualSelectedHerraje] = useState(null);
   const [recalcIndividualSelectedVidrio, setRecalcIndividualSelectedVidrio] = useState(null);
   const [recalcIndividualPriceType, setRecalcIndividualPriceType] = useState("installed");
+  // Estados para mostrar el cálculo en tiempo real
+  const [recalcIndividualPreview, setRecalcIndividualPreview] = useState({ unitPrice: 0, total: 0, calculation: "" });
 
   // Estados para agregar elementos individuales
   const [showAddIndividualItemDialog, setShowAddIndividualItemDialog] = useState(false);
@@ -1614,6 +1629,8 @@ export const useProyectosController = () => {
     setRecalcIndividualQuantityType("metros");
     setRecalcIndividualDimensions(item.dimensions || { height: "", width: "" });
     setRecalcIndividualPriceType("installed");
+    // Reset preview
+    setRecalcIndividualPreview({ unitPrice: 0, total: 0, calculation: "" });
     setShowRecalcIndividualDialog(true);
   };
 
@@ -1625,45 +1642,57 @@ export const useProyectosController = () => {
       switch (recalcIndividualItem.itemType) {
         case 'material':
           const material = materialsOptions.find(m => m.id === recalcIndividualItem.itemId);
-          unitPrice = parseFloat(material?.price || "0");
-          if (recalcIndividualQuantityType === "metros") {
-            const tramo = parseFloat(material?.stretch || "6.1");
-            total = (recalcIndividualQuantity / tramo) * unitPrice;
-          } else {
-            total = recalcIndividualQuantity * unitPrice;
+          if (material) {
+            unitPrice = parseFloat(material.price || "0");
+            if (recalcIndividualQuantityType === "metros") {
+              const tramo = parseFloat(material.stretch || "6.1");
+              total = (recalcIndividualQuantity / tramo) * unitPrice;
+            } else {
+              total = recalcIndividualQuantity * unitPrice;
+            }
           }
           break;
         case 'herraje':
           const herraje = chapesOptions.find(c => c.id === recalcIndividualItem.itemId);
-          unitPrice = parseFloat(herraje?.price || "0");
-          total = recalcIndividualQuantity * unitPrice;
+          if (herraje) {
+            unitPrice = parseFloat(herraje.price || "0");
+            total = recalcIndividualQuantity * unitPrice;
+          }
           break;
         case 'vidrio':
           const vidrio = glassesOptions.find(g => g.id === recalcIndividualItem.itemId);
-          unitPrice = parseFloat(vidrio?.[recalcIndividualPriceType === "installed" ? "priceInstalled" : "price"] || "0");
-          let area = recalcIndividualQuantity;
-          if (recalcIndividualDimensions.height && recalcIndividualDimensions.width) {
-            area = (parseFloat(recalcIndividualDimensions.height) / 100) * (parseFloat(recalcIndividualDimensions.width) / 100);
+          if (vidrio) {
+            unitPrice = parseFloat(vidrio[recalcIndividualPriceType === "installed" ? "priceInstalled" : "price"] || "0");
+            let area = recalcIndividualQuantity;
+            
+            // If dimensions are provided, calculate area from dimensions
+            if (recalcIndividualDimensions.height && recalcIndividualDimensions.width) {
+              area = (parseFloat(recalcIndividualDimensions.height) / 100) * (parseFloat(recalcIndividualDimensions.width) / 100);
+            }
+            
+            total = area * unitPrice;
+            console.log(`Glass calculation: area=${area}m², unitPrice=${unitPrice}, total=${total}`); // Debug log
           }
-          total = area * unitPrice;
           break;
       }
 
       const updatedItem = {
         quantity: recalcIndividualQuantity,
-        unitPrice,
-        total,
+        unitPrice: unitPrice,
+        total: total,
         dimensions: recalcIndividualDimensions.height && recalcIndividualDimensions.width ? {
           height: parseFloat(recalcIndividualDimensions.height),
           width: parseFloat(recalcIndividualDimensions.width)
         } : undefined
       };
 
+      console.log("Updating item with:", updatedItem); // Debug log
+
       await updateProjectItem(recalcIndividualItem.projectId, recalcIndividualItem.itemIndex, updatedItem);
       
       setSnackbar({
         open: true,
-        message: "Elemento re-cotizado exitosamente.",
+        message: `Elemento re-cotizado exitosamente. Nuevo total: ${formatCurrency(total)}`,
         severity: "success"
       });
       
@@ -1795,7 +1824,76 @@ export const useProyectosController = () => {
     individualItemPriceType
   ]);
 
-  // Función utilitaria para verificar y corregir todos los totales de proyectos
+  // Calcular precios en tiempo real para recotización de elementos individuales
+  useEffect(() => {
+    if (!recalcIndividualItem) {
+      setRecalcIndividualPreview({ unitPrice: 0, total: 0, calculation: "" });
+      return;
+    }
+
+    let unitPrice = 0;
+    let total = 0;
+    let calculation = "";
+
+    try {
+      switch (recalcIndividualItem.itemType) {
+        case 'material':
+          const material = materialsOptions.find(m => m.id === recalcIndividualItem.itemId);
+          if (material) {
+            unitPrice = parseFloat(material.price || "0");
+            if (recalcIndividualQuantityType === "metros") {
+              const tramo = parseFloat(material.stretch || "6.1");
+              total = (recalcIndividualQuantity / tramo) * unitPrice;
+              calculation = `${recalcIndividualQuantity}m ÷ ${tramo}m/tramo × ${formatCurrency(unitPrice)} = ${formatCurrency(total)}`;
+            } else {
+              total = recalcIndividualQuantity * unitPrice;
+              calculation = `${recalcIndividualQuantity} tramos × ${formatCurrency(unitPrice)} = ${formatCurrency(total)}`;
+            }
+          }
+          break;
+        case 'herraje':
+          const herraje = chapesOptions.find(c => c.id === recalcIndividualItem.itemId);
+          if (herraje) {
+            unitPrice = parseFloat(herraje.price || "0");
+            total = recalcIndividualQuantity * unitPrice;
+            calculation = `${recalcIndividualQuantity} piezas × ${formatCurrency(unitPrice)} = ${formatCurrency(total)}`;
+          }
+          break;
+        case 'vidrio':
+          const vidrio = glassesOptions.find(g => g.id === recalcIndividualItem.itemId);
+          if (vidrio) {
+            unitPrice = parseFloat(vidrio[recalcIndividualPriceType === "installed" ? "priceInstalled" : "price"] || "0");
+            let area = recalcIndividualQuantity;
+            let calculationText = "";
+            
+            // If dimensions are provided, calculate area from dimensions
+            if (recalcIndividualDimensions.height && recalcIndividualDimensions.width) {
+              area = (parseFloat(recalcIndividualDimensions.height) / 100) * (parseFloat(recalcIndividualDimensions.width) / 100);
+              calculationText = `${recalcIndividualDimensions.height}cm × ${recalcIndividualDimensions.width}cm = ${area.toFixed(2)}m² × ${formatCurrency(unitPrice)} = ${formatCurrency(area * unitPrice)}`;
+            } else {
+              calculationText = `${recalcIndividualQuantity}m² × ${formatCurrency(unitPrice)} = ${formatCurrency(area * unitPrice)}`;
+            }
+            
+            total = area * unitPrice;
+            calculation = calculationText;
+          }
+          break;
+      }
+    } catch (error) {
+      console.error("Error calculating recalc preview:", error);
+    }
+
+    setRecalcIndividualPreview({ unitPrice, total, calculation });
+  }, [
+    recalcIndividualItem,
+    recalcIndividualQuantity,
+    recalcIndividualQuantityType,
+    recalcIndividualDimensions,
+    recalcIndividualPriceType,
+    materialsOptions,
+    chapesOptions,
+    glassesOptions
+  ]);
 
   // Retornar todos los estados y funciones necesarias
   return {
@@ -1878,6 +1976,11 @@ export const useProyectosController = () => {
     setRecalcIndividualSelectedVidrio,
     recalcIndividualPriceType,
     setRecalcIndividualPriceType,
+    // Estados para mostrar el cálculo en tiempo real
+    recalcIndividualPreview,
+    setRecalcIndividualPreview,
+
+    // Estados para agregar elementos individuales
     showAddIndividualItemDialog,
     setShowAddIndividualItemDialog,
     individualItemType,
