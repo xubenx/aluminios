@@ -40,7 +40,7 @@ import {
 import Image from "next/image";
 import { evaluate } from "mathjs";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
-import { ShoppingCart, Delete, Add, Save } from "@mui/icons-material";
+import { ShoppingCart, Delete, Add, Save, Edit } from "@mui/icons-material";
 
 export default function CotizadorApp() {
   // Estados para la búsqueda de modelos
@@ -73,6 +73,13 @@ export default function CotizadorApp() {
   const [newCustomerName, setNewCustomerName] = useState("");
   const [newCustomerPhone, setNewCustomerPhone] = useState("");
   const [createNewCustomer, setCreateNewCustomer] = useState(false);
+
+  // Estados para recotización de productos en el carrito
+  const [showRequoteDialog, setShowRequoteDialog] = useState(false);
+  const [requoteItem, setRequoteItem] = useState(null);
+  const [requoteDimensions, setRequoteDimensions] = useState({ height: "", width: "" });
+  const [requoteGlass, setRequoteGlass] = useState(null);
+  const [requoteColor, setRequoteColor] = useState(null);
 
   // Estados para agregar elementos individuales
   const [showAddItemDialog, setShowAddItemDialog] = useState(false);
@@ -171,6 +178,7 @@ export default function CotizadorApp() {
   useEffect(() => {
     fetchModels();
     fetchCustomers();
+    loadCartFromStorage();
   }, []);
 
   useEffect(() => {
@@ -180,6 +188,32 @@ export default function CotizadorApp() {
       )
     );
   }, [searchQuery, models]);
+
+  // Persistencia del carrito
+  const saveCartToStorage = (cartData) => {
+    try {
+      localStorage.setItem('aluminios-cart', JSON.stringify(cartData));
+    } catch (error) {
+      console.error('Error saving cart to localStorage:', error);
+    }
+  };
+
+  const loadCartFromStorage = () => {
+    try {
+      const savedCart = localStorage.getItem('aluminios-cart');
+      if (savedCart) {
+        const parsedCart = JSON.parse(savedCart);
+        setCart(parsedCart);
+      }
+    } catch (error) {
+      console.error('Error loading cart from localStorage:', error);
+    }
+  };
+
+  // Actualizar localStorage cuando cambie el carrito
+  useEffect(() => {
+    saveCartToStorage(cart);
+  }, [cart]);
 
   // ––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––
   // CARGA DE OPCIONES DE MATERIALES, CHAPES Y VIDRIOS
@@ -303,6 +337,7 @@ export default function CotizadorApp() {
       modelName: modelData.name,
       dimensions: { ...dimensions },
       selectedGlass: { ...selectedGlass },
+      selectedColor: selectedColor ? { ...selectedColor } : null,
       calculations: { ...calculations },
       m2: modelData.m2 || 100, // Costo por m² de vidrio del modelo
       timestamp: new Date().toISOString()
@@ -319,6 +354,8 @@ export default function CotizadorApp() {
   const removeFromCart = (itemId) => {
     setCart(prevCart => prevCart.filter(item => item.id !== itemId));
   };
+
+
 
   // Funciones para agregar elementos individuales
   const handleOpenAddItemDialog = (type) => {
@@ -669,6 +706,7 @@ export default function CotizadorApp() {
               modelName: item.modelName,
               dimensions: item.dimensions,
               selectedGlass: item.selectedGlass,
+              selectedColor: item.selectedColor || null,
               total: item.calculations.totalGeneral,
               m2: item.m2 || 100, // Costo por m² de vidrio del modelo
               details: {
@@ -705,6 +743,7 @@ export default function CotizadorApp() {
 
       // Limpiar estados
       setCart([]);
+      localStorage.removeItem('aluminios-cart'); // Limpiar también el localStorage
       setProjectName("");
       setSelectedCustomer(null);
       setNewCustomerName("");
@@ -1328,6 +1367,9 @@ export default function CotizadorApp() {
         <Dialog open={showCart} onClose={() => setShowCart(false)} maxWidth="xl" fullWidth>
           <DialogTitle>
             Carrito de Cotización
+            <Typography variant="caption" color="textSecondary" sx={{ display: 'block', fontWeight: 'normal' }}>
+              * El carrito se guarda automáticamente y persiste entre sesiones
+            </Typography>
           </DialogTitle>
           <DialogContent>
             {/* Total del Proyecto - Prominente */}
@@ -1396,6 +1438,11 @@ export default function CotizadorApp() {
                                 <Typography variant="caption" color="textSecondary">
                                   Vidrio: {item.selectedGlass.name} (${item.selectedGlass.priceInstalled || item.selectedGlass.price || 0}/m²)
                                 </Typography>
+                                {item.selectedColor && (
+                                  <Typography variant="caption" color="textSecondary" sx={{ display: 'block' }}>
+                                    Color: {item.selectedColor.name} (+{item.selectedColor.percentage}%)
+                                  </Typography>
+                                )}
                                 <Typography variant="caption" color="textSecondary" sx={{ display: 'block' }}>
                                   Mat: ${item.calculations.materialsCalc.price.toFixed(2)} | 
                                   Her: ${item.calculations.chapesCalc.price.toFixed(2)} | 
@@ -1409,12 +1456,16 @@ export default function CotizadorApp() {
                             ${(item.type === "individual" ? item.itemData.totalPrice : item.calculations.totalGeneral).toFixed(2)}
                           </TableCell>
                           <TableCell>
-                            <IconButton 
-                              color="error" 
-                              onClick={() => removeFromCart(item.id)}
-                            >
-                              <Delete />
-                            </IconButton>
+                            <Box sx={{ display: 'flex', gap: 1 }}>
+                              
+                              <IconButton 
+                                color="error" 
+                                onClick={() => removeFromCart(item.id)}
+                                title="Eliminar"
+                              >
+                                <Delete />
+                              </IconButton>
+                            </Box>
                           </TableCell>
                         </TableRow>
                       ))}
@@ -1551,13 +1602,31 @@ export default function CotizadorApp() {
           <DialogActions>
             <Button onClick={() => setShowCart(false)}>Cerrar</Button>
             {cart.length > 0 && (
-              <Button 
-                variant="contained" 
-                startIcon={<Save />}
-                onClick={() => setShowProjectDialog(true)}
-              >
-                Guardar Proyecto
-              </Button>
+              <>
+                <Button 
+                  color="error"
+                  onClick={() => {
+                    if (window.confirm('¿Está seguro de que desea limpiar todo el carrito? Esta acción no se puede deshacer.')) {
+                      setCart([]);
+                      localStorage.removeItem('aluminios-cart');
+                      setSnackbar({ 
+                        open: true, 
+                        message: "Carrito limpiado exitosamente.", 
+                        severity: "success" 
+                      });
+                    }
+                  }}
+                >
+                  Limpiar Carrito
+                </Button>
+                <Button 
+                  variant="contained" 
+                  startIcon={<Save />}
+                  onClick={() => setShowProjectDialog(true)}
+                >
+                  Guardar Proyecto
+                </Button>
+              </>
             )}
           </DialogActions>
         </Dialog>
@@ -1632,6 +1701,8 @@ export default function CotizadorApp() {
             </Button>
           </DialogActions>
         </Dialog>
+
+
 
         {/* Diálogo para Agregar Elementos Individuales */}
         <Dialog open={showAddItemDialog} onClose={() => setShowAddItemDialog(false)} maxWidth="md" fullWidth>

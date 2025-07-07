@@ -1,4 +1,4 @@
-import { collection, getDocs, doc, updateDoc, serverTimestamp, query, orderBy } from "firebase/firestore";
+import { collection, getDocs, getDoc, doc, updateDoc, serverTimestamp, query, orderBy } from "firebase/firestore";
 import { db } from "../../../../firebase";
 
 export interface Payment {
@@ -22,6 +22,13 @@ export interface ProjectItem {
   laborCostSelected?: number;
   laborCostActual?: number;
   m2?: number;
+  // For models
+  dimensions?: {
+    height: number;
+    width: number;
+  };
+  selectedGlass?: any;
+  selectedColor?: any;
   details?: {
     materials?: ItemDetails;
     chapes?: ItemDetails;
@@ -32,11 +39,7 @@ export interface ProjectItem {
   // For individual items
   quantity?: number;
   unitPrice?: number;
-  totalPrice?: number;
-  dimensions?: {
-    height: number;
-    width: number;
-  };
+  total?: number;
 }
 
 export interface ItemDetails {
@@ -323,14 +326,335 @@ export const filterProjects = (projects: Project[], searchQuery: string, showIna
 export const calculateProjectTotal = (items: ProjectItem[]): number => {
   return items.reduce((total, item) => {
     if (item.type === 'model') {
-      return total + 
-             (item.details?.materials?.price || 0) + 
-             (item.details?.chapes?.price || 0) + 
-             (item.details?.glasses?.price || 0) + 
-             (item.laborCostSelected || 0);
+      // Use the item's total if available, otherwise calculate from components
+      if (item.total !== undefined && item.total !== null) {
+        return total + item.total;
+      } else {
+        // Fallback to calculating from components
+        return total + 
+               (item.details?.materials?.price || 0) + 
+               (item.details?.chapes?.price || 0) + 
+               (item.details?.glasses?.price || 0) + 
+               (item.laborCostSelected || 0);
+      }
     } else if (item.type === 'individual') {
-      return total + (item.totalPrice || 0);
+      return total + (item.total || 0);
     }
     return total;
   }, 0);
+};
+
+export const updateProjectItem = async (
+  projectId: string,
+  itemIndex: number,
+  itemData: Partial<ProjectItem>
+): Promise<void> => {
+  try {
+    const projectRef = doc(db, "projects", projectId);
+    const projectSnap = await getDoc(projectRef);
+    
+    if (!projectSnap.exists()) {
+      throw new Error("Proyecto no encontrado");
+    }
+
+    const projectData = projectSnap.data() as Project;
+    const updatedItems = [...projectData.items];
+    
+    // Clean the itemData to remove undefined values before merging
+    const cleanedItemData = cleanObjectForFirestore(itemData);
+    updatedItems[itemIndex] = { ...updatedItems[itemIndex], ...cleanedItemData };
+
+    // Use the helper function to ensure total is recalculated
+    await updateProjectWithRecalculatedTotal(projectId, updatedItems);
+  } catch (error) {
+    console.error("Error updating project item:", error);
+    throw error;
+  }
+};
+
+export const deleteProjectItem = async (
+  projectId: string,
+  itemIndex: number
+): Promise<void> => {
+  try {
+    const projectRef = doc(db, "projects", projectId);
+    const projectSnap = await getDoc(projectRef);
+    
+    if (!projectSnap.exists()) {
+      throw new Error("Proyecto no encontrado");
+    }
+
+    const projectData = projectSnap.data() as Project;
+    const updatedItems = projectData.items.filter((_, index) => index !== itemIndex);
+
+    // Use the helper function to ensure total is recalculated
+    await updateProjectWithRecalculatedTotal(projectId, updatedItems);
+  } catch (error) {
+    console.error("Error deleting project item:", error);
+    throw error;
+  }
+};
+
+export const updateAllProjectItemsStatus = async (
+  projectId: string,
+  newStatus: ProjectItem['status']
+): Promise<void> => {
+  try {
+    const projectRef = doc(db, "projects", projectId);
+    const projectSnap = await getDoc(projectRef);
+    
+    if (!projectSnap.exists()) {
+      throw new Error("Proyecto no encontrado");
+    }
+
+    const projectData = projectSnap.data() as Project;
+    const updatedItems = projectData.items.map(item => ({
+      ...item,
+      status: newStatus
+    }));
+
+    await updateDoc(projectRef, {
+      items: updatedItems,
+      date: serverTimestamp()
+    });
+  } catch (error) {
+    console.error("Error updating all project items status:", error);
+    throw error;
+  }
+};
+
+export const addModelToProject = async (
+  projectId: string,
+  modelData: {
+    modelId: string;
+    modelName: string;
+    dimensions: { height: number; width: number };
+    selectedGlass: any;
+    selectedColor: any;
+    calculations: any;
+  }
+): Promise<void> => {
+  try {
+    const projectRef = doc(db, "projects", projectId);
+    const projectSnap = await getDoc(projectRef);
+    
+    if (!projectSnap.exists()) {
+      throw new Error("Proyecto no encontrado");
+    }
+
+    const projectData = projectSnap.data() as Project;
+    
+    // Ensure all calculations have valid values
+    const safeCalculations = {
+      materials: modelData.calculations?.materials || { price: 0, meterage: 0, items: [] },
+      chapes: modelData.calculations?.chapes || { price: 0, pieces: 0, items: [] },
+      glasses: modelData.calculations?.glasses || { price: 0, meterage: 0, items: [] },
+      laborCost: modelData.calculations?.laborCost || 0,
+      laborCostActual: modelData.calculations?.laborCostActual || 0,
+      m2: modelData.calculations?.m2 || 100,
+      glassLaborCost: modelData.calculations?.glassLaborCost || 0,
+      totalLaborActual: modelData.calculations?.totalLaborActual || 0,
+      totalGeneral: modelData.calculations?.totalGeneral || 0
+    };
+
+    const newItem: ProjectItem = {
+      id: `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+      type: 'model',
+      modelId: modelData.modelId,
+      modelName: modelData.modelName,
+      dimensions: modelData.dimensions,
+      selectedGlass: modelData.selectedGlass,
+      selectedColor: modelData.selectedColor,
+      status: 'cotizacion',
+      laborCostSelected: safeCalculations.laborCost,
+      laborCostActual: safeCalculations.laborCostActual,
+      m2: safeCalculations.m2,
+      total: safeCalculations.totalGeneral,
+      details: {
+        materials: safeCalculations.materials,
+        chapes: safeCalculations.chapes,
+        glasses: safeCalculations.glasses,
+        laborCost: safeCalculations.laborCost,
+        laborCostActual: safeCalculations.laborCostActual
+      }
+    };
+
+    // Clean the item to remove any undefined values
+    const cleanedItem = cleanObjectForFirestore(newItem);
+    const updatedItems = [...projectData.items, cleanedItem];
+
+    // Use the helper function to ensure total is recalculated
+    await updateProjectWithRecalculatedTotal(projectId, updatedItems);
+  } catch (error) {
+    console.error("Error adding model to project:", error);
+    throw error;
+  }
+};
+
+export const addIndividualItemToProject = async (
+  projectId: string,
+  itemData: {
+    itemType: 'material' | 'herraje' | 'vidrio';
+    itemId: string;
+    itemName: string;
+    quantity: number;
+    unitPrice: number;
+    total: number;
+    dimensions?: { height: number; width: number } | null;
+  }
+): Promise<void> => {
+  try {
+    const projectRef = doc(db, "projects", projectId);
+    const projectSnap = await getDoc(projectRef);
+    
+    if (!projectSnap.exists()) {
+      throw new Error("Proyecto no encontrado");
+    }
+
+    const projectData = projectSnap.data() as Project;
+    
+    // Ensure all values are valid and not undefined
+    const newItem: ProjectItem = {
+      id: `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+      type: 'individual',
+      itemType: itemData.itemType,
+      itemId: itemData.itemId,
+      itemName: itemData.itemName || '',
+      quantity: itemData.quantity || 0,
+      unitPrice: itemData.unitPrice || 0,
+      total: itemData.total || 0,
+      status: 'cotizacion'
+    };
+
+    // Only add dimensions if they exist and are valid
+    if (itemData.dimensions && itemData.dimensions.height && itemData.dimensions.width) {
+      newItem.dimensions = itemData.dimensions;
+    }
+
+    // Clean the item to remove any undefined values
+    const cleanedItem = cleanObjectForFirestore(newItem);
+    const updatedItems = [...projectData.items, cleanedItem];
+
+    // Use the helper function to ensure total is recalculated
+    await updateProjectWithRecalculatedTotal(projectId, updatedItems);
+  } catch (error) {
+    console.error("Error adding individual item to project:", error);
+    throw error;
+  }
+};
+
+export const loadColors = async (): Promise<Color[]> => {
+  try {
+    const querySnapshot = await getDocs(collection(db, "colors"));
+    return querySnapshot.docs.map(doc => ({
+      id: doc.id,
+      ...(doc.data() as Omit<Color, 'id'>)
+    } as Color));
+  } catch (error) {
+    console.error("Error loading colors:", error);
+    return [];
+  }
+};
+
+export interface Color {
+  id: string;
+  name: string;
+  [key: string]: unknown;
+}
+
+// Utility function to remove undefined values from objects
+const cleanObjectForFirestore = (obj: any): any => {
+  if (obj === null || obj === undefined) {
+    return null;
+  }
+  
+  if (Array.isArray(obj)) {
+    return obj.map(item => cleanObjectForFirestore(item));
+  }
+  
+  if (typeof obj === 'object') {
+    const cleaned: any = {};
+    for (const [key, value] of Object.entries(obj)) {
+      if (value !== undefined) {
+        cleaned[key] = cleanObjectForFirestore(value);
+      }
+    }
+    return cleaned;
+  }
+  
+  return obj;
+};
+
+// Helper function to ensure project total is always updated when items change
+export const updateProjectWithRecalculatedTotal = async (
+  projectId: string,
+  updatedItems: ProjectItem[],
+  additionalData: Record<string, any> = {}
+): Promise<void> => {
+  try {
+    const projectRef = doc(db, "projects", projectId);
+    
+    await updateDoc(projectRef, {
+      items: updatedItems,
+      total: calculateProjectTotal(updatedItems),
+      date: serverTimestamp(),
+      ...additionalData
+    });
+  } catch (error) {
+    console.error("Error updating project with recalculated total:", error);
+    throw error;
+  }
+};
+
+// Function to verify and fix project totals if they don't match the calculated total
+export const verifyAndFixProjectTotal = async (projectId: string): Promise<boolean> => {
+  try {
+    const projectRef = doc(db, "projects", projectId);
+    const projectSnap = await getDoc(projectRef);
+    
+    if (!projectSnap.exists()) {
+      throw new Error("Proyecto no encontrado");
+    }
+
+    const projectData = projectSnap.data() as Project;
+    const calculatedTotal = calculateProjectTotal(projectData.items);
+    
+    // Check if the stored total matches the calculated total
+    if (Math.abs(projectData.total - calculatedTotal) > 0.01) { // Allow for small floating point differences
+      console.log(`Total mismatch for project ${projectId}: stored=${projectData.total}, calculated=${calculatedTotal}`);
+      
+      // Fix the total
+      await updateDoc(projectRef, {
+        total: calculatedTotal,
+        date: serverTimestamp()
+      });
+      
+      return true; // Indicates total was fixed
+    }
+    
+    return false; // Indicates total was already correct
+  } catch (error) {
+    console.error("Error verifying/fixing project total:", error);
+    throw error;
+  }
+};
+
+// Function to verify and fix all project totals
+export const verifyAndFixAllProjectTotals = async (): Promise<{ fixed: number; total: number }> => {
+  try {
+    const projects = await loadProjects();
+    let fixedCount = 0;
+    
+    for (const project of projects) {
+      const wasFixed = await verifyAndFixProjectTotal(project.id);
+      if (wasFixed) {
+        fixedCount++;
+      }
+    }
+    
+    return { fixed: fixedCount, total: projects.length };
+  } catch (error) {
+    console.error("Error verifying/fixing all project totals:", error);
+    throw error;
+  }
 };

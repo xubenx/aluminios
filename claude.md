@@ -105,6 +105,13 @@ public/
 - **Cálculos automáticos**: Usa el valor correcto según el contexto
 - **Para vidrios**: Mantiene el sistema de pago por m² sin cambios
 
+**🆕 Funcionalidades de Edición de Cotizaciones (Julio 2025)**:
+- **Eliminación de modelos**: Permite eliminar modelos de proyectos en estado "Cotización"
+- **Re-cotización completa**: Modificación de dimensiones, vidrios y colores con recálculo automático
+- **Agregar elementos individuales**: Adición de materiales, herrajes o vidrios por separado
+- **Cálculos en tiempo real**: Actualización inmediata de totales y desgloses
+- **Validaciones completas**: Prevención de errores con feedback al usuario
+
 **Estados de proyecto**:
 - **Cotización** (`quotation`): Proyecto en fase de presupuesto
 - **Activo** (`active`): Proyecto aprobado y en ejecución
@@ -127,7 +134,27 @@ public/
 - **Asignación de trabajadores**: Cada elemento puede ser asignado a un empleado específico
 - **Seguimiento granular**: Control detallado del progreso del proyecto
 
-**Funcionalidades**:
+**🆕 Capacidades de Edición en Estado "Cotización"**:
+
+#### Eliminación de Modelos
+- **Funcionalidad**: Permite eliminar cualquier modelo o elemento de un proyecto
+- **Restricción**: Solo disponible en estado "Cotización"
+- **Recálculo automático**: Actualiza el total del proyecto al eliminar elementos
+- **Confirmación**: Requiere confirmación antes de eliminar
+
+#### Re-cotización de Modelos
+- **Modificación completa**: Cambio de dimensiones, vidrios y colores
+- **Cálculo en tiempo real**: Muestra desglose actualizado antes de confirmar
+- **Preservación de datos**: Mantiene información del modelo original como referencia
+- **Validación**: Verifica que todos los campos requeridos estén completos
+
+#### Agregar Elementos Individuales
+- **Materiales**: Adición por metros o tramos con cálculo automático
+- **Herrajes**: Adición por piezas con pricing unitario
+- **Vidrios**: Adición por m² directos o por dimensiones calculadas
+- **Integración**: Se añaden al proyecto junto con los modelos existentes
+
+**Funcionalidades principales**:
 - Creación de proyectos con información del cliente
 - Vista detallada con desglose de costos (dual)
 - Asignación de colaboradores por elemento
@@ -136,7 +163,16 @@ public/
 - Sistema de filtros (archivados, inactivos)
 - Gestión de pagos con historial completo
 - **🆕 Personalización de costos de mano de obra duales** por elemento
-- Agregar nuevos modelos a proyectos existentes
+- **🆕 Agregar nuevos modelos a proyectos existentes**
+- **🆕 Edición completa de cotizaciones con recálculo automático**
+- **🆕 Eliminación y re-cotización de elementos existentes**
+
+**🆕 Interfaz de Usuario Mejorada**:
+- **Botones contextuales**: Acciones disponibles según el estado del proyecto
+- **Diálogos especializados**: Formularios específicos para cada tipo de edición
+- **Feedback visual**: Indicadores de estado y progreso en tiempo real
+- **Validación dinámica**: Mensajes de error específicos y ayuda contextual
+- **Cálculos transparentes**: Desglose detallado de costos en todas las operaciones
 
 ### 3. Calculadora de Vidrios (`/sistema/calculadora-vidrios`)
 **Propósito**: Herramienta especializada para cálculo rápido de vidrios
@@ -560,7 +596,7 @@ const individualItem = {
     quantity: number,
     quantityType: string,
     unitPrice: number,
-    totalPrice: number,
+    total: number,
     // Propiedades específicas según tipo
     meters?: number,        // materiales
     tramo?: number,         // materiales
@@ -576,7 +612,7 @@ Sistema que combina modelos completos y elementos individuales:
 const getCartTotal = () => {
   return cart.reduce((total, item) => {
     if (item.type === "individual") {
-      return total + item.itemData.totalPrice;
+      return total + item.itemData.total;
     } else {
       return total + item.calculations.totalGeneral;
     }
@@ -988,10 +1024,86 @@ La arquitectura modular permite extensiones sin afectar módulos existentes. Cad
 ---
 
 **Fecha de documentación**: Diciembre 2024  
-**Última actualización**: Junio 2025 - Sistema Dual de Mano de Obra implementado  
-**Versión del sistema**: 0.2.0  
-**Nuevas características**: Sistema dual de costos laborales, API de subida de imágenes, validaciones mejoradas  
+**Última actualización**: Julio 2025 - Sistema de Edición Completa de Proyectos implementado  
+**Versión del sistema**: 0.4.0  
+**Nuevas características**: Resumen por categorías, dimensiones en centímetros, selección de precios de vidrio, totales corregidos  
 **Mantenido por**: Equipo de desarrollo Aluminios San Francisco
+
+### 🆕 Changelog v0.4.0 (Julio 2025)
+
+#### Nuevas Funcionalidades Implementadas
+- ✅ **Resumen por Categorías**: Nuevo panel que muestra totales reales por materiales, herrajes, vidrios y mano de obra
+- ✅ **Dimensiones en Centímetros**: Los modelos ahora se agregan con dimensiones en centímetros (se convierten automáticamente a metros para cálculos)
+- ✅ **Selección de Precio para Vidrios**: Al agregar vidrios individuales, permite elegir entre "precio instalado" y "precio de corte"
+- ✅ **Imagen de Modelo**: Muestra la imagen del modelo al agregarlo a un proyecto
+- ✅ **Totales Corregidos**: Los totales por categorías ahora se calculan y muestran correctamente (no más ceros)
+- ✅ **Cálculo de Materiales Corregido**: Los materiales individuales ahora se calculan y almacenan correctamente (precio por metro × metros o precio por tramo × tramos)
+
+#### Mejoras Técnicas Implementadas
+- **Función `getProjectCategoricalTotals()`**: Calcula correctamente los totales por categoría tanto para modelos completos como elementos individuales
+- **Conversión automática de unidades**: Las dimensiones se almacenan en cm pero se convierten a metros para los cálculos de fórmulas
+- **Manejo dual de precios**: Los vidrios individuales pueden usar precio instalado o de corte según la selección
+- **Interfaz mejorada**: Campos con helper text específicos y validación adecuada
+- **Cálculo de área preciso**: Para vidrios por dimensiones, convierte cm² a m² automáticamente
+- **Cálculo de materiales corregido**: En `confirmAddIndividualItem`, ahora calcula correctamente el `unitPrice` según el tipo de cantidad (metros/tramos)
+
+#### Funcionalidades de Edición Preservadas
+- ✅ **Eliminación de modelos**: Solo en proyectos de "Cotización"
+- ✅ **Re-cotización completa**: Modificación de dimensiones, vidrios y colores con recálculo automático
+- ✅ **Agregar elementos individuales**: Materiales, herrajes y vidrios por separado
+- ✅ **Restricciones de edición**: Solo área, ubicación, colaborador y estado en modelos existentes
+
+#### Beneficios de Negocio
+- 📊 **Transparencia Visual**: Resumen claro de costos por categoría en cada proyecto
+- 🎯 **Precisión en Dimensiones**: Entrada intuitiva en centímetros para mayor precisión
+- 💰 **Flexibilidad de Precios**: Selección apropiada entre precios de corte e instalación para vidrios
+- 🖼️ **Referencia Visual**: Imagen del modelo durante la configuración para evitar errores
+- ✅ **Totales Correctos**: Eliminación de los totales en cero que causaban confusión
+- 🔢 **Cálculos Precisos**: Materiales individuales ahora se calculan y almacenan correctamente según su tipo
+
+#### 🎯 Funcionalidades de Edición Avanzada - COMPLETADO
+Todas las funcionalidades solicitadas han sido implementadas exitosamente:
+
+1. **✅ Selección de Precio para Vidrios**: Al agregar vidrios individuales, permite elegir entre "precio instalado" y "precio de corte"
+2. **✅ Dimensiones en Centímetros**: Los modelos se agregan con dimensiones en centímetros y muestran la imagen del modelo
+3. **✅ Totales Corregidos**: Los totales para materiales, herrajes y vidrios se calculan y muestran correctamente
+4. **✅ Eliminación Restringida**: Solo se pueden eliminar modelos de proyectos en estado "Cotización"
+5. **✅ Edición Limitada**: Solo se puede editar área, ubicación, colaborador asignado y estado del modelo
+6. **✅ Cálculos de Materiales**: Los materiales individuales se calculan y almacenan correctamente según el tipo de cantidad
+
+### 🆕 Changelog v0.3.0 (Julio 2025)
+
+#### Nuevas Funcionalidades - Módulo de Proyectos
+- ✅ **Edición Completa de Cotizaciones**: Capacidad total de edición para proyectos en estado "Cotización"
+- ✅ **Eliminación de Modelos**: Permite eliminar cualquier modelo/elemento de proyectos en cotización
+- ✅ **Re-cotización Avanzada**: Modificación completa de dimensiones, vidrios y colores con recálculo automático
+- ✅ **Agregar Elementos Individuales**: Adición de materiales, herrajes y vidrios por separado
+- ✅ **Cálculos en Tiempo Real**: Actualización inmediata de totales y desgloses durante la edición
+- ✅ **Validaciones Exhaustivas**: Prevención de errores con feedback específico al usuario
+- ✅ **Interfaz Contextual**: Botones y acciones disponibles según el estado del proyecto
+
+#### Funcionalidades Específicas Implementadas
+- **Gestión de Materiales Individuales**: Adición por metros o tramos con cálculo automático
+- **Gestión de Herrajes Individuales**: Adición por piezas con pricing unitario
+- **Gestión de Vidrios Individuales**: Adición por m² directos o por dimensiones calculadas
+- **Recálculo Automático**: Todos los totales del proyecto se actualizan automáticamente
+- **Preservación de Datos**: Información original mantenida como referencia durante ediciones
+- **Diálogos Especializados**: Formularios específicos para cada tipo de operación
+
+#### Mejoras Técnicas
+- ✅ **Estados Granulares**: Cada dialog mantiene su propio estado independiente
+- ✅ **Validación Dinámica**: Verificación de datos en cada paso del proceso
+- ✅ **Integración Completa**: Funciona con todos los tipos de elementos existentes
+- ✅ **Feedback Inmediato**: Notificaciones de éxito/error para cada operación
+- ✅ **Cálculos Consistentes**: Misma lógica de cálculo que el módulo de presupuestos
+- ✅ **Manejo de Errores**: Captura y manejo apropiado de errores con mensajes informativos
+
+#### Beneficios de Negocio
+- 🔄 **Flexibilidad Total**: Modificación completa de cotizaciones sin perder datos
+- 📊 **Control Preciso**: Gestión granular de cada elemento en los proyectos
+- 💼 **Eficiencia Operativa**: Reducción de tiempo en modificaciones de cotizaciones
+- 🎯 **Precisión**: Cálculos exactos y actualizados en tiempo real
+- 📈 **Escalabilidad**: Base sólida para futuras expansiones del sistema
 
 ### 🆕 Changelog v0.2.0 (Junio 2025)
 
@@ -1015,3 +1127,616 @@ La arquitectura modular permite extensiones sin afectar módulos existentes. Cad
 - 🔄 **Flexibilidad**: Ajustes independientes de precios y costos laborales por modelo
 - 🎯 **Personalización**: Cada modelo puede tener su propio costo de vidrio por m²
 - 📈 **Escalabilidad**: Base preparada para futuras expansiones del sistema
+
+### 17. 🆕 Gestión de Dimensiones y Precios Mejorada (Julio 2025)
+Implementación de mejoras en la interfaz y cálculos para mayor precisión y usabilidad:
+
+#### Dimensiones en Centímetros
+```javascript
+// Al agregar modelos, las dimensiones se ingresan en centímetros
+const addModelToProject = async () => {
+  const newModel = {
+    modelId: modelData.id,
+    modelName: modelData.name,
+    dimensions: { 
+      height: dimensions.height, 
+      width: dimensions.width,
+      unit: "cm" // Marcador de unidad
+    },
+    // ... otros campos
+  };
+};
+
+// En cálculos, se convierten automáticamente a metros
+const getCalculations = () => {
+  const heightInMeters = parseFloat(dimensions.height) / 100;
+  const widthInMeters = parseFloat(dimensions.width) / 100;
+  
+  // Usar en fórmulas
+  const meterage = calculatePrice(material.formula, {
+    ALTO: heightInMeters,
+    ANCHO: widthInMeters,
+    // ...
+  });
+};
+```
+
+#### Selección de Precios para Vidrios
+```javascript
+// Estado para tipo de precio
+const [individualItemPriceType, setIndividualItemPriceType] = useState("installed");
+
+// Cálculo según tipo seleccionado
+const vidrioPrice = parseFloat(individualItemPriceType === "installed" 
+  ? (selectedItem.priceInstalled || "0") 
+  : (selectedItem.price || "0"));
+
+// Para elementos individuales por dimensiones (cm² → m²)
+if (individualItemQuantityType === "dimensiones") {
+  area = (parseFloat(individualItemDimensions.height) * parseFloat(individualItemDimensions.width)) / 10000;
+  vidrioTotal = area * vidrioPrice;
+}
+```
+
+#### Resumen por Categorías
+```javascript
+// Función para calcular totales reales por categoría
+const getProjectCategoricalTotals = (project) => {
+  if (!project || !project.items) return { materials: 0, herrajes: 0, vidrios: 0, laborCost: 0, total: 0 };
+  
+  return project.items.reduce((acc, item) => {
+    if (item.type === 'individual') {
+      // Elementos individuales por tipo
+      switch (item.itemType) {
+        case 'material':
+          acc.materials += item.total || 0;
+          break;
+        case 'herraje':
+          acc.herrajes += item.total || 0;
+          break;
+        case 'vidrio':
+          acc.vidrios += item.total || 0;
+          break;
+      }
+    } else {
+      // Modelos completos - desglose por categoría
+      acc.materials += item.details?.materials?.price || 0;
+      acc.herrajes += item.details?.chapes?.price || 0;
+      acc.vidrios += item.details?.glasses?.price || 0;
+      acc.laborCost += item.laborCostSelected || item.details?.laborCost || 0;
+    }
+    acc.total += item.total || 0;
+    return acc;
+  }, { materials: 0, herrajes: 0, vidrios: 0, laborCost: 0, total: 0 });
+};
+
+// Renderizado en interfaz
+const totals = getProjectCategoricalTotals(selectedProject);
+// Muestra totales reales para cada categoría
+```
+
+#### Interfaz de Usuario Mejorada
+```javascript
+// Campos con helper text específico
+<TextField
+  label="Alto (centímetros)"
+  type="number"
+  inputProps={{ min: "1", step: "1" }}
+  helperText="Ingrese las dimensiones en centímetros"
+/>
+
+// Selección de tipo de precio con feedback visual
+<TextField
+  select
+  label="Tipo de Precio"
+  value={individualItemPriceType || "installed"}
+>
+  <MenuItem value="installed">Precio Instalado</MenuItem>
+  <MenuItem value="cut">Precio de Corte</MenuItem>
+</TextField>
+
+// Cálculo dinámico con área convertida
+<Typography variant="body2">
+  Área calculada: {(parseFloat(height || 0) * parseFloat(width || 0) / 10000).toFixed(2)} m²
+</Typography>
+```
+
+### 16. 🆕 Patrones de Edición de Proyectos (Julio 2025)
+Implementación completa de capacidades de edición para proyectos en estado "Cotización":
+
+#### Gestión de Estado para Edición
+```javascript
+// Estados para re-cotización de modelos
+const [showRecalcDialog, setShowRecalcDialog] = useState(false);
+const [recalcModel, setRecalcModel] = useState(null);
+const [recalcDimensions, setRecalcDimensions] = useState({ height: "", width: "" });
+const [recalcSelectedGlass, setRecalcSelectedGlass] = useState(null);
+const [recalcSelectedColor, setRecalcSelectedColor] = useState(null);
+
+// Estados para elementos individuales
+const [showAddIndividualItemDialog, setShowAddIndividualItemDialog] = useState(false);
+const [individualItemType, setIndividualItemType] = useState("material");
+const [selectedIndividualMaterial, setSelectedIndividualMaterial] = useState(null);
+const [selectedIndividualHerraje, setSelectedIndividualHerraje] = useState(null);
+const [selectedIndividualVidrio, setSelectedIndividualVidrio] = useState(null);
+const [individualItemQuantity, setIndividualItemQuantity] = useState(1);
+const [individualItemQuantityType, setIndividualItemQuantityType] = useState("metros");
+```
+
+#### Función de Eliminación de Modelos
+```javascript
+const handleDeleteModel = async (project, modelIndex) => {
+  if (project.status !== 'quotation') {
+    setSnackbar({
+      open: true,
+      message: "Solo se pueden eliminar modelos en proyectos de cotización.",
+      severity: "error"
+    });
+    return;
+  }
+
+  const updatedItems = [...project.items];
+  updatedItems.splice(modelIndex, 1);
+  const newTotal = updatedItems.reduce((sum, item) => sum + (item.total || 0), 0);
+
+  await updateDoc(doc(db, "projects", project.id), {
+    items: updatedItems,
+    total: newTotal
+  });
+
+  setSnackbar({
+    open: true,
+    message: "Modelo eliminado del proyecto exitosamente.",
+    severity: "success"
+  });
+};
+```
+
+#### Función de Re-cotización
+```javascript
+const handleRecalcModel = async (project, modelIndex) => {
+  if (project.status !== 'quotation') return;
+
+  const modelToRecalc = project.items[modelIndex];
+  const modelDoc = await getDoc(doc(db, "models", modelToRecalc.modelId));
+  
+  if (modelDoc.exists()) {
+    setRecalcModel({ ...modelToRecalc, index: modelIndex, projectId: project.id });
+    setModelData(modelDoc.data());
+    setRecalcDimensions(modelToRecalc.dimensions || { height: "1", width: "1" });
+    setRecalcSelectedGlass(modelToRecalc.selectedGlass || null);
+    setRecalcSelectedColor(modelToRecalc.selectedColor || null);
+    setShowRecalcDialog(true);
+  }
+};
+
+const confirmRecalcModel = async () => {
+  try {
+    const project = projects.find(p => p.id === recalcModel.projectId);
+    if (!project) return;
+
+    const calculations = getRecalcCalculations();
+    if (!calculations) return;
+
+    const updatedItems = [...project.items];
+    updatedItems[recalcModel.index] = {
+      ...recalcModel,
+      dimensions: { ...recalcDimensions },
+      selectedGlass: recalcSelectedGlass,
+      selectedColor: recalcSelectedColor,
+      total: calculations.totalGeneral,
+      details: {
+        materials: calculations.materialsCalc,
+        chapes: calculations.chapesCalc,
+        glasses: calculations.glassesCalc,
+        laborCost: calculations.laborCost,
+        laborCostActual: calculations.laborCostActual
+      }
+    };
+
+    const newTotal = updatedItems.reduce((sum, item) => sum + (item.total || 0), 0);
+
+    await updateDoc(doc(db, "projects", recalcModel.projectId), {
+      items: updatedItems,
+      total: newTotal
+    });
+
+    setSnackbar({
+      open: true,
+      message: "Modelo re-cotizado exitosamente.",
+      severity: "success"
+    });
+    
+    setShowRecalcDialog(false);
+    fetchProjects();
+  } catch (error) {
+    console.error("Error re-cotizando modelo:", error);
+    setSnackbar({
+      open: true,
+      message: "Error al re-cotizar el modelo.",
+      severity: "error"
+    });
+  }
+};
+```
+
+#### Función para Agregar Elementos Individuales
+```javascript
+const handleAddIndividualItem = (project) => {
+  if (project.status !== 'quotation') {
+    setSnackbar({
+      open: true,
+      message: "Solo se pueden agregar elementos a proyectos en cotización.",
+      severity: "error"
+    });
+    return;
+  }
+
+  setAddingToProject(project);
+  setShowAddIndividualItemDialog(true);
+};
+
+const confirmAddIndividualItem = async () => {
+  try {
+    let itemData;
+    let selectedItem;
+
+    switch (individualItemType) {
+      case "material":
+        if (!selectedIndividualMaterial) {
+          setSnackbar({ open: true, message: "Selecciona un material.", severity: "error" });
+          return;
+        }
+        selectedItem = selectedIndividualMaterial;
+        const materialPrice = parseFloat(selectedItem.price || "0");
+        const materialLength = parseFloat(selectedItem.length || "6");
+        
+        let meters, tramos, materialTotal;
+        if (individualItemQuantityType === "metros") {
+          meters = individualItemQuantity;
+          tramos = meters / materialLength;
+          materialTotal = tramos * materialPrice;
+        } else {
+          tramos = individualItemQuantity;
+          meters = tramos * materialLength;
+          materialTotal = tramos * materialPrice;
+        }
+
+        itemData = {
+          type: "individual",
+          itemType: "material",
+          itemId: selectedItem.id,
+          itemName: selectedItem.name,
+          quantity: individualItemQuantity,
+          quantityType: individualItemQuantityType,
+          unitPrice: materialPrice,
+          total: materialTotal,
+          meters: meters,
+          tramo: materialLength,
+          status: "cotizacion"
+        };
+        break;
+
+      case "herraje":
+        if (!selectedIndividualHerraje) {
+          setSnackbar({ open: true, message: "Selecciona un herraje.", severity: "error" });
+          return;
+        }
+        selectedItem = selectedIndividualHerraje;
+        const herrajePrice = parseFloat(selectedItem.price || "0");
+        
+        itemData = {
+          type: "individual",
+          itemType: "herraje",
+          itemId: selectedItem.id,
+          itemName: selectedItem.name,
+          quantity: individualItemQuantity,
+          quantityType: "piezas",
+          unitPrice: herrajePrice,
+          total: individualItemQuantity * herrajePrice,
+          status: "cotizacion"
+        };
+        break;
+
+      case "vidrio":
+        if (!selectedIndividualVidrio) {
+          setSnackbar({ open: true, message: "Selecciona un vidrio.", severity: "error" });
+          return;
+        }
+        selectedItem = selectedIndividualVidrio;
+        const vidrioPrice = parseFloat(selectedItem.priceInstalled || "0");
+        
+        let area, vidrioTotal;
+        if (individualItemQuantityType === "m2") {
+          area = individualItemQuantity;
+          vidrioTotal = individualItemQuantity * vidrioPrice;
+        } else {
+          if (!individualItemDimensions.height || !individualItemDimensions.width) {
+            setSnackbar({ open: true, message: "Ingresa las dimensiones del vidrio.", severity: "error" });
+            return;
+          }
+          area = (parseFloat(individualItemDimensions.height) * parseFloat(individualItemDimensions.width));
+          vidrioTotal = area * vidrioPrice;
+        }
+
+        itemData = {
+          type: "individual",
+          itemType: "vidrio",
+          itemId: selectedItem.id,
+          itemName: selectedItem.name,
+          quantity: individualItemQuantity,
+          quantityType: individualItemQuantityType,
+          unitPrice: vidrioPrice,
+          total: vidrioTotal,
+          status: "cotizacion",
+          dimensions: individualItemQuantityType === "dimensiones" ? { ...individualItemDimensions } : null,
+          area: area
+        };
+        break;
+
+      default:
+        setSnackbar({ open: true, message: "Tipo de elemento no válido.", severity: "error" });
+        return;
+    }
+
+    const project = projects.find(p => p.id === addingToProject.id);
+    if (!project) return;
+
+    const updatedItems = [...project.items, itemData];
+    const newTotal = updatedItems.reduce((sum, item) => sum + (item.total || 0), 0);
+
+    await updateDoc(doc(db, "projects", addingToProject.id), {
+      items: updatedItems,
+      total: newTotal
+    });
+
+    setSnackbar({
+      open: true,
+      message: "Elemento agregado al proyecto exitosamente.",
+      severity: "success"
+    });
+
+    setShowAddIndividualItemDialog(false);
+    setAddingToProject(null);
+    fetchProjects();
+  } catch (error) {
+    console.error("Error adding individual item to project:", error);
+    setSnackbar({
+      open: true,
+      message: "Error al agregar el elemento al proyecto.",
+      severity: "error"
+    });
+  }
+};
+```
+
+#### Interfaz de Usuario Contextual
+```javascript
+// Botones que solo aparecen en estado "Cotización"
+{selectedProject.status === 'quotation' && (
+  <>
+    {item.type !== 'individual' && (
+      <Button
+        size="small"
+        variant="outlined"
+        color="primary"
+        onClick={() => handleRecalcModel(selectedProject, index)}
+      >
+        Re-cotizar
+      </Button>
+    )}
+    <Button
+      size="small"
+      variant="outlined"
+      color="error"
+      onClick={() => handleDeleteModel(selectedProject, index)}
+    >
+      Eliminar
+    </Button>
+  </>
+)}
+
+// Botón para agregar elementos individuales
+{selectedProject.status === 'quotation' && (
+  <Button
+    variant="outlined"
+    color="secondary"
+    startIcon={<Add />}
+    onClick={() => handleAddIndividualItem(selectedProject)}
+    size="small"
+  >
+    Agregar Elemento
+  </Button>
+)}
+```
+
+#### Validación y Cálculos en Tiempo Real
+```javascript
+const getRecalcCalculations = () => {
+  if (!modelData || !recalcSelectedGlass || !recalcDimensions.height || !recalcDimensions.width) {
+    return null;
+  }
+
+  try {
+    const dimensionsObj = {
+      height: parseFloat(recalcDimensions.height),
+      width: parseFloat(recalcDimensions.width)
+    };
+
+    // Cálculo de materiales
+    const materialsCalc = calculateMaterials(modelData.materials, dimensionsObj);
+    
+    // Cálculo de herrajes
+    const chapesCalc = calculateChapes(modelData.chapes, dimensionsObj);
+    
+    // Cálculo de vidrios
+    const glassesCalc = calculateGlasses(modelData.glasses, dimensionsObj, recalcSelectedGlass);
+    
+    // Cálculo de mano de obra
+    const laborCost = materialsCalc.price * (parseFloat(modelData.manpower) / 100);
+    const laborCostActual = parseFloat(modelData.manpowerActual || "0");
+    
+    // Cálculo de mano de obra de vidrio
+    const glassLaborCost = glassesCalc.meterage * (parseFloat(modelData.m2) || 100);
+    
+    // Total general
+    const totalGeneral = materialsCalc.price + chapesCalc.price + glassesCalc.price + laborCost + glassLaborCost;
+    const totalLaborActual = laborCostActual + glassLaborCost;
+
+    return {
+      materialsCalc,
+      chapesCalc,
+      glassesCalc,
+      laborCost,
+      laborCostActual,
+      glassLaborCost,
+      totalGeneral,
+      totalLaborActual
+    };
+  } catch (error) {
+    console.error("Error calculating:", error);
+    return null;
+  }
+};
+```
+
+#### Características Técnicas Implementadas
+- **Estado granular**: Cada dialog y operación mantiene su propio estado
+- **Validación exhaustiva**: Verificación de datos en cada paso
+- **Cálculos consistentes**: Misma lógica de cálculo que presupuestos
+- **Actualización reactiva**: Todos los totales se actualizan automáticamente
+- **Feedback inmediato**: Notificaciones de éxito/error para cada operación
+- **Preservación de datos**: Información original mantenida como referencia
+- **Integración completa**: Funciona con todos los tipos de elementos existentes
+
+## 🆕 Mejoras Implementadas en Presupuestos - Julio 2025
+
+### Persistencia del Carrito con localStorage
+
+#### Funcionalidad Implementada
+- **Guardado automático**: El carrito se guarda automáticamente en localStorage cada vez que se modifica
+- **Restauración automática**: Al cargar la página, el carrito se restaura desde localStorage
+- **Persistencia entre sesiones**: El carrito mantiene su contenido aunque se cierre el navegador
+- **Limpieza inteligente**: Se limpia automáticamente al guardar un proyecto exitosamente
+
+#### Implementación Técnica
+```javascript
+// Funciones de persistencia
+const saveCartToStorage = (cartData) => {
+  localStorage.setItem('aluminios-cart', JSON.stringify(cartData));
+};
+
+const loadCartFromStorage = () => {
+  const savedCart = localStorage.getItem('aluminios-cart');
+  if (savedCart) {
+    setCart(JSON.parse(savedCart));
+  }
+};
+
+// Hook para persistir cambios
+useEffect(() => {
+  saveCartToStorage(cart);
+}, [cart]);
+```
+
+### Recotización de Productos en el Carrito
+
+#### Funcionalidad Implementada
+- **Botón de edición**: Cada producto de modelo en el carrito tiene un botón para recotizar
+- **Diálogo completo**: Interfaz para cambiar dimensiones, vidrio y color
+- **Recálculo automático**: Los nuevos valores se calculan usando la lógica existente
+- **Vista previa**: Muestra información del producto antes de confirmar
+- **Validación**: Solo permite recotizar si todos los campos están completos
+
+#### Estados y Funciones Agregadas
+```javascript
+// Nuevos estados para recotización
+const [showRequoteDialog, setShowRequoteDialog] = useState(false);
+const [requoteItem, setRequoteItem] = useState(null);
+const [requoteDimensions, setRequoteDimensions] = useState({ height: "", width: "" });
+const [requoteGlass, setRequoteGlass] = useState(null);
+const [requoteColor, setRequoteColor] = useState(null);
+
+// Función principal de recotización
+const handleRequoteConfirm = async () => {
+  // Obtiene datos del modelo con nombres resueltos
+  // Calcula nuevos valores usando getRecalcCalculations
+  // Actualiza el item en el carrito
+  // Muestra feedback al usuario
+};
+```
+
+### Mejoras en la Interfaz de Usuario
+
+#### Carrito Mejorado
+- **Indicador de persistencia**: Texto que informa sobre el guardado automático
+- **Botón de limpieza**: Opción para vaciar todo el carrito con confirmación
+- **Iconos de acción**: Botones diferenciados para editar y eliminar
+- **Información de color**: Muestra el color aplicado cuando corresponde
+- **Tooltips**: Ayuda contextual en botones de acción
+
+#### Diálogo de Recotización
+- **Interfaz intuitiva**: Formulario claro con campos separados por secciones
+- **Validación visual**: Campos requeridos marcados y validados
+- **Vista previa**: Cálculo de área y resumen de selecciones
+- **Consistencia**: Misma lógica de cálculo que el cotizador principal
+
+### Características Técnicas
+
+#### Robustez
+- **Manejo de errores**: Captura y muestra errores de manera amigable
+- **Validación completa**: Verificación de datos en cada operación
+- **Recuperación**: Funciona aunque localStorage no esté disponible
+- **Compatibilidad**: Mantiene compatibilidad con carrito existente
+
+#### Performance
+- **Persistencia eficiente**: Solo guarda cuando hay cambios reales
+- **Cálculos optimizados**: Reutiliza lógica existente sin duplicar código
+- **Carga rápida**: Restauración inmediata del carrito al iniciar
+- **Memoria mínima**: Limpieza automática para evitar acumulación
+
+### Beneficios Implementados
+
+1. **📱 Continuidad de Trabajo**
+   - Los usuarios pueden pausar y continuar su trabajo sin perder datos
+   - Navegación libre entre módulos sin pérdida de contexto
+
+2. **✏️ Flexibilidad de Corrección**
+   - Corrección inmediata de errores sin rehacer todo el trabajo
+   - Comparación fácil entre diferentes opciones
+
+3. **🎯 Mejora en la Experiencia**
+   - Feedback visual claro sobre persistencia
+   - Confirmaciones para prevenir pérdidas accidentales
+
+4. **🔄 Eficiencia Operativa**
+   - Menos tiempo perdido rehaciendo cotizaciones
+   - Flujo de trabajo más natural y flexible
+
+### Flujo de Trabajo Actualizado
+
+#### Nuevo Flujo con Persistencia
+1. **Agregar productos** → Se guardan automáticamente
+2. **Navegar a otros módulos** → Carrito persiste
+3. **Regresar a presupuestos** → Carrito restaurado
+4. **Modificar productos** → Cambios guardados automáticamente
+5. **Guardar proyecto** → Carrito se limpia automáticamente
+
+#### Flujo de Recotización
+1. **Abrir carrito** → Ver productos agregados
+2. **Clic en editar** → Diálogo con datos actuales
+3. **Modificar valores** → Vista previa actualizada
+4. **Confirmar cambios** → Producto actualizado en carrito
+5. **Continuar trabajo** → Cambios persistidos automáticamente
+
+### Compatibilidad y Migración
+
+#### Retrocompatibilidad
+- **Carrito existente**: Funciona con productos ya agregados
+- **Proyectos guardados**: Mantiene estructura de datos existente
+- **Funcionalidad previa**: Todas las características anteriores intactas
+
+#### Migración Suave
+- **Sin cambios requeridos**: Implementación transparente
+- **Datos preservados**: Información existente se mantiene
+- **Funcionalidad incremental**: Nuevas características se añaden sin afectar las existentes

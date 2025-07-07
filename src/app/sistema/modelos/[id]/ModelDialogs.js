@@ -1,5 +1,6 @@
 "use client";
 import React from "react";
+import Image from "next/image";
 import {
   Dialog,
   DialogTitle,
@@ -105,9 +106,11 @@ export function ChangeImageDialog({ open, onCancel, onConfirm, onImageChange, pr
         {previewImage && (
           <div style={{ textAlign: 'center', marginTop: '16px' }}>
             <Typography variant="subtitle2" sx={{ mb: 1 }}>Vista previa:</Typography>
-            <img
+            <Image
               src={previewImage}
               alt="Vista previa"
+              width={300}
+              height={300}
               style={{
                 maxWidth: '100%',
                 maxHeight: '300px',
