@@ -1639,31 +1639,42 @@ useEffect(() => {
 }, [cart]);
 ```
 
-### Recotización de Productos en el Carrito
+### Funcionalidad Simplificada del Carrito
 
-#### Funcionalidad Implementada
-- **Botón de edición**: Cada producto de modelo en el carrito tiene un botón para recotizar
-- **Diálogo completo**: Interfaz para cambiar dimensiones, vidrio y color
-- **Recálculo automático**: Los nuevos valores se calculan usando la lógica existente
-- **Vista previa**: Muestra información del producto antes de confirmar
-- **Validación**: Solo permite recotizar si todos los campos están completos
+#### Funcionalidad Implementada (Simplificada - Julio 2025)
+- **Eliminación directa**: Cada producto en el carrito tiene un botón para eliminarlo
+- **Flujo simplificado**: En lugar de recotizar, los usuarios eliminan y agregan nuevos productos
+- **UX mejorada**: Menor complejidad cognitiva y flujo más directo
+- **Persistencia mantenida**: El carrito simplificado mantiene todas las capacidades de persistencia
+- **Validación**: Solo permite eliminar productos, no hay validaciones complejas de recotización
 
-#### Estados y Funciones Agregadas
+#### Beneficios de la Simplificación
+- **Menos complejidad**: Eliminación de diálogos complejos y estados múltiples
+- **UX más clara**: Flujo directo: eliminar → agregar nuevo
+- **Menos errores**: Reducción de puntos de falla en la recotización
+- **Mantenimiento**: Código más simple y fácil de mantener
+- **Performance**: Menos cálculos en tiempo real y validaciones complejas
+
+#### Estados y Funciones Simplificadas
 ```javascript
-// Nuevos estados para recotización
-const [showRequoteDialog, setShowRequoteDialog] = useState(false);
-const [requoteItem, setRequoteItem] = useState(null);
-const [requoteDimensions, setRequoteDimensions] = useState({ height: "", width: "" });
-const [requoteGlass, setRequoteGlass] = useState(null);
-const [requoteColor, setRequoteColor] = useState(null);
+// Estados eliminados (simplificación)
+// - showRequoteDialog, requoteItem, requoteDimensions
+// - requoteGlass, requoteColor (ya no necesarios)
 
-// Función principal de recotización
-const handleRequoteConfirm = async () => {
-  // Obtiene datos del modelo con nombres resueltos
-  // Calcula nuevos valores usando getRecalcCalculations
-  // Actualiza el item en el carrito
-  // Muestra feedback al usuario
+// Función simplificada para eliminar del carrito
+const removeFromCart = (itemId) => {
+  setCart(prevCart => prevCart.filter(item => item.id !== itemId));
+  setSnackbar({ 
+    open: true, 
+    message: "Producto eliminado del carrito.", 
+    severity: "success" 
+  });
 };
+
+// Flujo simplificado: eliminar y agregar nuevo
+// 1. Usuario elimina producto del carrito
+// 2. Usuario agrega nuevo producto con configuración correcta
+// 3. Cambios se persisten automáticamente
 ```
 
 ### Mejoras en la Interfaz de Usuario
@@ -1701,17 +1712,24 @@ const handleRequoteConfirm = async () => {
    - Los usuarios pueden pausar y continuar su trabajo sin perder datos
    - Navegación libre entre módulos sin pérdida de contexto
 
-2. **✏️ Flexibilidad de Corrección**
-   - Corrección inmediata de errores sin rehacer todo el trabajo
-   - Comparación fácil entre diferentes opciones
+2. **🗑️ Simplicidad de Corrección**
+   - Eliminación directa de productos incorrectos
+   - Agregar nuevo producto con configuración correcta es más rápido
 
 3. **🎯 Mejora en la Experiencia**
    - Feedback visual claro sobre persistencia
    - Confirmaciones para prevenir pérdidas accidentales
+   - Flujo más directo y menos confuso
 
 4. **🔄 Eficiencia Operativa**
-   - Menos tiempo perdido rehaciendo cotizaciones
-   - Flujo de trabajo más natural y flexible
+   - Menos tiempo en validaciones complejas
+   - Flujo de trabajo más natural y predecible
+   - Menos puntos de falla en el sistema
+
+5. **🛠️ Mantenibilidad del Código**
+   - Código más simple y fácil de mantener
+   - Menos estados complejos y validaciones
+   - Mejor performance general del sistema
 
 ### Flujo de Trabajo Actualizado
 

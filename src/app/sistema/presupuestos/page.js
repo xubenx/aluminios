@@ -40,7 +40,7 @@ import {
 import Image from "next/image";
 import { evaluate } from "mathjs";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
-import { ShoppingCart, Delete, Add, Save, Edit } from "@mui/icons-material";
+import { ShoppingCart, Delete, Add, Save } from "@mui/icons-material";
 
 export default function CotizadorApp() {
   // Estados para la búsqueda de modelos
@@ -73,13 +73,6 @@ export default function CotizadorApp() {
   const [newCustomerName, setNewCustomerName] = useState("");
   const [newCustomerPhone, setNewCustomerPhone] = useState("");
   const [createNewCustomer, setCreateNewCustomer] = useState(false);
-
-  // Estados para recotización de productos en el carrito
-  const [showRequoteDialog, setShowRequoteDialog] = useState(false);
-  const [requoteItem, setRequoteItem] = useState(null);
-  const [requoteDimensions, setRequoteDimensions] = useState({ height: "", width: "" });
-  const [requoteGlass, setRequoteGlass] = useState(null);
-  const [requoteColor, setRequoteColor] = useState(null);
 
   // Estados para agregar elementos individuales
   const [showAddItemDialog, setShowAddItemDialog] = useState(false);

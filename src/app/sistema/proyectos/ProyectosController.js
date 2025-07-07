@@ -15,16 +15,7 @@ import {
   updateProject,
   activateProject,
   addPaymentToProject,
-  updateProjectItem,
-  deleteProjectItem,
-  updateAllProjectItemsStatus,
-  addModelToProject as addModelToProjectService,
-  addIndividualItemToProject,
   formatCurrency,
-  formatDate,
-  getStatusColor,
-  getStatusText,
-  filterProjects,
   calculateProjectTotal,
   updateProjectWithRecalculatedTotal
 } from "./projectController";
@@ -135,7 +126,24 @@ export const useProyectosController = () => {
 
   // Filtrar proyectos basado en la búsqueda y filtros
   useEffect(() => {
-    const filtered = filterProjects(projects, searchQuery, showInactive);
+    let filtered = projects;
+    
+    // Filtrar por estado inactivo
+    if (!showInactive) {
+      filtered = filtered.filter(project => 
+        project.status !== 'inactive' && !project.archived
+      );
+    }
+    
+    // Filtrar por búsqueda
+    if (searchQuery.trim()) {
+      const query = searchQuery.toLowerCase();
+      filtered = filtered.filter(project => 
+        project.name.toLowerCase().includes(query) ||
+        (project.customerName && project.customerName.toLowerCase().includes(query))
+      );
+    }
+    
     setFilteredProjects(filtered);
   }, [searchQuery, projects, showInactive]);
 
