@@ -1,6 +1,6 @@
 "use client";
 import { useState, useEffect } from "react";
-import { doc, updateDoc, getDoc } from "firebase/firestore";
+import { updateDoc, getDoc } from "firebase/firestore";
 import { db } from "../../../../firebase";
 import { evaluate } from "mathjs";
 import { collection, getDocs, doc, updateDoc, getDoc, query, orderBy } from "firebase/firestore";
