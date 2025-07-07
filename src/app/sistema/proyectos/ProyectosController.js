@@ -18,7 +18,7 @@ import {
   formatCurrency,
   calculateProjectTotal,
   updateProjectWithRecalculatedTotal
-} from "./projectController.ts";
+} from "./projectController";
 
 export const useProyectosController = () => {
   // Estados principales
