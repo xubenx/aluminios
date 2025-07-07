@@ -602,7 +602,7 @@ export default function ClientesPage() {
   };
 
   const getCalculations = () => {
-    if (!selectedModelToAdd || !selectedGlass) return { area: 0, totalPrice: 0 };
+    if (!selectedModelToAdd || !selectedGlass) return { area: 0, total: 0 };
     
     const height = parseFloat(dimensions.height) || 0;
     const width = parseFloat(dimensions.width) || 0;
@@ -615,9 +615,9 @@ export default function ClientesPage() {
       glassPrice: typeof selectedGlass.price === 'number' ? selectedGlass.price : 0
     };
     
-    const totalPrice = calculatePrice(typeof selectedModelToAdd.formula === 'string' ? selectedModelToAdd.formula : '0', variables);
+    const total = calculatePrice(typeof selectedModelToAdd.formula === 'string' ? selectedModelToAdd.formula : '0', variables);
     
-    return { area, totalPrice };
+    return { area, total };
   };
 
   const addModelToProject = async () => {
@@ -627,14 +627,14 @@ export default function ClientesPage() {
     }
 
     try {
-      const { area, totalPrice } = getCalculations();
+      const { area, total } = getCalculations();
       
       const newItem = {
         modelId: selectedModelToAdd.id,
         modelName: selectedModelToAdd.name,
         dimensions: dimensions,
         area: area,
-        price: totalPrice,
+        price: total,
         selectedGlass: selectedGlass,
         status: 'pendiente',
         assignedEmployee: null,
@@ -649,7 +649,7 @@ export default function ClientesPage() {
 
       await updateDoc(projectRef, { 
         items: updatedItems,
-        total: (addingToProject.total || 0) + totalPrice
+        total: (addingToProject.total || 0) + total
       });
 
       setSnackbar({ open: true, message: 'Modelo agregado al proyecto correctamente', severity: 'success' });
@@ -1251,7 +1251,7 @@ export default function ClientesPage() {
                                                 </Typography>
                                               )}
                                               <Typography variant="caption" color="primary">
-                                                <strong>Precio: {formatCurrency(item.totalPrice || 0)}</strong>
+                                                <strong>Precio: {formatCurrency(item.total || 0)}</strong>
                                               </Typography>
                                             </Box>
                                           </Box>
@@ -1309,7 +1309,7 @@ export default function ClientesPage() {
                                         )}
                                         {item.type === 'individual' && (
                                           <Typography variant="caption">
-                                            Precio Total: {formatCurrency(item.totalPrice || 0)}
+                                            Precio Total: {formatCurrency(item.total || 0)}
                                           </Typography>
                                         )}
                                       </Box>
@@ -1651,11 +1651,11 @@ export default function ClientesPage() {
                   fullWidth
                   label="Precio del Modelo"
                   type="number"
-                  value={editingModel.price || editingModel.totalPrice || 0}
+                  value={editingModel.price || editingModel.total || 0}
                   onChange={(e) => setEditingModel({ 
                     ...editingModel, 
                     price: parseFloat(e.target.value) || 0,
-                    totalPrice: parseFloat(e.target.value) || 0
+                    total: parseFloat(e.target.value) || 0
                   })}
                   inputProps={{ min: 0, step: 0.01 }}
                 />
@@ -1805,7 +1805,7 @@ export default function ClientesPage() {
                       <strong>Área:</strong> {getCalculations().area.toFixed(2)} m²
                     </Typography>
                     <Typography variant="body2" color="primary">
-                      <strong>Precio Total:</strong> {formatCurrency(getCalculations().totalPrice)}
+                      <strong>Precio Total:</strong> {formatCurrency(getCalculations().total)}
                     </Typography>
                   </Paper>
                 )}

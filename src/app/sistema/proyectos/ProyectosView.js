@@ -20,8 +20,6 @@ import {
   TableBody,
   Chip,
   IconButton,
-  Snackbar,
-  Alert,
   Divider,
   Paper,
   Collapse,
@@ -42,7 +40,6 @@ import {
   FilterList,
   Add,
   Block,
-  Settings
 } from "@mui/icons-material";
 
 // Componente de imagen con caché mejorado
@@ -124,8 +121,7 @@ const ProyectosView = ({
   editProject,
   showEditDialog,
   setShowEditDialog,
-  snackbar,
-  setSnackbar,
+
   isMobile,
   expandedModels,
   employees,
@@ -182,12 +178,7 @@ const ProyectosView = ({
   setRecalcIndividualQuantityType,
   recalcIndividualDimensions,
   setRecalcIndividualDimensions,
-  recalcIndividualSelectedMaterial,
-  setRecalcIndividualSelectedMaterial,
-  recalcIndividualSelectedHerraje,
-  setRecalcIndividualSelectedHerraje,
-  recalcIndividualSelectedVidrio,
-  setRecalcIndividualSelectedVidrio,
+
   recalcIndividualPriceType,
   setRecalcIndividualPriceType,
   showAddIndividualItemDialog,
@@ -994,7 +985,7 @@ const ProyectosView = ({
                 <option value="pagada">Pagada</option>
               </TextField>
               <Typography variant="body2" color="textSecondary" sx={{ mt: 2 }}>
-                Todos los elementos serán cambiados al estado "{getModelStatusText(massStatusValue)}"
+                Todos los elementos serán cambiados al estado &quot;{getModelStatusText(massStatusValue)}&quot;
               </Typography>
             </Box>
           )}

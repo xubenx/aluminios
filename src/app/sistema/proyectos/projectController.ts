@@ -27,8 +27,8 @@ export interface ProjectItem {
     height: number;
     width: number;
   };
-  selectedGlass?: any;
-  selectedColor?: any;
+  selectedGlass?: Glass;
+  selectedColor?: Color;
   details?: {
     materials?: ItemDetails;
     chapes?: ItemDetails;
@@ -429,9 +429,9 @@ export const addModelToProject = async (
     modelId: string;
     modelName: string;
     dimensions: { height: number; width: number };
-    selectedGlass: any;
-    selectedColor: any;
-    calculations: any;
+    selectedGlass: Glass;
+    selectedColor: Color;
+    calculations: ModelCalculations;
   }
 ): Promise<void> => {
   try {
@@ -562,24 +562,36 @@ export interface Color {
   [key: string]: unknown;
 }
 
+export interface ModelCalculations {
+  materials: ItemDetails;
+  chapes: ItemDetails;
+  glasses: ItemDetails;
+  laborCost: number;
+  laborCostActual: number;
+  m2: number;
+  glassLaborCost: number;
+  totalLaborActual: number;
+  totalGeneral: number;
+}
+
 // Utility function to remove undefined values from objects
-const cleanObjectForFirestore = (obj: any): any => {
+const cleanObjectForFirestore = <T>(obj: T): T => {
   if (obj === null || obj === undefined) {
-    return null;
+    return obj;
   }
   
   if (Array.isArray(obj)) {
-    return obj.map(item => cleanObjectForFirestore(item));
+    return obj.map(item => cleanObjectForFirestore(item)) as T;
   }
   
   if (typeof obj === 'object') {
-    const cleaned: any = {};
+    const cleaned: Record<string, unknown> = {};
     for (const [key, value] of Object.entries(obj)) {
       if (value !== undefined) {
         cleaned[key] = cleanObjectForFirestore(value);
       }
     }
-    return cleaned;
+    return cleaned as T;
   }
   
   return obj;
@@ -589,7 +601,7 @@ const cleanObjectForFirestore = (obj: any): any => {
 export const updateProjectWithRecalculatedTotal = async (
   projectId: string,
   updatedItems: ProjectItem[],
-  additionalData: Record<string, any> = {}
+  additionalData: Record<string, unknown> = {}
 ): Promise<void> => {
   try {
     const projectRef = doc(db, "projects", projectId);

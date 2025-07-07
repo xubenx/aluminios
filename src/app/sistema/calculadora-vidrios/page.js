@@ -144,7 +144,7 @@ export default function GlassCalculatorPage() {
       area: area,
       priceType: priceTypeText,
       pricePerUnit: parseFloat(option[priceType]) || 0,
-      totalPrice: price,
+      total: price,
       timestamp: new Date().toISOString()
     };
 
@@ -182,7 +182,7 @@ export default function GlassCalculatorPage() {
       thickness: newOption.tickness,
       priceType: priceTypeText,
       pricePerUnit: parseFloat(newOption[priceType]) || 0,
-      totalPrice: price,
+      total: price,
       timestamp: new Date().toISOString()
     };
 
@@ -214,8 +214,8 @@ export default function GlassCalculatorPage() {
     return calculatorItems.reduce((total, item) => total + item.area, 0);
   };
 
-  const getTotalPrice = () => {
-    return calculatorItems.reduce((total, item) => total + item.totalPrice, 0);
+  const gettotal = () => {
+    return calculatorItems.reduce((total, item) => total + item.total, 0);
   };
 
   const saveToHistory = async () => {
@@ -232,7 +232,7 @@ export default function GlassCalculatorPage() {
       const historyData = {
         items: calculatorItems,
         totalArea: getTotalArea(),
-        totalPrice: getTotalPrice(),
+        total: gettotal(),
         createdAt: new Date().toISOString(),
         type: "glass_calculation"
       };
@@ -319,7 +319,7 @@ export default function GlassCalculatorPage() {
             name: `${item.glassName} ${item.thickness}mm`,
             priceInstalled: item.pricePerUnit
           },
-          total: item.totalPrice,
+          total: item.total,
           area: item.area || "",
           status: "cotizacion",
           laborCostSelected: 0,
@@ -327,17 +327,17 @@ export default function GlassCalculatorPage() {
             materials: { price: 0, items: [] },
             chapes: { price: 0, items: [] },
             glasses: { 
-              price: item.totalPrice, 
+              price: item.total, 
               items: [{
                 name: `${item.glassName} ${item.thickness}mm`,
                 meterage: item.area,
-                price: item.totalPrice
+                price: item.total
               }]
             },
             laborCost: 0
           }
         })),
-        total: getTotalPrice(),
+        total: gettotal(),
         createdAt: new Date().toISOString(),
         status: "quotation",
         type: "glass_project"
@@ -522,7 +522,7 @@ export default function GlassCalculatorPage() {
               <Box sx={{ display: "flex", flexDirection: "column", gap: 1 }}>
                 {selectedGlass.options.map((option, index) => {
                   const price = parseFloat(option[priceType]) || 0;
-                  const totalPrice = calculateGlassArea() * price;
+                  const total = calculateGlassArea() * price;
                   const isValidDimensions = parseFloat(dimensions.height) > 0 && parseFloat(dimensions.width) > 0;
                   
                   return (
@@ -544,7 +544,7 @@ export default function GlassCalculatorPage() {
                           Grosor: {option.tickness}mm
                         </Typography>
                         <Typography variant="body2" color="text.secondary">
-                          ${price.toFixed(2)}/m² = ${isValidDimensions ? totalPrice.toFixed(2) : "0.00"}
+                          ${price.toFixed(2)}/m² = ${isValidDimensions ? total.toFixed(2) : "0.00"}
                         </Typography>
                       </Box>
                       
@@ -670,7 +670,7 @@ export default function GlassCalculatorPage() {
                       </Box>
                       <Box sx={{ textAlign: "right", ml: 2 }}>
                         <Typography variant="h6" sx={{ color: "primary.main", fontWeight: "bold" }}>
-                          ${item.totalPrice.toFixed(2)}
+                          ${item.total.toFixed(2)}
                         </Typography>
                         <Box sx={{ display: "flex", gap: 0.5, mt: 1 }}>
                           <IconButton
@@ -717,7 +717,7 @@ export default function GlassCalculatorPage() {
                   </Typography>
                 </Box>
                 <Typography variant="h4" sx={{ fontWeight: "bold" }}>
-                  ${getTotalPrice().toFixed(2)}
+                  ${gettotal().toFixed(2)}
                 </Typography>
               </Box>
             </Box>
@@ -827,7 +827,7 @@ export default function GlassCalculatorPage() {
                       </TableCell>
                       <TableCell>{record.items?.length || 0}</TableCell>
                       <TableCell>{record.totalArea?.toFixed(2) || 0} m²</TableCell>
-                      <TableCell>${record.totalPrice?.toFixed(2) || 0}</TableCell>
+                      <TableCell>${record.total?.toFixed(2) || 0}</TableCell>
                     </TableRow>
                   ))}
                 </TableBody>
@@ -908,7 +908,7 @@ export default function GlassCalculatorPage() {
                   <Box sx={{ display: "flex", flexDirection: "column", gap: 1 }}>
                     {selectedGlass.options.map((option, index) => {
                       const price = parseFloat(option[priceType]) || 0;
-                      const totalPrice = calculateGlassArea() * price;
+                      const total = calculateGlassArea() * price;
                       const isValidDimensions = parseFloat(dimensions.height) > 0 && parseFloat(dimensions.width) > 0;
                       
                       return (
@@ -930,7 +930,7 @@ export default function GlassCalculatorPage() {
                               Grosor: {option.tickness}mm
                             </Typography>
                             <Typography variant="body2" color="text.secondary">
-                              ${price.toFixed(2)}/m² = ${isValidDimensions ? totalPrice.toFixed(2) : "0.00"}
+                              ${price.toFixed(2)}/m² = ${isValidDimensions ? total.toFixed(2) : "0.00"}
                             </Typography>
                           </Box>
                           
@@ -968,7 +968,7 @@ export default function GlassCalculatorPage() {
         </DialogTitle>
         <DialogContent>
           <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-            Elemento actual: {itemToEdit?.glassName} {itemToEdit?.thickness}mm - ${itemToEdit?.totalPrice.toFixed(2)}
+            Elemento actual: {itemToEdit?.glassName} {itemToEdit?.thickness}mm - ${itemToEdit?.total.toFixed(2)}
           </Typography>
           
           <Box sx={{ display: "flex", flexDirection: "column", gap: 2, maxHeight: "60vh", overflow: "auto" }}>
@@ -984,7 +984,7 @@ export default function GlassCalculatorPage() {
                     
                     const area = (parseFloat(itemToEdit.dimensions.height) / 100) * (parseFloat(itemToEdit.dimensions.width) / 100);
                     const price = parseFloat(option[priceType]) || 0;
-                    const totalPrice = area * price;
+                    const total = area * price;
                     const currentSelection = itemToEdit.glassName === glass.name && itemToEdit.thickness === option.tickness;
                     
                     return (
@@ -1005,7 +1005,7 @@ export default function GlassCalculatorPage() {
                             Grosor: {option.tickness}mm
                           </Typography>
                           <Typography variant="body2" color="text.secondary">
-                            ${price.toFixed(2)}/m² = ${totalPrice.toFixed(2)}
+                            ${price.toFixed(2)}/m² = ${total.toFixed(2)}
                           </Typography>
                           {currentSelection && (
                             <Chip size="small" label="Actual" color="primary" sx={{ mt: 0.5 }} />

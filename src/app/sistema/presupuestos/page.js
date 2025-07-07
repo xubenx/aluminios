@@ -401,7 +401,7 @@ export default function CotizadorApp() {
             quantityType: "tramos",
             unitPrice: parseFloat(selectedMaterial.price || 0),
             meters: itemQuantity * tramo,
-            totalPrice: itemQuantity * parseFloat(selectedMaterial.price || 0),
+            total: itemQuantity * parseFloat(selectedMaterial.price || 0),
             tramo: tramo
           };
         } else {
@@ -414,7 +414,7 @@ export default function CotizadorApp() {
             quantityType: "metros",
             unitPrice: parseFloat(selectedMaterial.price || 0) / tramo,
             meters: itemQuantity,
-            totalPrice: tramosCost,
+            total: tramosCost,
             tramo: tramo
           };
         }
@@ -435,7 +435,7 @@ export default function CotizadorApp() {
           quantity: itemQuantity,
           quantityType: "piezas",
           unitPrice: parseFloat(selectedHerraje.price || 0),
-          totalPrice: itemQuantity * parseFloat(selectedHerraje.price || 0)
+          total: itemQuantity * parseFloat(selectedHerraje.price || 0)
         };
         break;
 
@@ -471,7 +471,7 @@ export default function CotizadorApp() {
           quantity: area,
           quantityType: itemQuantityType,
           unitPrice: parseFloat(selectedVidrio.price || 0),
-          totalPrice: area * parseFloat(selectedVidrio.price || 0),
+          total: area * parseFloat(selectedVidrio.price || 0),
           dimensions: itemQuantityType === "dimensiones" ? { ...itemDimensions } : null,
           area: area
         };
@@ -502,7 +502,7 @@ export default function CotizadorApp() {
   const getCartTotal = () => {
     return cart.reduce((total, item) => {
       if (item.type === "individual") {
-        return total + item.itemData.totalPrice;
+        return total + item.itemData.total;
       } else {
         // Elementos de modelo
         return total + item.calculations.totalGeneral;
@@ -523,12 +523,12 @@ export default function CotizadorApp() {
           case "material":
             if (materialsSummary[item.itemData.name]) {
               materialsSummary[item.itemData.name].meterage += item.itemData.meters;
-              materialsSummary[item.itemData.name].price += item.itemData.totalPrice;
+              materialsSummary[item.itemData.name].price += item.itemData.total;
             } else {
               materialsSummary[item.itemData.name] = {
                 name: item.itemData.name,
                 meterage: item.itemData.meters,
-                price: item.itemData.totalPrice,
+                price: item.itemData.total,
                 isIndividual: true
               };
             }
@@ -536,12 +536,12 @@ export default function CotizadorApp() {
           case "herraje":
             if (chapesSummary[item.itemData.name]) {
               chapesSummary[item.itemData.name].pieces += item.itemData.quantity;
-              chapesSummary[item.itemData.name].price += item.itemData.totalPrice;
+              chapesSummary[item.itemData.name].price += item.itemData.total;
             } else {
               chapesSummary[item.itemData.name] = {
                 name: item.itemData.name,
                 pieces: item.itemData.quantity,
-                price: item.itemData.totalPrice,
+                price: item.itemData.total,
                 isIndividual: true
               };
             }
@@ -549,12 +549,12 @@ export default function CotizadorApp() {
           case "vidrio":
             if (glassesSummary[item.itemData.name]) {
               glassesSummary[item.itemData.name].meterage += item.itemData.area;
-              glassesSummary[item.itemData.name].price += item.itemData.totalPrice;
+              glassesSummary[item.itemData.name].price += item.itemData.total;
             } else {
               glassesSummary[item.itemData.name] = {
                 name: item.itemData.name,
                 meterage: item.itemData.area,
-                price: item.itemData.totalPrice,
+                price: item.itemData.total,
                 isIndividual: true
               };
             }
@@ -683,7 +683,7 @@ export default function CotizadorApp() {
               quantity: item.itemData.quantity,
               quantityType: item.itemData.quantityType,
               unitPrice: item.itemData.unitPrice,
-              total: item.itemData.totalPrice,
+              total: item.itemData.total,
               dimensions: item.itemData.dimensions || null,
               area: item.itemData.area || null,
               meters: item.itemData.meters || null,
@@ -1446,7 +1446,7 @@ export default function CotizadorApp() {
                             )}
                           </TableCell>
                           <TableCell>
-                            ${(item.type === "individual" ? item.itemData.totalPrice : item.calculations.totalGeneral).toFixed(2)}
+                            ${(item.type === "individual" ? item.itemData.total : item.calculations.totalGeneral).toFixed(2)}
                           </TableCell>
                           <TableCell>
                             <Box sx={{ display: 'flex', gap: 1 }}>
