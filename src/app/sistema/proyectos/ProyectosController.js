@@ -3,22 +3,362 @@ import { useState, useEffect } from "react";
 import { doc, updateDoc, getDoc } from "firebase/firestore";
 import { db } from "../../../../firebase";
 import { evaluate } from "mathjs";
-import {
-  loadProjects,
-  loadEmployees,
-  loadModels,
-  loadGlasses,
-  loadMaterials,
-  loadChapes,
-  loadColors,
-  updateProjectStatus,
-  updateProject,
-  activateProject,
-  addPaymentToProject,
-  formatCurrency,
-  calculateProjectTotal,
-  updateProjectWithRecalculatedTotal
-} from "./projectController";
+import { collection, getDocs, doc, updateDoc, getDoc, query, orderBy } from "firebase/firestore";
+
+// Helper functions to avoid import issues
+const loadProjects = async () => {
+  try {
+    const q = query(collection(db, "projects"), orderBy("date", "desc"));
+    const querySnapshot = await getDocs(q);
+    return querySnapshot.docs.map(doc => ({
+      id: doc.id,
+      ...doc.data()
+    }));
+  } catch (error) {
+    console.error("Error loading projects:", error);
+    throw error;
+  }
+};
+
+const loadEmployees = async () => {
+  try {
+    const querySnapshot = await getDocs(collection(db, "employees"));
+    return querySnapshot.docs.map(doc => ({
+      id: doc.id,
+      ...doc.data()
+    }));
+  } catch (error) {
+    console.error("Error loading employees:", error);
+    throw error;
+  }
+};
+
+const loadModels = async () => {
+  try {
+    const querySnapshot = await getDocs(collection(db, "models"));
+    return querySnapshot.docs.map(doc => ({
+      id: doc.id,
+      ...doc.data()
+    }));
+  } catch (error) {
+    console.error("Error loading models:", error);
+    throw error;
+  }
+};
+
+const loadGlasses = async () => {
+  try {
+    const querySnapshot = await getDocs(collection(db, "glasses"));
+    return querySnapshot.docs.map(doc => ({
+      id: doc.id,
+      ...doc.data()
+    }));
+  } catch (error) {
+    console.error("Error loading glasses:", error);
+    throw error;
+  }
+};
+
+const loadMaterials = async () => {
+  try {
+    const querySnapshot = await getDocs(collection(db, "materials"));
+    return querySnapshot.docs.map(doc => ({
+      id: doc.id,
+      ...doc.data()
+    }));
+  } catch (error) {
+    console.error("Error loading materials:", error);
+    throw error;
+  }
+};
+
+const loadChapes = async () => {
+  try {
+    const querySnapshot = await getDocs(collection(db, "chapes"));
+    return querySnapshot.docs.map(doc => ({
+      id: doc.id,
+      ...doc.data()
+    }));
+  } catch (error) {
+    console.error("Error loading chapes:", error);
+    throw error;
+  }
+};
+
+const loadColors = async () => {
+  try {
+    const querySnapshot = await getDocs(collection(db, "colors"));
+    return querySnapshot.docs.map(doc => ({
+      id: doc.id,
+      ...doc.data()
+    }));
+  } catch (error) {
+    console.error("Error loading colors:", error);
+    throw error;
+  }
+};
+
+const updateProjectStatus = async (projectId, newStatus) => {
+  try {
+    await updateDoc(doc(db, "projects", projectId), {
+      status: newStatus
+    });
+  } catch (error) {
+    console.error("Error updating project status:", error);
+    throw error;
+  }
+};
+
+const updateProject = async (projectId, projectData) => {
+  try {
+    await updateDoc(doc(db, "projects", projectId), projectData);
+  } catch (error) {
+    console.error("Error updating project:", error);
+    throw error;
+  }
+};
+
+const activateProject = async (projectId, project, initialPayment = 0) => {
+  try {
+    const updateData = {
+      status: "active",
+      debt: project.total - initialPayment
+    };
+
+    if (initialPayment > 0) {
+      updateData.payments = [{
+        date: new Date().toISOString(),
+        amount: initialPayment,
+        description: "Anticipo inicial",
+        method: "efectivo"
+      }];
+    }
+
+    await updateDoc(doc(db, "projects", projectId), updateData);
+  } catch (error) {
+    console.error("Error activating project:", error);
+    throw error;
+  }
+};
+
+const addPaymentToProject = async (projectId, project, payment) => {
+  try {
+    const currentPayments = project.payments || [];
+    const newPayments = [...currentPayments, payment];
+    const newDebt = Math.max(0, (project.debt || project.total) - payment.amount);
+
+    await updateDoc(doc(db, "projects", projectId), {
+      payments: newPayments,
+      debt: newDebt
+    });
+  } catch (error) {
+    console.error("Error adding payment:", error);
+    throw error;
+  }
+};
+
+const formatCurrency = (amount) => {
+  return new Intl.NumberFormat('es-MX', {
+    style: 'currency',
+    currency: 'MXN',
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2
+  }).format(amount || 0);
+};
+
+const calculateProjectTotal = (items) => {
+  return items.reduce((sum, item) => sum + (item.total || 0), 0);
+};
+
+const updateProjectWithRecalculatedTotal = async (projectId, updatedItems) => {
+  try {
+    const newTotal = calculateProjectTotal(updatedItems);
+    await updateDoc(doc(db, "projects", projectId), {
+      items: updatedItems,
+      total: newTotal
+    });
+  } catch (error) {
+    console.error("Error updating project with recalculated total:", error);
+    throw error;
+  }
+};
+
+// Additional helper functions needed
+const updateProjectItem = async (projectId, itemIndex, updatedData) => {
+  try {
+    const projectDoc = await getDoc(doc(db, "projects", projectId));
+    if (!projectDoc.exists()) {
+      throw new Error("Project not found");
+    }
+
+    const projectData = projectDoc.data();
+    const updatedItems = [...(projectData.items || [])];
+    updatedItems[itemIndex] = { ...updatedItems[itemIndex], ...updatedData };
+
+    const newTotal = calculateProjectTotal(updatedItems);
+    await updateDoc(doc(db, "projects", projectId), {
+      items: updatedItems,
+      total: newTotal
+    });
+  } catch (error) {
+    console.error("Error updating project item:", error);
+    throw error;
+  }
+};
+
+const deleteProjectItem = async (projectId, itemIndex) => {
+  try {
+    const projectDoc = await getDoc(doc(db, "projects", projectId));
+    if (!projectDoc.exists()) {
+      throw new Error("Project not found");
+    }
+
+    const projectData = projectDoc.data();
+    const updatedItems = [...(projectData.items || [])];
+    updatedItems.splice(itemIndex, 1);
+
+    const newTotal = calculateProjectTotal(updatedItems);
+    await updateDoc(doc(db, "projects", projectId), {
+      items: updatedItems,
+      total: newTotal
+    });
+  } catch (error) {
+    console.error("Error deleting project item:", error);
+    throw error;
+  }
+};
+
+const addModelToProjectService = async (projectId, modelData) => {
+  try {
+    const projectDoc = await getDoc(doc(db, "projects", projectId));
+    if (!projectDoc.exists()) {
+      throw new Error("Project not found");
+    }
+
+    const projectDataFromDB = projectDoc.data();
+    const currentItems = projectDataFromDB.items || [];
+
+    const newItem = {
+      type: "model",
+      modelId: modelData.modelId,
+      modelName: modelData.modelName,
+      dimensions: modelData.dimensions,
+      selectedGlass: modelData.selectedGlass,
+      selectedColor: modelData.selectedColor,
+      area: "",
+      assignedEmployeeId: "",
+      status: "cotizacion",
+      laborCostSelected: modelData.calculations.laborCost,
+      laborCostActual: modelData.calculations.laborCostActual,
+      m2: modelData.calculations.m2,
+      total: modelData.calculations.totalGeneral,
+      details: {
+        materials: modelData.calculations.materials,
+        chapes: modelData.calculations.chapes,
+        glasses: modelData.calculations.glasses,
+        laborCost: modelData.calculations.laborCost,
+        laborCostActual: modelData.calculations.laborCostActual
+      }
+    };
+
+    const updatedItems = [...currentItems, newItem];
+    const newTotal = calculateProjectTotal(updatedItems);
+
+    await updateDoc(doc(db, "projects", projectId), {
+      items: updatedItems,
+      total: newTotal
+    });
+  } catch (error) {
+    console.error("Error adding model to project:", error);
+    throw error;
+  }
+};
+
+const addIndividualItemToProject = async (projectId, itemData) => {
+  try {
+    const projectDoc = await getDoc(doc(db, "projects", projectId));
+    if (!projectDoc.exists()) {
+      throw new Error("Project not found");
+    }
+
+    const projectDataFromDB = projectDoc.data();
+    const currentItems = projectDataFromDB.items || [];
+
+    const newItem = {
+      type: "individual",
+      itemType: itemData.itemType,
+      itemId: itemData.itemId,
+      itemName: itemData.itemName,
+      quantity: itemData.quantity,
+      unitPrice: itemData.unitPrice,
+      total: itemData.total,
+      dimensions: itemData.dimensions,
+      status: "cotizacion"
+    };
+
+    const updatedItems = [...currentItems, newItem];
+    const newTotal = calculateProjectTotal(updatedItems);
+
+    await updateDoc(doc(db, "projects", projectId), {
+      items: updatedItems,
+      total: newTotal
+    });
+  } catch (error) {
+    console.error("Error adding individual item to project:", error);
+    throw error;
+  }
+};
+
+const updateAllProjectItemsStatus = async (projectId, newStatus) => {
+  try {
+    const projectDoc = await getDoc(doc(db, "projects", projectId));
+    if (!projectDoc.exists()) {
+      throw new Error("Project not found");
+    }
+
+    const projectData = projectDoc.data();
+    const updatedItems = (projectData.items || []).map(item => ({
+      ...item,
+      status: newStatus
+    }));
+
+    await updateDoc(doc(db, "projects", projectId), {
+      items: updatedItems
+    });
+  } catch (error) {
+    console.error("Error updating all project items status:", error);
+    throw error;
+  }
+};
+
+// Helper functions for formatting
+const formatDate = (timestamp) => {
+  if (!timestamp) return "";
+  const date = timestamp.toDate ? timestamp.toDate() : new Date(timestamp);
+  return date.toLocaleDateString('es-MX');
+};
+
+const getStatusColor = (status) => {
+  switch (status) {
+    case 'quotation': return 'warning';
+    case 'active': return 'info';
+    case 'completed': return 'success';
+    case 'cancelled': return 'error';
+    case 'inactive': return 'default';
+    default: return 'default';
+  }
+};
+
+const getStatusText = (status) => {
+  switch (status) {
+    case 'quotation': return 'Cotización';
+    case 'active': return 'Activo';
+    case 'completed': return 'Completado';
+    case 'cancelled': return 'Cancelado';
+    case 'inactive': return 'Inactivo';
+    default: return 'Desconocido';
+  }
+};
 
 export const useProyectosController = () => {
   // Estados principales
@@ -1121,12 +1461,6 @@ export const useProyectosController = () => {
           laborCostActual: calculations.laborCostActual || 0
         }
       };
-
-      console.log("DEBUG - Saving updated model:", {
-        selectedColor: recalcSelectedColor,
-        selectedGlass: recalcSelectedGlass,
-        updatedModel
-      });
 
       console.log("DEBUG - Saving updated model:", {
         selectedColor: recalcSelectedColor,
