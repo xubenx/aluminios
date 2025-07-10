@@ -1,7 +1,8 @@
 "use client";
 import React, { useState, useEffect } from "react";
-import { collection, getDocs, getDoc, doc, addDoc } from "firebase/firestore";
+import { collection, getDocs, getDoc, doc, addDoc, serverTimestamp } from "firebase/firestore";
 import { db } from "../../../../firebase";
+import { evaluate } from "mathjs";
 
 import {
   Box,
@@ -38,7 +39,6 @@ import {
   Paper
 } from "@mui/material";
 import Image from "next/image";
-import { evaluate } from "mathjs";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import { ShoppingCart, Delete, Add, Save } from "@mui/icons-material";
 
@@ -723,6 +723,7 @@ export default function CotizadorApp() {
         }),
         total: getCartTotal(),
         createdAt: new Date().toISOString(),
+        date: serverTimestamp(),
         status: "quotation"
       };
 

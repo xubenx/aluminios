@@ -1462,7 +1462,7 @@ export const useProyectosController = () => {
           width: parseFloat(recalcDimensions.width) || 0
         },
         selectedGlass: recalcSelectedGlass || null,
-        selectedColor: recalcSelectedColor || null,
+        selectedColor: recalcSelectedColor || null, // <-- Asegura que el color se guarde
         laborCostSelected: calculations.laborCost || 0,
         laborCostActual: calculations.laborCostActual || 0,
         m2: calculations.m2 || 100,
@@ -1624,6 +1624,7 @@ export const useProyectosController = () => {
 
   const handleRecalcIndividualItem = (project, itemIndex) => {
     const item = project.items[itemIndex];
+    console.log("DEBUG - Item to recalc:", item); // Debug log
     setRecalcIndividualItem({ ...item, projectId: project.id, itemIndex });
     setRecalcIndividualQuantity(item.quantity || 1);
     setRecalcIndividualQuantityType("metros");
@@ -1660,7 +1661,10 @@ export const useProyectosController = () => {
           }
           break;
         case 'vidrio':
-          const vidrio = glassesOptions.find(g => g.id === recalcIndividualItem.itemId);
+          // Buscar el vidrio por itemId, considerando tanto id como originalId
+          const vidrio = glassesOptions.find(g => 
+            g.id === recalcIndividualItem.itemId || g.originalId === recalcIndividualItem.itemId
+          );
           if (vidrio) {
             unitPrice = parseFloat(vidrio[recalcIndividualPriceType === "installed" ? "priceInstalled" : "price"] || "0");
             let area = recalcIndividualQuantity;
@@ -1671,7 +1675,10 @@ export const useProyectosController = () => {
             }
             
             total = area * unitPrice;
-            console.log(`Glass calculation: area=${area}m², unitPrice=${unitPrice}, total=${total}`); // Debug log
+            console.log(`Glass found: ${vidrio.name}, unitPrice: ${unitPrice}, area: ${area}, total: ${total}`); // Debug log
+          } else {
+            console.error(`Glass not found for itemId: ${recalcIndividualItem.itemId}`); // Debug log
+            console.log("Available glasses:", glassesOptions.map(g => ({ id: g.id, originalId: g.originalId, name: g.name }))); // Debug log
           }
           break;
       }
@@ -1831,6 +1838,9 @@ export const useProyectosController = () => {
       return;
     }
 
+    console.log("DEBUG - Calculating preview for:", recalcIndividualItem); // Debug log
+    console.log("DEBUG - Available glasses:", glassesOptions.slice(0, 3)); // Debug log (first 3 items)
+
     let unitPrice = 0;
     let total = 0;
     let calculation = "";
@@ -1860,22 +1870,25 @@ export const useProyectosController = () => {
           }
           break;
         case 'vidrio':
-          const vidrio = glassesOptions.find(g => g.id === recalcIndividualItem.itemId);
+          // Buscar el vidrio por itemId, considerando tanto id como originalId
+          const vidrio = glassesOptions.find(g => 
+            g.id === recalcIndividualItem.itemId || g.originalId === recalcIndividualItem.itemId
+          );
           if (vidrio) {
             unitPrice = parseFloat(vidrio[recalcIndividualPriceType === "installed" ? "priceInstalled" : "price"] || "0");
             let area = recalcIndividualQuantity;
-            let calculationText = "";
             
-            // If dimensions are provided, calculate area from dimensions
             if (recalcIndividualDimensions.height && recalcIndividualDimensions.width) {
               area = (parseFloat(recalcIndividualDimensions.height) / 100) * (parseFloat(recalcIndividualDimensions.width) / 100);
-              calculationText = `${recalcIndividualDimensions.height}cm × ${recalcIndividualDimensions.width}cm = ${area.toFixed(2)}m² × ${formatCurrency(unitPrice)} = ${formatCurrency(area * unitPrice)}`;
+              calculation = `${recalcIndividualDimensions.height}cm × ${recalcIndividualDimensions.width}cm = ${area.toFixed(2)}m² × ${formatCurrency(unitPrice)} = ${formatCurrency(area * unitPrice)}`;
             } else {
-              calculationText = `${recalcIndividualQuantity}m² × ${formatCurrency(unitPrice)} = ${formatCurrency(area * unitPrice)}`;
+              calculation = `${recalcIndividualQuantity}m² × ${formatCurrency(unitPrice)} = ${formatCurrency(area * unitPrice)}`;
             }
             
             total = area * unitPrice;
-            calculation = calculationText;
+          } else {
+            console.error(`Glass not found for itemId: ${recalcIndividualItem.itemId} in live preview`);
+            calculation = "Vidrio no encontrado";
           }
           break;
       }
