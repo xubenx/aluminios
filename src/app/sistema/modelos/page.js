@@ -8,6 +8,7 @@ import {
   doc,
 } from "firebase/firestore";
 import { db } from "../../../../firebase";
+import { getModelImageURL } from "../../../utils/imageStorage";
 import {
   Button,
   Card,
@@ -34,6 +35,7 @@ export default function ModelsPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [openDialog, setOpenDialog] = useState(false);
   const [currentModel, setCurrentModel] = useState(null);
+  const [modelImageURLs, setModelImageURLs] = useState({}); // URLs de imágenes desde Firebase Storage
   const [formData, setFormData] = useState({
     name: "",
     manpower: "",
@@ -63,13 +65,40 @@ export default function ModelsPage() {
   }, [searchQuery, models]);
 
   const fetchModels = async () => {
-    const modelsSnapshot = await getDocs(collection(db, "models"));
-    const modelsData = modelsSnapshot.docs.map((doc) => ({
-      id: doc.id,
-      ...doc.data(),
-    }));
-    setModels(modelsData);
-    setFilteredModels(modelsData);
+    try {
+      const modelsSnapshot = await getDocs(collection(db, "models"));
+      const modelsData = modelsSnapshot.docs.map((doc) => ({
+        id: doc.id,
+        ...doc.data(),
+      }));
+      
+      setModels(modelsData);
+      setFilteredModels(modelsData);
+
+      // Cargar URLs de imágenes desde Firebase Storage
+      const imageURLs = {};
+      await Promise.all(
+        modelsData.map(async (model) => {
+          try {
+            const imageURL = await getModelImageURL(model.id);
+            if (imageURL) {
+              imageURLs[model.id] = imageURL;
+            }
+          } catch (error) {
+            console.log(`No se encontró imagen para el modelo ${model.id}`);
+          }
+        })
+      );
+      
+      setModelImageURLs(imageURLs);
+    } catch (error) {
+      console.error("Error fetching models:", error);
+      setSnackbar({
+        open: true,
+        message: "Error al cargar los modelos",
+        severity: "error",
+      });
+    }
   };
 
   const updateModelsWithoutManpowerActual = async () => {
@@ -264,7 +293,16 @@ export default function ModelsPage() {
             throw new Error('Failed to upload image');
           }
 
+          const uploadResult = await uploadResponse.json();
           console.log("Imagen subida correctamente para modelo:", docRef.id);
+          console.log("URL de la imagen:", uploadResult.downloadURL);
+          
+          // Actualizar el estado con la nueva URL de imagen
+          setModelImageURLs(prev => ({
+            ...prev,
+            [docRef.id]: uploadResult.downloadURL
+          }));
+          
         } catch (imageError) {
           console.error("Error al subir imagen:", imageError);
           setSnackbar({
@@ -328,9 +366,16 @@ export default function ModelsPage() {
               <CardMedia
                 component="img"
                 height="200"
-                image={`/images/${model.id}.png`}
+                image={modelImageURLs[model.id] || '/placeholder-image.png'}
                 alt={`Imagen de ${model.name}`}
-                onError={(e) => (e.target.style.display = "none")}
+                onError={(e) => {
+                  e.target.src = '/placeholder-image.png';
+                  e.target.style.opacity = '0.5';
+                }}
+                sx={{
+                  objectFit: 'cover',
+                  backgroundColor: '#f5f5f5'
+                }}
               />
               <CardContent>
                 <Typography

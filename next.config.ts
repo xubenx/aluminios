@@ -6,6 +6,17 @@ const nextConfig: NextConfig = {
   // Habilitar el modo estricto de React
   reactStrictMode: true,
 
+  // Configurar dominios permitidos para imágenes
+  images: {
+    remotePatterns: [
+      {
+        protocol: 'https',
+        hostname: 'firebasestorage.googleapis.com',
+        port: '',
+        pathname: '/v0/b/aluminios-88a45.firebasestorage.app/o/**',
+      },
+    ],
+  },
 
 };
 

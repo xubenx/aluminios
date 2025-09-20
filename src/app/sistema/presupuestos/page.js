@@ -2,6 +2,7 @@
 import React, { useState, useEffect } from "react";
 import { collection, getDocs, getDoc, doc, addDoc, serverTimestamp } from "firebase/firestore";
 import { db } from "../../../../firebase";
+import { getModelImageURL } from "../../../utils/imageStorage";
 import { evaluate } from "mathjs";
 
 import {
@@ -90,7 +91,22 @@ export default function CotizadorApp() {
   const CachedImage = ({ modelId, modelName, height = 200, width = "100%" }) => {
     const [imageLoaded, setImageLoaded] = useState(imageCache.has(modelId));
     const [imageError, setImageError] = useState(false);
-    const imageSrc = `/images/${modelId}.png`;
+    const [imageSrc, setImageSrc] = useState('');
+
+    useEffect(() => {
+      const loadImage = async () => {
+        try {
+          const imageUrl = await getModelImageURL(modelId);
+          setImageSrc(imageUrl || '/images/placeholder.png');
+        } catch (error) {
+          console.error('Error loading image:', error);
+          setImageSrc('/images/placeholder.png');
+          setImageError(true);
+        }
+      };
+
+      loadImage();
+    }, [modelId]);
 
     const handleImageLoad = () => {
       if (!imageLoaded) {
@@ -1034,6 +1050,43 @@ export default function CotizadorApp() {
     );
   }
 
+  // Componente para imagen de modelo principal en cotizador
+  const ModelImage = ({ modelId, modelName }) => {
+    const [imageSrc, setImageSrc] = useState('');
+    const [imageError, setImageError] = useState(false);
+
+    useEffect(() => {
+      const loadImage = async () => {
+        try {
+          const imageUrl = await getModelImageURL(modelId);
+          setImageSrc(imageUrl || '/images/placeholder.png');
+        } catch (error) {
+          console.error('Error loading model image:', error);
+          setImageSrc('/images/placeholder.png');
+          setImageError(true);
+        }
+      };
+
+      loadImage();
+    }, [modelId]);
+
+    if (imageError && !imageSrc) return null;
+
+    return (
+      <Image
+        src={imageSrc}
+        alt={`Imagen de ${modelName}`}
+        width={500}
+        height={500}
+        style={{
+          objectFit: "cover",
+          borderRadius: "16px",
+        }}
+        onError={() => setImageError(true)}
+      />
+    );
+  };
+
   // Vista del cotizador del modelo seleccionado
   if (modelData) {
     const calculations = getCalculations();
@@ -1060,17 +1113,7 @@ export default function CotizadorApp() {
             mb: 4,
           }}
         >
-          <Image
-            src={`/images/${modelData.id}.png`}
-            alt={`Imagen de ${modelData.name}`}
-            width={500}
-            height={500}
-            style={{
-              objectFit: "cover",
-              borderRadius: "16px",
-            }}
-            onError={(e) => (e.target.style.display = "none")}
-          />
+          <ModelImage modelId={modelData.id} modelName={modelData.name} />
         </Box>
         
         {/* Campos para modificar dimensiones */}

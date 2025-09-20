@@ -1,5 +1,6 @@
 import React from "react";
 import Image from "next/image";
+import { getModelImageURL } from "../../utils/imageStorage";
 import {
   Box,
   Button,
@@ -46,7 +47,22 @@ import {
 const CachedImage = ({ modelId, modelName, height = 200, width = "100%", imageCache, setImageCache }) => {
   const [imageLoaded, setImageLoaded] = React.useState(imageCache.has(modelId));
   const [imageError, setImageError] = React.useState(false);
-  const imageSrc = `/images/${modelId}.png`;
+  const [imageSrc, setImageSrc] = React.useState('');
+
+  React.useEffect(() => {
+    const loadImage = async () => {
+      try {
+        const imageUrl = await getModelImageURL(modelId);
+        setImageSrc(imageUrl || '/images/placeholder.png');
+      } catch (error) {
+        console.error('Error loading image:', error);
+        setImageSrc('/images/placeholder.png');
+        setImageError(true);
+      }
+    };
+
+    loadImage();
+  }, [modelId]);
 
   const handleImageLoad = () => {
     if (!imageLoaded) {
@@ -119,6 +135,7 @@ const ProyectosView = ({
   showDetailsDialog,
   setShowDetailsDialog,
   editProject,
+  setEditProject,
   showEditDialog,
   setShowEditDialog,
 
@@ -126,10 +143,11 @@ const ProyectosView = ({
   expandedModels,
   employees,
   editingModel,
+  setEditingModel,
   showModelEditDialog,
   setShowModelEditDialog,
   showPaymentDialog,
-  setShowPaymentDialog,
+  handleClosePaymentDialog,
   paymentProject,
   paymentAmount,
   setPaymentAmount,
@@ -142,6 +160,8 @@ const ProyectosView = ({
   activatingProject,
   initialPayment,
   setInitialPayment,
+  adjustedTotal,
+  setAdjustedTotal,
   showInactive,
   setShowInactive,
   showAddModelDialog,
@@ -923,9 +943,33 @@ const ProyectosView = ({
               <Typography variant="h6" sx={{ mb: 2 }}>
                 {activatingProject.name}
               </Typography>
-              <Typography variant="body1" sx={{ mb: 2 }}>
-                Total del proyecto: <strong>${activatingProject.total.toFixed(2)}</strong>
-              </Typography>
+              
+              {/* Campo para total ajustado */}
+              <TextField
+                label="Total del Proyecto"
+                type="number"
+                fullWidth
+                variant="outlined"
+                value={adjustedTotal || ''}
+                onChange={(e) => {
+                  const value = e.target.value;
+                  if (value === '' || (!isNaN(value) && parseFloat(value) >= 0)) {
+                    const newTotal = value === '' ? 0 : parseFloat(value);
+                    setAdjustedTotal(newTotal);
+                    // Ajustar anticipo sugerido al nuevo total
+                    if (newTotal > 0) {
+                      setInitialPayment(newTotal * 0.5);
+                    }
+                  }
+                }}
+                sx={{ mb: 2 }}
+                inputProps={{ min: "0", step: "0.01" }}
+                helperText={adjustedTotal !== activatingProject.total 
+                  ? `Total original calculado: $${activatingProject.total.toFixed(2)}` 
+                  : "Ajusta el total si el precio negociado es diferente"
+                }
+              />
+              
               <TextField
                 label="Pago inicial (Anticipo)"
                 type="number"
@@ -939,11 +983,11 @@ const ProyectosView = ({
                   }
                 }}
                 sx={{ mb: 2 }}
-                inputProps={{ min: "0", max: activatingProject?.total || 0, step: "0.01" }}
-                helperText={`Sugerido: $${((activatingProject?.total || 0) * 0.5).toFixed(2)} (50%)`}
+                inputProps={{ min: "0", max: adjustedTotal || 0, step: "0.01" }}
+                helperText={`Sugerido: $${((adjustedTotal || 0) * 0.5).toFixed(2)} (50%)`}
               />
               <Typography variant="body2" color="textSecondary">
-                Deuda restante: ${((activatingProject?.total || 0) - (initialPayment || 0)).toFixed(2)}
+                Deuda restante: ${((adjustedTotal || 0) - (initialPayment || 0)).toFixed(2)}
               </Typography>
             </Box>
           )}
@@ -956,163 +1000,150 @@ const ProyectosView = ({
         </DialogActions>
       </Dialog>
 
-      {/* Diálogo para cambio masivo de estados */}
-      <Dialog open={showMassStatusDialog} onClose={() => setShowMassStatusDialog(false)} maxWidth="sm" fullWidth>
-        <DialogTitle>Cambiar Estado de Todos los Elementos</DialogTitle>
-        <DialogContent>
-          {massStatusProject && (
-            <Box>
-              <Typography variant="h6" sx={{ mb: 2 }}>
-                {massStatusProject.name}
-              </Typography>
-              <Typography variant="body1" sx={{ mb: 3 }}>
-                Esta acción cambiará el estado de todos los {massStatusProject.items.length} elementos del proyecto.
-              </Typography>
-              <TextField
-                select
-                label="Nuevo Estado"
-                fullWidth
-                variant="outlined"
-                value={massStatusValue}
-                onChange={(e) => setMassStatusValue(e.target.value)}
-                SelectProps={{
-                  native: true,
-                }}
-              >
-                <option value="pendiente">Pendiente</option>
-                <option value="enProceso">En Proceso</option>
-                <option value="instalado">Instalado</option>
-                <option value="revisado">Revisado</option>
-                <option value="pagada">Pagada</option>
-              </TextField>
-              <Typography variant="body2" color="textSecondary" sx={{ mt: 2 }}>
-                Todos los elementos serán cambiados al estado &quot;{getModelStatusText(massStatusValue)}&quot;
-              </Typography>
-            </Box>
-          )}
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setShowMassStatusDialog(false)}>Cancelar</Button>
-          <Button variant="contained" onClick={confirmMassStatusChange} color="primary">
-            Confirmar Cambio
-          </Button>
-        </DialogActions>
-      </Dialog>
+        <Dialog open={showMassStatusDialog} onClose={() => setShowMassStatusDialog(false)} maxWidth="md" fullWidth>
+          <DialogTitle>Cambiar Estado de Todos los Elementos</DialogTitle>
+          <DialogContent>
+            {massStatusProject && (
+          <Box>
+            <Typography variant="h6" sx={{ mb: 2 }}>
+              {massStatusProject.name}
+            </Typography>
+            <Typography variant="body1" sx={{ mb: 3 }}>
+              Esta acción cambiará el estado de todos los {massStatusProject.items.length} elementos del proyecto.
+            </Typography>
+            <TextField
+              select
+              label="Nuevo Estado"
+              fullWidth
+              variant="outlined"
+              value={massStatusValue}
+              onChange={(e) => setMassStatusValue(e.target.value)}
+              SelectProps={{
+            native: true,
+              }}
+            >
+              <option value="pendiente">Pendiente</option>
+              <option value="enProceso">En Proceso</option>
+              <option value="instalado">Instalado</option>
+              <option value="revisado">Revisado</option>
+              <option value="pagada">Pagada</option>
+            </TextField>
+            <Typography variant="body2" color="textSecondary" sx={{ mt: 2 }}>
+              Todos los elementos serán cambiados al estado &quot;{getModelStatusText(massStatusValue)}&quot;
+            </Typography>
+          </Box>
+            )}
+          </DialogContent>
+          <DialogActions>
+            <Button onClick={() => setShowMassStatusDialog(false)}>Cancelar</Button>
+            <Button variant="contained" onClick={confirmMassStatusChange} color="primary">
+          Confirmar Cambio
+            </Button>
+          </DialogActions>
+        </Dialog>
 
-      {/* Diálogo de edición de modelo */}
-      <Dialog open={showModelEditDialog} onClose={() => setShowModelEditDialog(false)} maxWidth="md" fullWidth fullScreen={isMobile}>
-        <DialogTitle>Editar Modelo</DialogTitle>
-        <DialogContent>
+          <Dialog open={showModelEditDialog} onClose={() => setShowModelEditDialog(false)} maxWidth="lg" fullWidth>
+            <DialogTitle>Editar Modelo</DialogTitle>
+            <DialogContent>
           {editingModel && (
             <Box>
-              <Typography variant="h6" sx={{ mb: 2 }}>
-                {editingModel.modelName || editingModel.itemName}
-              </Typography>
-              
-              <Grid container spacing={2}>
-                <Grid item xs={12} sm={6}>
-                  <TextField
-                    label="Área/Ubicación"
-                    fullWidth
-                    variant="outlined"
-                    value={editingModel.area || ''}
-                    onChange={(e) => setEditingModel({ ...editingModel, area: e.target.value })}
-                    sx={{ mb: 2 }}
-                  />
-                </Grid>
-                
-                <Grid item xs={12} sm={6}>
-                  <Autocomplete
-                    options={employees}
-                    getOptionLabel={(option) => option.name || ''}
-                    value={employees.find(emp => emp.id === editingModel.assignedEmployeeId) || null}
-                    onChange={(event, newValue) => {
-                      setEditingModel({ ...editingModel, assignedEmployeeId: newValue ? newValue.id : '' });
-                    }}
-                    renderInput={(params) => (
-                      <TextField
-                        {...params}
-                        label="Colaborador Asignado"
-                        variant="outlined"
-                        fullWidth
-                      />
-                    )}
-                    sx={{ mb: 2 }}
-                  />
-                </Grid>
-                
-                <Grid item xs={12} sm={6}>
-                  <TextField
-                    select
-                    label="Estado"
-                    fullWidth
-                    variant="outlined"
-                    value={editingModel.status}
-                    onChange={(e) => setEditingModel({ ...editingModel, status: e.target.value })}
-                    SelectProps={{
-                      native: true,
-                    }}
-                    sx={{ mb: 2 }}
-                  >
-                    <option value="cotizacion">Cotización</option>
-                    <option value="pendiente">Pendiente</option>
-                    <option value="enProceso">En Proceso</option>
-                    <option value="instalado">Instalado</option>
-                    <option value="revisado">Revisado</option>
-                    <option value="pagada">Pagada</option>
-                  </TextField>
-                </Grid>
-                
-                <Grid item xs={12} sm={6}>
-                  <TextField
-                    label="Costo M.O. para Cotización"
-                    type="number"
-                    fullWidth
-                    variant="outlined"
-                    value={editingModel.laborCostSelected || 0}
-                    onChange={(e) => setEditingModel({ ...editingModel, laborCostSelected: parseFloat(e.target.value) || 0 })}
-                    sx={{ mb: 2 }}
-                    inputProps={{ step: "0.01" }}
-                  />
-                </Grid>
-                
-                <Grid item xs={12} sm={6}>
-                  <TextField
-                    label="Costo M.O. Real (Trabajador)"
-                    type="number"
-                    fullWidth
-                    variant="outlined"
-                    value={editingModel.laborCostActual || 0}
-                    onChange={(e) => setEditingModel({ ...editingModel, laborCostActual: parseFloat(e.target.value) || 0 })}
-                    sx={{ mb: 2 }}
-                    inputProps={{ step: "0.01" }}
-                  />
-                </Grid>
-                
-                <Grid item xs={12} sm={6}>
-                  <TextField
-                    label="Costo M.O. por m² (Vidrio)"
-                    type="number"
-                    fullWidth
-                    variant="outlined"
-                    value={editingModel.m2 || 100}
-                    onChange={(e) => setEditingModel({ ...editingModel, m2: parseFloat(e.target.value) || 100 })}
-                    sx={{ mb: 2 }}
-                    inputProps={{ step: "0.01" }}
-                  />
-                </Grid>
-              </Grid>
+          <Typography variant="h6" sx={{ mb: 2 }}>
+            {editingModel.modelName || editingModel.itemName}
+          </Typography>
+          
+          <Grid container spacing={2}>
+            <Grid item xs={12} sm={6}>
+          <TextField
+            label="Área/Ubicación"
+            fullWidth
+            variant="outlined"
+            value={editingModel.area || ''}
+            onChange={(e) => setEditingModel({ ...editingModel, area: e.target.value })}
+            sx={{ mb: 2 }}
+          />
+            </Grid>
+            
+            <Grid item xs={12} sm={6}>
+          <Autocomplete
+            options={employees}
+            getOptionLabel={(option) => option.name || ''}
+            value={employees.find(emp => emp.id === editingModel.assignedEmployeeId) || null}
+            onChange={(event, newValue) => {
+              setEditingModel({ ...editingModel, assignedEmployeeId: newValue ? newValue.id : '' });
+            }}
+            renderInput={(params) => (
+              <TextField
+            {...params}
+            label="Colaborador Asignado"
+            variant="outlined"
+            fullWidth
+              />
+            )}
+            sx={{ mb: 2 }}
+          />
+            </Grid>
+            
+            <Grid item xs={12} sm={6}>
+          <TextField
+            select
+            label="Estado"
+            fullWidth
+            variant="outlined"
+            value={editingModel.status}
+            onChange={(e) => setEditingModel({ ...editingModel, status: e.target.value })}
+            SelectProps={{
+              native: true,
+            }}
+            sx={{ mb: 2 }}
+          >
+            <option value="cotizacion">Cotización</option>
+            <option value="pendiente">Pendiente</option>
+            <option value="enProceso">En Proceso</option>
+            <option value="instalado">Instalado</option>
+            <option value="revisado">Revisado</option>
+            <option value="pagada">Pagada</option>
+          </TextField>
+            </Grid>
+            
+          
+            
+            <Grid item xs={12} sm={6}>
+          <TextField
+            label="Costo M.O. Real (Trabajador)"
+            type="number"
+            fullWidth
+            variant="outlined"
+            value={editingModel.laborCostActual || 0}
+            onChange={(e) => setEditingModel({ ...editingModel, laborCostActual: parseFloat(e.target.value) || 0 })}
+            sx={{ mb: 2 }}
+            inputProps={{ step: "0.01" }}
+          />
+            </Grid>
+            
+            <Grid item xs={12} sm={6}>
+          <TextField
+            label="Costo M.O. por m² (Vidrio)"
+            type="number"
+            fullWidth
+            variant="outlined"
+            value={editingModel.m2 || 100}
+            onChange={(e) => setEditingModel({ ...editingModel, m2: parseFloat(e.target.value) || 100 })}
+            sx={{ mb: 2 }}
+            inputProps={{ step: "0.01" }}
+          />
+            </Grid>
+          </Grid>
             </Box>
           )}
-        </DialogContent>
-        <DialogActions>
+            </DialogContent>
+            <DialogActions>
           <Button onClick={() => setShowModelEditDialog(false)}>Cancelar</Button>
           <Button variant="contained" onClick={handleSaveModelEdit}>Guardar Cambios</Button>
-        </DialogActions>
-      </Dialog>
+            </DialogActions>
+          </Dialog>
 
-      {/* Diálogo de gestión de pagos */}
-      <Dialog open={showPaymentDialog} onClose={() => setShowPaymentDialog(false)} maxWidth="md" fullWidth fullScreen={isMobile}>
+          {/* Diálogo de gestión de pagos */}
+      <Dialog open={showPaymentDialog} onClose={handleClosePaymentDialog} maxWidth="md" fullWidth fullScreen={isMobile}>
         <DialogTitle>Gestionar Pagos</DialogTitle>
         <DialogContent>
           {paymentProject && (
@@ -1224,7 +1255,7 @@ const ProyectosView = ({
           )}
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setShowPaymentDialog(false)}>Cancelar</Button>
+          <Button onClick={handleClosePaymentDialog}>Cancelar</Button>
           <Button 
             variant="contained" 
             onClick={handleAddPayment}

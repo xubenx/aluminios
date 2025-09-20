@@ -2,6 +2,7 @@
 import React, { useState, useEffect } from "react";
 import { collection, getDocs, getDoc, doc, addDoc } from "firebase/firestore";
 import { db } from "../../../../firebase";
+import { getModelImageURL } from "../../../utils/imageStorage";
 import {
   Box,
   Button,
@@ -89,6 +90,42 @@ export default function CotizadorApp() {
       )
     );
   }, [searchQuery, models]);
+
+  // ––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––
+  // COMPONENTE DE IMAGEN PARA MODELOS
+  const ModelCardImage = ({ modelId, modelName, height = 200 }) => {
+    const [imageSrc, setImageSrc] = useState('');
+    const [imageError, setImageError] = useState(false);
+
+    useEffect(() => {
+      const loadImage = async () => {
+        try {
+          const imageUrl = await getModelImageURL(modelId);
+          setImageSrc(imageUrl || '/images/placeholder.png');
+        } catch (error) {
+          console.error('Error loading image:', error);
+          setImageSrc('/images/placeholder.png');
+          setImageError(true);
+        }
+      };
+
+      loadImage();
+    }, [modelId]);
+
+    return (
+      <CardMedia
+        component="img"
+        height={height}
+        image={imageSrc}
+        alt={`Imagen de ${modelName}`}
+        onError={() => setImageError(true)}
+        sx={{
+          objectFit: 'cover',
+          backgroundColor: imageError ? '#f5f5f5' : 'transparent'
+        }}
+      />
+    );
+  };
 
   // ––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––
   // CARGA DE OPCIONES DE MATERIALES, CHAPES Y VIDRIOS
@@ -459,13 +496,7 @@ export default function CotizadorApp() {
           {filteredModels.map((model) => (
             <Grid item xs={12} sm={6} md={4} lg={3} key={model.id}>
               <Card sx={{ maxWidth: 345, boxShadow: 3 }}>
-                <CardMedia
-                  component="img"
-                  height="200"
-                  image={`/images/${model.id}.png`}
-                  alt={`Imagen de ${model.name}`}
-                  onError={(e) => (e.target.style.display = "none")}
-                />
+                <ModelCardImage modelId={model.id} modelName={model.name} height={200} />
                 <CardContent>
                   <Typography
                     gutterBottom

@@ -1,6 +1,5 @@
 import { NextResponse } from 'next/server';
-import { unlink } from 'fs/promises';
-import path from 'path';
+import { deleteModelImage } from '../../../utils/imageStorage';
 
 export async function DELETE(request) {
   try {
@@ -14,27 +13,28 @@ export async function DELETE(request) {
       );
     }
 
-    // Definir la ruta de la imagen a eliminar
-    const publicPath = path.join(process.cwd(), 'public', 'images');
-    const filePath = path.join(publicPath, `${modelId}.png`);
-
     try {
-      // Intentar eliminar el archivo
-      await unlink(filePath);
+      // Eliminar la imagen de Firebase Storage
+      const success = await deleteModelImage(modelId);
       
-      return NextResponse.json({
-        message: 'Image deleted successfully',
-        path: `/images/${modelId}.png`
-      });
-    } catch (error) {
-      // Si el archivo no existe, no es un problema crítico
-      if (error.code === 'ENOENT') {
+      if (success) {
         return NextResponse.json({
-          message: 'Image not found, nothing to delete',
-          path: `/images/${modelId}.png`
+          message: 'Image deleted successfully from Firebase Storage',
+          modelId: modelId
         });
+      } else {
+        return NextResponse.json({
+          message: 'Image not found in Firebase Storage',
+          modelId: modelId
+        }, { status: 404 });
       }
-      throw error;
+
+    } catch (error) {
+      console.error('Error deleting image from Firebase Storage:', error);
+      return NextResponse.json({
+        error: 'Error deleting image from Firebase Storage',
+        details: error.message
+      }, { status: 500 });
     }
 
   } catch (error) {

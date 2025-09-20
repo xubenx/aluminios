@@ -9,6 +9,7 @@ import {
   getDocs
 } from "firebase/firestore";
 import { db } from "../../../../../firebase";
+import { getModelImageURL } from "../../../../utils/imageStorage";
 import {
   Button,
   Table,
@@ -43,6 +44,7 @@ export default function ModelDetailsPage({ params }) {
   // Estados principales
   const [id, setId] = useState(null);
   const [model, setModel] = useState(null);
+  const [modelImageURL, setModelImageURL] = useState(null); // URL de imagen desde Firebase Storage
   const [openDialog, setOpenDialog] = useState(false);
   const [currentSection, setCurrentSection] = useState("");
   const [formData, setFormData] = useState({ id: "", formula: "", amount: "" });
@@ -114,6 +116,15 @@ export default function ModelDetailsPage({ params }) {
           chapes,
           glasses,
         });
+
+        // Cargar imagen desde Firebase Storage
+        try {
+          const imageURL = await getModelImageURL(id);
+          setModelImageURL(imageURL);
+        } catch (error) {
+          console.log(`No se encontró imagen para el modelo ${id}`);
+          setModelImageURL(null);
+        }
       } else {
         setModel(null);
       }
@@ -247,17 +258,7 @@ export default function ModelDetailsPage({ params }) {
     }
 
     try {
-      // Primero eliminar la imagen anterior si existe
-      try {
-        await fetch(`/api/delete-image?modelId=${id}`, {
-          method: 'DELETE',
-        });
-        // No necesitamos manejar errores aquí ya que es normal que no exista imagen anterior
-      } catch (deleteError) {
-        console.log("No se pudo eliminar la imagen anterior (probablemente no existía):", deleteError);
-      }
-
-      // Subir la nueva imagen
+      // Subir la nueva imagen a Firebase Storage
       const imageFormData = new FormData();
       imageFormData.append('file', imageFile);
       imageFormData.append('modelId', id);
@@ -271,11 +272,16 @@ export default function ModelDetailsPage({ params }) {
         throw new Error('Failed to upload image');
       }
 
+      const uploadResult = await uploadResponse.json();
+      
       setSnackbar({ 
         open: true, 
         message: "Imagen cambiada correctamente.", 
         severity: "success" 
       });
+      
+      // Actualizar la URL de la imagen en el estado
+      setModelImageURL(uploadResult.downloadURL);
       
       // Limpiar estados
       setChangeImageDialog(false);
@@ -502,12 +508,19 @@ const totalGlassMeterage = model.glasses.reduce((acc, glass) => {
         </Button>
         <Box sx={{ display: "flex", justifyContent: "center", alignItems: "center", height: { xs: "300px", sm: "400px", md: "500px" }, mb: 2 }}>
           <Image
-            src={`/images/${model.id}.png?t=${imageTimestamp}`}
+            src={modelImageURL || '/placeholder-image.png'}
             alt={`Imagen de ${model.name}`}
             width={500}
             height={500}
-            style={{ objectFit: "cover", borderRadius: "16px" }}
-            onError={(e) => (e.target.style.display = "none")}
+            style={{ 
+              objectFit: "cover", 
+              borderRadius: "16px",
+              opacity: modelImageURL ? 1 : 0.5
+            }}
+            onError={(e) => {
+              e.target.src = '/placeholder-image.png';
+              e.target.style.opacity = '0.5';
+            }}
           />
         </Box>
         <Button  variant="contained" color="azulote" startIcon={<AddPhotoAlternate />} onClick={handleChangeImage}>

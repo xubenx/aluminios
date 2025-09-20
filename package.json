@@ -8,7 +8,11 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "postbuild": "next-sitemap"
+    "postbuild": "next-sitemap",
+    "migrate-images": "node migrate-images.js",
+    "migrate-all": "node migrate-all-images.js",
+    "test-storage": "node test-firebase-storage.js",
+    "check-migration": "node migrate-images.js --check"
   },
   "dependencies": {
     "@emotion/cache": "^11.14.0",

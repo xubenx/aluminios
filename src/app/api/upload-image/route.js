@@ -1,6 +1,5 @@
 import { NextResponse } from 'next/server';
-import { writeFile, mkdir } from 'fs/promises';
-import path from 'path';
+import { uploadModelImage } from '../../../utils/imageStorage';
 
 export async function POST(request) {
   try {
@@ -15,33 +14,36 @@ export async function POST(request) {
       );
     }
 
-    // Convertir el archivo a buffer
-    const bytes = await file.arrayBuffer();
-    const buffer = Buffer.from(bytes);
-
-    // Definir la ruta donde se guardará la imagen
-    const publicPath = path.join(process.cwd(), 'public', 'images');
-    const filePath = path.join(publicPath, `${modelId}.png`);
-
-    // Crear el directorio si no existe
-    try {
-      await mkdir(publicPath, { recursive: true });
-    } catch {
-      // El directorio ya existe, continuar
+    // Validar que sea un archivo de imagen
+    if (!file.type.startsWith('image/')) {
+      return NextResponse.json(
+        { error: 'File must be an image' },
+        { status: 400 }
+      );
     }
 
-    // Escribir el archivo
-    await writeFile(filePath, buffer);
+    // Validar el tamaño del archivo (máximo 5MB)
+    const maxSize = 5 * 1024 * 1024; // 5MB en bytes
+    if (file.size > maxSize) {
+      return NextResponse.json(
+        { error: 'File size must be less than 5MB' },
+        { status: 400 }
+      );
+    }
+
+    // Subir imagen a Firebase Storage
+    const downloadURL = await uploadModelImage(file, modelId);
 
     return NextResponse.json({
-      message: 'Image uploaded successfully',
-      path: `/images/${modelId}.png`
+      message: 'Image uploaded successfully to Firebase Storage',
+      downloadURL: downloadURL,
+      modelId: modelId
     });
 
   } catch (error) {
-    console.error('Error uploading image:', error);
+    console.error('Error uploading image to Firebase Storage:', error);
     return NextResponse.json(
-      { error: 'Failed to upload image' },
+      { error: `Failed to upload image: ${error.message}` },
       { status: 500 }
     );
   }

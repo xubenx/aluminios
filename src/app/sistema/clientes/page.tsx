@@ -4,6 +4,7 @@ import Image from "next/image";
 import { evaluate } from "mathjs";
 import { collection, getDocs, addDoc, updateDoc, doc } from "firebase/firestore";
 import { db } from "../../../../firebase";
+import { getModelImageURL } from "../../../utils/imageStorage";
 import {
   Button,
   Table,
@@ -217,22 +218,32 @@ export default function ClientesPage() {
     const [imageUrl, setImageUrl] = useState<string>('');
 
     useEffect(() => {
-      if (imageCache.has(modelId)) {
-        setImageLoaded(true);
-        setImageUrl(`/images/${modelId}.png`);
-        return;
-      }
+      const loadImage = async () => {
+        try {
+          if (imageCache.has(modelId)) {
+            setImageLoaded(true);
+            const cachedUrl = await getModelImageURL(modelId);
+            setImageUrl(cachedUrl || '/images/placeholder.png');
+            return;
+          }
 
-      const img = document.createElement('img');
-      img.onload = () => {
-        setImageCache(prev => new Set([...prev, modelId]));
-        setImageLoaded(true);
-        setImageUrl(`/images/${modelId}.png`);
+          const firebaseUrl = await getModelImageURL(modelId);
+          if (firebaseUrl) {
+            setImageCache(prev => new Set([...prev, modelId]));
+            setImageLoaded(true);
+            setImageUrl(firebaseUrl);
+          } else {
+            setImageUrl('/images/placeholder.png');
+            setImageError(true);
+          }
+        } catch (error) {
+          console.error('Error loading image:', error);
+          setImageUrl('/images/placeholder.png');
+          setImageError(true);
+        }
       };
-      img.onerror = () => {
-        setImageError(true);
-      };
-      img.src = `/images/${modelId}.png`;
+
+      loadImage();
     }, [modelId]);
 
     if (imageError) {

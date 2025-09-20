@@ -117,11 +117,14 @@ const updateProject = async (projectId, projectData) => {
   }
 };
 
-const activateProject = async (projectId, project, initialPayment = 0) => {
+const activateProject = async (projectId, project, initialPayment = 0, adjustedTotal = null) => {
   try {
+    const finalTotal = adjustedTotal !== null ? adjustedTotal : project.total;
+    
     const updateData = {
       status: "active",
-      debt: project.total - initialPayment
+      total: finalTotal, // Actualizar el total del proyecto si fue ajustado
+      debt: finalTotal - initialPayment
     };
 
     if (initialPayment > 0) {
@@ -401,6 +404,7 @@ export const useProyectosController = () => {
   const [paymentDescription, setPaymentDescription] = useState("");
   const [paymentMethod, setPaymentMethod] = useState("efectivo");
   const [initialPayment, setInitialPayment] = useState(0);
+  const [adjustedTotal, setAdjustedTotal] = useState(0);
   const [showActivateDialog, setShowActivateDialog] = useState(false);
   const [activatingProject, setActivatingProject] = useState(null);
 
@@ -790,6 +794,7 @@ export const useProyectosController = () => {
       
       if (wasQuotation && isBecomingActive) {
         setActivatingProject(editProject);
+        setAdjustedTotal(editProject.total); // Inicializar con el total calculado
         setInitialPayment(editProject.total * 0.5);
         setShowActivateDialog(true);
         return;
@@ -826,13 +831,17 @@ export const useProyectosController = () => {
         status: "pendiente"
       }));
 
-      await activateProject(activatingProject.id, activatingProject, initialPayment);
+      await activateProject(activatingProject.id, activatingProject, initialPayment, adjustedTotal);
       
       await updateProjectWithRecalculatedTotal(activatingProject.id, updatedItems);
       
+      const totalWasAdjusted = adjustedTotal !== activatingProject.total;
+      const totalMessage = totalWasAdjusted ? `Total ajustado a ${formatCurrency(adjustedTotal)}.` : '';
+      const paymentMessage = initialPayment > 0 ? `Anticipo de ${formatCurrency(initialPayment)} registrado.` : '';
+      
       setSnackbar({
         open: true,
-        message: `Proyecto activado exitosamente. Todos los modelos han sido cambiados a estado "Pendiente". ${initialPayment > 0 ? `Anticipo de ${formatCurrency(initialPayment)} registrado.` : ''}`,
+        message: `Proyecto activado exitosamente. Todos los modelos han sido cambiados a estado "Pendiente". ${totalMessage} ${paymentMessage}`.trim(),
         severity: "success"
       });
       
@@ -840,7 +849,8 @@ export const useProyectosController = () => {
       setShowEditDialog(false);
       setActivatingProject(null);
       setEditProject(null);
-      fetchProjects();
+      
+      await fetchProjects();
     } catch (error) {
       console.error("Error activating project: ", error);
       setSnackbar({
@@ -893,6 +903,14 @@ export const useProyectosController = () => {
     setShowPaymentDialog(true);
   };
 
+  const handleClosePaymentDialog = () => {
+    setShowPaymentDialog(false);
+    setPaymentProject(null);
+    setPaymentAmount(0);
+    setPaymentDescription("");
+    setPaymentMethod("efectivo");
+  };
+
   const handleAddPayment = async () => {
     try {
       if (paymentAmount <= 0) {
@@ -913,14 +931,37 @@ export const useProyectosController = () => {
 
       await addPaymentToProject(paymentProject.id, paymentProject, payment);
       
+      // Actualizar el proyecto local en el modal inmediatamente
+      const currentPayments = paymentProject.payments || [];
+      const newPayments = [...currentPayments, payment];
+      const newDebt = Math.max(0, (paymentProject.debt || paymentProject.total) - payment.amount);
+      
+      const updatedPaymentProject = {
+        ...paymentProject,
+        payments: newPayments,
+        debt: newDebt
+      };
+      
+      // Actualizar el estado del proyecto en el modal
+      setPaymentProject(updatedPaymentProject);
+      
+      // Si también está seleccionado en detalles, actualizarlo
+      if (selectedProject && selectedProject.id === paymentProject.id) {
+        setSelectedProject(updatedPaymentProject);
+      }
+      
       setSnackbar({
         open: true,
         message: `Pago de ${formatCurrency(paymentAmount)} registrado exitosamente.`,
         severity: "success"
       });
       
-      setShowPaymentDialog(false);
-      setPaymentProject(null);
+      // Limpiar campos del formulario pero mantener el diálogo abierto
+      setPaymentAmount(0);
+      setPaymentDescription("");
+      setPaymentMethod("efectivo");
+      
+      // Recargar proyectos en segundo plano para mantener sincronización
       fetchProjects();
     } catch (error) {
       console.error("Error adding payment: ", error);
@@ -1916,9 +1957,11 @@ export const useProyectosController = () => {
     searchQuery,
     setSearchQuery,
     selectedProject,
+    setSelectedProject,
     showDetailsDialog,
     setShowDetailsDialog,
     editProject,
+    setEditProject,
     showEditDialog,
     setShowEditDialog,
     snackbar,
@@ -1927,6 +1970,7 @@ export const useProyectosController = () => {
     expandedModels,
     employees,
     editingModel,
+    setEditingModel,
     showModelEditDialog,
     setShowModelEditDialog,
     showPaymentDialog,
@@ -1940,6 +1984,8 @@ export const useProyectosController = () => {
     setPaymentMethod,
     initialPayment,
     setInitialPayment,
+    adjustedTotal,
+    setAdjustedTotal,
     showActivateDialog,
     setShowActivateDialog,
     activatingProject,
@@ -2072,6 +2118,7 @@ export const useProyectosController = () => {
     handleActivateProject,
     handleInactivateProject,
     handleOpenPaymentDialog,
+    handleClosePaymentDialog,
     handleAddPayment,
     handleEditModel,
     handleSaveModelEdit,
