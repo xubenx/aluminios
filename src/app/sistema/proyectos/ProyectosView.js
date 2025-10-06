@@ -1,6 +1,6 @@
 import React from "react";
 import Image from "next/image";
-import { getModelImageURL } from "../../utils/imageStorage";
+import { getModelImageURL } from "../../../utils/imageStorage";
 import {
   Box,
   Button,

@@ -60,7 +60,6 @@ export default function ModelDetailsPage({ params }) {
   // Estados para el cambio de imagen
   const [imageFile, setImageFile] = useState(null);
   const [previewImage, setPreviewImage] = useState("");
-  const [imageTimestamp, setImageTimestamp] = useState(Date.now());
   // Opciones para Autocomplete (para materials y chapes)
   const [materialsOptions, setMaterialsOptions] = useState([]);
   const [chapesOptions, setChapesOptions] = useState([]);
@@ -121,7 +120,7 @@ export default function ModelDetailsPage({ params }) {
         try {
           const imageURL = await getModelImageURL(id);
           setModelImageURL(imageURL);
-        } catch (error) {
+        } catch {
           console.log(`No se encontró imagen para el modelo ${id}`);
           setModelImageURL(null);
         }

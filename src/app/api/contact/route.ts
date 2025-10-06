@@ -21,7 +21,7 @@ export async function POST(request: NextRequest) {
 
     // Obtener los datos del formulario
     const body = await request.json();
-    const { name, email, phone, message, pageUrl, pageTitle } = body;
+    const { name, email, phone, message, pageUrl } = body;
 
     // Validar que todos los campos requeridos estén presentes
     if (!name || !email || !message) {

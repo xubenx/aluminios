@@ -84,7 +84,7 @@ export default function ModelsPage() {
             if (imageURL) {
               imageURLs[model.id] = imageURL;
             }
-          } catch (error) {
+          } catch {
             console.log(`No se encontró imagen para el modelo ${model.id}`);
           }
         })

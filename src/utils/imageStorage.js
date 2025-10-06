@@ -61,7 +61,7 @@ export const getModelImageURL = async (modelId, extension = 'png') => {
             const altImageRef = ref(storage, `models/images/${modelId}.${ext}`);
             const downloadURL = await getDownloadURL(altImageRef);
             return downloadURL;
-          } catch (altError) {
+          } catch {
             // Continuar con la siguiente extensión
           }
         }
@@ -162,7 +162,7 @@ export const modelImageExists = async (modelId) => {
   try {
     const imageURL = await getModelImageURL(modelId);
     return imageURL !== null;
-  } catch (error) {
+  } catch {
     return false;
   }
 };

@@ -51,14 +51,6 @@ const nextConfig: NextConfig = {
 
   // Configuración para sitemap
   trailingSlash: false,
-  
-  // Optimizaciones de compilación
-  swcMinify: true,
-  
-  // Configuración experimental para mejor SEO
-  experimental: {
-    optimizeCss: true,
-  },
 };
 
 export default nextConfig;

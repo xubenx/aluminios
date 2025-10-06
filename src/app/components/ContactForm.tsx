@@ -61,7 +61,7 @@ export default function ContactForm() {
       } else {
         setSubmitMessage('Hubo un error al enviar tu mensaje. Por favor intenta nuevamente.');
       }
-    } catch (error) {
+    } catch {
       setSubmitMessage('Hubo un error al enviar tu mensaje. Por favor intenta nuevamente.');
     } finally {
       setIsSubmitting(false);
