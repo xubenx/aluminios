@@ -20,7 +20,7 @@ const nextConfig: NextConfig = {
   env: {
     NEXT_PUBLIC_SITE_URL: process.env.NEXT_PUBLIC_SITE_URL || 'https://aluminiosanfrancisco.com',
     NEXT_PUBLIC_COMPANY_NAME: 'Aluminio San Francisco',
-    NEXT_PUBLIC_COMPANY_LOCATION: 'León, Guanajuato',
+    NEXT_PUBLIC_COMPANY_LOCATION: 'San Francisco del Rincón, Guanajuato',
   },
 
   // Configuración para optimización SEO

@@ -3,9 +3,9 @@ import ContactForm from './components/ContactForm';
 import { Metadata } from 'next';
 
 export const metadata: Metadata = {
-  title: "Aluminio San Francisco - Vidrio y Aluminio en León, Guanajuato | Especialistas desde 1990",
-  description: "🏆 Aluminio San Francisco: Líderes en vidrio y aluminio en León, Guanajuato. Ventanas, puertas, cancelería y domos residenciales. Más de 30 años de experiencia. ¡Cotización GRATUITA!",
-  keywords: "aluminio san francisco, vidrio y aluminio león, ventanas león guanajuato, puertas aluminio león, cancelería león, servicio león, domos león, vidrio templado león",
+  title: "Aluminio San Francisco - Vidrio y Aluminio en San Francisco del Rincón, Guanajuato | Especialistas desde 1990",
+  description: "🏆 Aluminio San Francisco: Líderes en vidrio y aluminio en San Francisco del Rincón, Guanajuato. Ventanas, puertas, cancelería y domos residenciales. Más de 30 años de experiencia. ¡Cotización GRATUITA!",
+  keywords: "aluminio san francisco, vidrio y aluminio san francisco del rincón, ventanas san francisco del rincón guanajuato, puertas aluminio san francisco del rincón, cancelería san francisco del rincón, servicio san francisco del rincón, domos san francisco del rincón, vidrio templado san francisco del rincón",
 };
 
 export default function Home() {
@@ -17,14 +17,14 @@ export default function Home() {
           <div className="flex items-center">
             <Image
               src="/logo_aluminos.png"
-              alt="Aluminio San Francisco - Especialistas en Vidrio y Aluminio León"
+              alt="Aluminio San Francisco - Especialistas en Vidrio y Aluminio San Francisco del Rincón"
               width={60}
               height={60}
               className="w-14 h-14 rounded-lg"
             />
             <div className="ml-4">
               <h1 className="text-xl font-bold">Aluminio San Francisco</h1>
-              <p className="text-blue-100 text-sm">León, Guanajuato</p>
+              <p className="text-blue-100 text-sm">San Francisco del Rincón, Guanajuato</p>
             </div>
           </div>
           <nav className="hidden md:block">
@@ -62,7 +62,7 @@ export default function Home() {
           <div className="container mx-auto px-6 py-20 relative z-10">
             <div className="max-w-4xl mx-auto text-center">
               <h1 className="text-5xl md:text-6xl font-bold mb-6 leading-tight">
-                Especialistas en <span className="text-yellow-400">Vidrio y Aluminio</span> en León
+                Especialistas en <span className="text-yellow-400">Vidrio y Aluminio</span> en San Francisco del Rincón
               </h1>
               <p className="text-xl md:text-2xl mb-8 text-blue-100">
                 🏆 Más de 30 años creando soluciones de calidad para tu hogar
@@ -113,7 +113,7 @@ export default function Home() {
                 Nuestros Servicios Especializados
               </h2>
               <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-                Ofrecemos soluciones integrales en vidrio y aluminio para León, Guanajuato y alrededores. 
+                Ofrecemos soluciones integrales en vidrio y aluminio para San Francisco del Rincón, Guanajuato y alrededores. 
                 Cada proyecto con la más alta calidad y profesionalismo.
               </p>
             </div>
@@ -121,9 +121,9 @@ export default function Home() {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 mb-16">
               <div className="bg-white rounded-xl shadow-lg p-8 hover:shadow-xl transition-shadow group">
                 <div className="text-4xl mb-4 group-hover:scale-110 transition-transform">🚪</div>
-                <h3 className="text-2xl font-bold mb-4 text-gray-900">Puertas de Aluminio León</h3>
+                <h3 className="text-2xl font-bold mb-4 text-gray-900">Puertas de Aluminio San Francisco del Rincón</h3>
                 <p className="text-gray-600 mb-4">
-                  Puertas residenciales de aluminio con diseños modernos. Seguridad, durabilidad y estilo para tu hogar en León.
+                  Puertas residenciales de aluminio con diseños modernos. Seguridad, durabilidad y estilo para tu hogar en San Francisco del Rincón.
                 </p>
                 <ul className="text-sm text-gray-500 space-y-1">
                   <li>✓ Puertas corredizas</li>
@@ -134,9 +134,9 @@ export default function Home() {
 
               <div className="bg-white rounded-xl shadow-lg p-8 hover:shadow-xl transition-shadow group">
                 <div className="text-4xl mb-4 group-hover:scale-110 transition-transform">🪟</div>
-                <h3 className="text-2xl font-bold mb-4 text-gray-900">Ventanas y Cancelería León</h3>
+                <h3 className="text-2xl font-bold mb-4 text-gray-900">Ventanas y Cancelería San Francisco del Rincón</h3>
                 <p className="text-gray-600 mb-4">
-                  Ventanas de aluminio y cancelería para León. Mejora la iluminación y ventilación de tu hogar con nuestras soluciones.
+                  Ventanas de aluminio y cancelería para San Francisco del Rincón. Mejora la iluminación y ventilación de tu hogar con nuestras soluciones.
                 </p>
                 <ul className="text-sm text-gray-500 space-y-1">
                   <li>✓ Ventanas corredizas</li>
@@ -147,9 +147,9 @@ export default function Home() {
 
               <div className="bg-white rounded-xl shadow-lg p-8 hover:shadow-xl transition-shadow group">
                 <div className="text-4xl mb-4 group-hover:scale-110 transition-transform">🔷</div>
-                <h3 className="text-2xl font-bold mb-4 text-gray-900">Vidrio y Cristal León</h3>
+                <h3 className="text-2xl font-bold mb-4 text-gray-900">Vidrio y Cristal San Francisco del Rincón</h3>
                 <p className="text-gray-600 mb-4">
-                  Especialistas en vidrio templado, laminado y cancelería de vidrio en León. Instalación profesional garantizada.
+                  Especialistas en vidrio templado, laminado y cancelería de vidrio en San Francisco del Rincón. Instalación profesional garantizada.
                 </p>
                 <ul className="text-sm text-gray-500 space-y-1">
                   <li>✓ Vidrio templado</li>
@@ -160,9 +160,9 @@ export default function Home() {
 
               <div className="bg-white rounded-xl shadow-lg p-8 hover:shadow-xl transition-shadow group">
                 <div className="text-4xl mb-4 group-hover:scale-110 transition-transform">🏗️</div>
-                <h3 className="text-2xl font-bold mb-4 text-gray-900">Domos y Techos León</h3>
+                <h3 className="text-2xl font-bold mb-4 text-gray-900">Domos y Techos San Francisco del Rincón</h3>
                 <p className="text-gray-600 mb-4">
-                  Domos arquitectónicos y techos de policarbonato en León. Soluciones modernas para iluminación natural.
+                  Domos arquitectónicos y techos de policarbonato en San Francisco del Rincón. Soluciones modernas para iluminación natural.
                 </p>
                 <ul className="text-sm text-gray-500 space-y-1">
                   <li>✓ Domos arquitectónicos</li>
@@ -175,7 +175,7 @@ export default function Home() {
                 <div className="text-4xl mb-4 group-hover:scale-110 transition-transform">🏢</div>
                 <h3 className="text-2xl font-bold mb-4 text-gray-900">Fachadas Integrales</h3>
                 <p className="text-gray-600 mb-4">
-                  Fachadas de aluminio y vidrio para proyectos arquitectónicos en León. Diseño moderno y funcional.
+                  Fachadas de aluminio y vidrio para proyectos arquitectónicos en San Francisco del Rincón. Diseño moderno y funcional.
                 </p>
                 <ul className="text-sm text-gray-500 space-y-1">
                   <li>✓ Muro cortina</li>
@@ -186,9 +186,9 @@ export default function Home() {
 
               <div className="bg-white rounded-xl shadow-lg p-8 hover:shadow-xl transition-shadow group">
                 <div className="text-4xl mb-4 group-hover:scale-110 transition-transform">🔧</div>
-                <h3 className="text-2xl font-bold mb-4 text-gray-900">Mantenimiento León</h3>
+                <h3 className="text-2xl font-bold mb-4 text-gray-900">Mantenimiento San Francisco del Rincón</h3>
                 <p className="text-gray-600 mb-4">
-                  Servicio de mantenimiento y reparación de aluminio y vidrio en León. Conserva tus instalaciones en perfecto estado.
+                  Servicio de mantenimiento y reparación de aluminio y vidrio en San Francisco del Rincón. Conserva tus instalaciones en perfecto estado.
                 </p>
                 <ul className="text-sm text-gray-500 space-y-1">
                   <li>✓ Reparaciones</li>
@@ -218,27 +218,27 @@ export default function Home() {
             <div className="max-w-6xl mx-auto">
               <div className="text-center mb-16">
                 <h2 className="text-4xl font-bold text-gray-900 mb-4">
-                  Aluminio San Francisco: Tradición y Calidad en León
+                  Aluminio San Francisco: Tradición y Calidad en San Francisco del Rincón
                 </h2>
                 <p className="text-xl text-gray-600">
-                  Más de 30 años siendo la empresa líder en vidrio y aluminio en León, Guanajuato
+                  Más de 30 años siendo la empresa líder en vidrio y aluminio en San Francisco del Rincón, Guanajuato
                 </p>
               </div>
 
               <div className="grid lg:grid-cols-2 gap-12 items-center mb-16">
                 <div>
                   <h3 className="text-2xl font-bold text-gray-900 mb-6">
-                    Nuestra Historia en León, Guanajuato
+                    Nuestra Historia en San Francisco del Rincón, Guanajuato
                   </h3>
                   <p className="text-gray-600 mb-4">
                     Desde <strong>1990</strong>, Aluminio San Francisco se ha posicionado como la empresa líder en 
-                    <strong> vidrio y aluminio en León, Guanajuato</strong>. Iniciamos como un pequeño taller familiar 
+                    <strong> vidrio y aluminio en San Francisco del Rincón, Guanajuato</strong>. Iniciamos como un pequeño taller familiar 
                     y hoy somos reconocidos por la <strong>calidad excepcional</strong> de nuestros productos y servicios.
                   </p>
                   <p className="text-gray-600 mb-6">
                     Nuestro compromiso es brindar <strong>soluciones residenciales de aluminio</strong> que cumplan 
                     con los más altos estándares de calidad, siempre con el respaldo de décadas de experiencia 
-                    sirviendo a las familias y empresas de <strong>León y sus alrededores</strong>.
+                    sirviendo a las familias y empresas de <strong>San Francisco del Rincón y sus alrededores</strong>.
                   </p>
                   
                   <div className="grid grid-cols-2 gap-6">
@@ -257,7 +257,7 @@ export default function Home() {
                   <div className="bg-gray-50 p-6 rounded-lg">
                     <h4 className="text-lg font-semibold text-gray-900 mb-3">🎯 Nuestra Misión</h4>
                     <p className="text-gray-600">
-                      Ser la empresa líder en <strong>vidrio y aluminio en León</strong>, ofreciendo productos y 
+                      Ser la empresa líder en <strong>vidrio y aluminio en San Francisco del Rincón</strong>, ofreciendo productos y 
                       servicios de la más alta calidad que superen las expectativas de nuestros clientes.
                     </p>
                   </div>
@@ -265,7 +265,7 @@ export default function Home() {
                   <div className="bg-gray-50 p-6 rounded-lg">
                     <h4 className="text-lg font-semibold text-gray-900 mb-3">🌟 Nuestra Visión</h4>
                     <p className="text-gray-600">
-                      Consolidarnos como la referencia en <strong>soluciones de aluminio residencial en León</strong>, 
+                      Consolidarnos como la referencia en <strong>soluciones de aluminio residencial en San Francisco del Rincón</strong>, 
                       expandiendo nuestros servicios mientras mantenemos la excelencia y cercanía con nuestros clientes.
                     </p>
                   </div>
@@ -275,7 +275,7 @@ export default function Home() {
                     <ul className="text-gray-600 space-y-1">
                       <li>✓ <strong>Calidad:</strong> Materiales y acabados superiores</li>
                       <li>✓ <strong>Confianza:</strong> Más de 30 años de respaldo</li>
-                      <li>✓ <strong>Servicio:</strong> Atención personalizada en León</li>
+                      <li>✓ <strong>Servicio:</strong> Atención personalizada en San Francisco del Rincón</li>
                       <li>✓ <strong>Innovación:</strong> Soluciones modernas y funcionales</li>
                     </ul>
                   </div>
@@ -284,7 +284,7 @@ export default function Home() {
 
               <div className="text-center bg-blue-50 py-12 px-6 rounded-xl">
                 <h3 className="text-2xl font-bold text-gray-900 mb-4">
-                  ¿Por qué elegir Aluminio San Francisco en León?
+                  ¿Por qué elegir Aluminio San Francisco en San Francisco del Rincón?
                 </h3>
                 <div className="grid md:grid-cols-4 gap-6 max-w-4xl mx-auto">
                   <div>
@@ -337,15 +337,16 @@ export default function Home() {
                 </div>
               </div>
               <p className="text-gray-300 mb-4">
-                Líderes en <strong>vidrio y aluminio en León, Guanajuato</strong> desde 1990. 
+                Líderes en <strong>vidrio y aluminio en San Francisco del Rincón, Guanajuato</strong> desde 1990. 
                 Especializados en ventanas, puertas, cancelería y domos residenciales. 
                 Calidad garantizada y servicio profesional.
               </p>
               <div className="flex space-x-4">
                 <span className="text-2xl">📍</span>
                 <div>
-                  <p className="font-medium">Servicio en León y Alrededores</p>
-                  <p className="text-gray-300 text-sm">León, Guanajuato, México</p>
+                  <p className="font-medium">4 de Diciembre 617</p>
+                  <p className="text-gray-300 text-sm">36353 San Francisco del Rincón, Guanajuato</p>
+                  <p className="text-gray-300 text-sm">Servicio en San Francisco del Rincón y Alrededores</p>
                 </div>
               </div>
             </div>
@@ -378,12 +379,12 @@ export default function Home() {
             <div className="flex flex-col md:flex-row justify-between items-center">
               <div className="mb-4 md:mb-0">
                 <p className="text-gray-300">
-                  &copy; {new Date().getFullYear()} <strong>Aluminio San Francisco</strong> - Vidrio y Aluminio León, Guanajuato. 
+                  &copy; {new Date().getFullYear()} <strong>Aluminio San Francisco</strong> - Vidrio y Aluminio San Francisco del Rincón, Guanajuato. 
                   Todos los derechos reservados.
                 </p>
               </div>
               <div className="text-sm text-gray-400">
-                <p>Especialistas en León • Servicio Profesional • Calidad Garantizada</p>
+                <p>Especialistas en San Francisco del Rincón • Servicio Profesional • Calidad Garantizada</p>
               </div>
             </div>
           </div>
@@ -396,11 +397,13 @@ export default function Home() {
                 "@context": "https://schema.org",
                 "@type": "LocalBusiness",
                 "name": "Aluminio San Francisco",
-                "description": "Especialistas en vidrio y aluminio en León, Guanajuato. Ventanas, puertas, cancelería y domos residenciales.",
+                "description": "Especialistas en vidrio y aluminio en San Francisco del Rincón, Guanajuato. Ventanas, puertas, cancelería y domos residenciales.",
                 "address": {
                   "@type": "PostalAddress",
-                  "addressLocality": "León",
+                  "streetAddress": "4 de Diciembre 617",
+                  "addressLocality": "San Francisco del Rincón",
                   "addressRegion": "Guanajuato",
+                  "postalCode": "36353",
                   "addressCountry": "MX"
                 },
                 "telephone": "477-XXX-XXXX",
@@ -409,7 +412,7 @@ export default function Home() {
                 "priceRange": "$$",
                 "serviceArea": {
                   "@type": "City",
-                  "name": "León, Guanajuato"
+                  "name": "San Francisco del Rincón, Guanajuato"
                 },
                 "hasOfferCatalog": {
                   "@type": "OfferCatalog",
@@ -419,21 +422,21 @@ export default function Home() {
                       "@type": "Offer",
                       "itemOffered": {
                         "@type": "Service",
-                        "name": "Ventanas de Aluminio León"
+                        "name": "Ventanas de Aluminio San Francisco del Rincón"
                       }
                     },
                     {
                       "@type": "Offer",
                       "itemOffered": {
                         "@type": "Service",
-                        "name": "Puertas de Aluminio León"
+                        "name": "Puertas de Aluminio San Francisco del Rincón"
                       }
                     },
                     {
                       "@type": "Offer",
                       "itemOffered": {
                         "@type": "Service",
-                        "name": "Cancelería de Vidrio León"
+                        "name": "Cancelería de Vidrio San Francisco del Rincón"
                       }
                     }
                   ]
