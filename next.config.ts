@@ -1,8 +1,6 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  // Cambiar el directorio de salida a "build"
-
   // Habilitar el modo estricto de React
   reactStrictMode: true,
 
@@ -18,6 +16,49 @@ const nextConfig: NextConfig = {
     ],
   },
 
+  // Variables de entorno públicas
+  env: {
+    NEXT_PUBLIC_SITE_URL: process.env.NEXT_PUBLIC_SITE_URL || 'https://aluminiosanfrancisco.com',
+    NEXT_PUBLIC_COMPANY_NAME: 'Aluminio San Francisco',
+    NEXT_PUBLIC_COMPANY_LOCATION: 'León, Guanajuato',
+  },
+
+  // Configuración para optimización SEO
+  poweredByHeader: false,
+  
+  // Configuración de headers para SEO
+  async headers() {
+    return [
+      {
+        source: '/(.*)',
+        headers: [
+          {
+            key: 'X-Content-Type-Options',
+            value: 'nosniff',
+          },
+          {
+            key: 'X-Frame-Options',
+            value: 'DENY',
+          },
+          {
+            key: 'X-XSS-Protection',
+            value: '1; mode=block',
+          },
+        ],
+      },
+    ];
+  },
+
+  // Configuración para sitemap
+  trailingSlash: false,
+  
+  // Optimizaciones de compilación
+  swcMinify: true,
+  
+  // Configuración experimental para mejor SEO
+  experimental: {
+    optimizeCss: true,
+  },
 };
 
 export default nextConfig;
