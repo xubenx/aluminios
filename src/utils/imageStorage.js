@@ -54,7 +54,7 @@ export const getModelImageURL = async (modelId, extension = 'png') => {
   } catch (error) {
     if (error.code === 'storage/object-not-found') {
       // La imagen no existe, intentar con diferentes extensiones
-      const extensions = ['png', 'jpg', 'jpeg', 'webp'];
+      const extensions = ['png'];
       for (const ext of extensions) {
         if (ext !== extension) {
           try {

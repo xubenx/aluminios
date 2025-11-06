@@ -45,6 +45,7 @@ export default function ModelDetailsPage({ params }) {
   const [id, setId] = useState(null);
   const [model, setModel] = useState(null);
   const [modelImageURL, setModelImageURL] = useState(null); // URL de imagen desde Firebase Storage
+  const [imageTimestamp, setImageTimestamp] = useState(Date.now()); // Timestamp para forzar recarga de imagen
   const [openDialog, setOpenDialog] = useState(false);
   const [currentSection, setCurrentSection] = useState("");
   const [formData, setFormData] = useState({ id: "", formula: "", amount: "" });
@@ -507,7 +508,7 @@ const totalGlassMeterage = model.glasses.reduce((acc, glass) => {
         </Button>
         <Box sx={{ display: "flex", justifyContent: "center", alignItems: "center", height: { xs: "300px", sm: "400px", md: "500px" }, mb: 2 }}>
           <Image
-            src={modelImageURL || '/placeholder-image.png'}
+            src={modelImageURL ? `${modelImageURL}?t=${imageTimestamp}` : '/placeholder-image.png'}
             alt={`Imagen de ${model.name}`}
             width={500}
             height={500}
