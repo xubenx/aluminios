@@ -1,16 +1,20 @@
 import { initializeApp } from "firebase/app";
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 import { getFirestore, doc, getDoc, collection, getDocs } from "firebase/firestore";
+import dotenv from 'dotenv';
+
+// Load environment variables
+dotenv.config({ path: '.env.local' });
 
 // Firebase configuration
 const firebaseConfig = {
-  apiKey: "AIzaSyBCRoZVl06YqcMvL0jcWyHgonDS75ojyJI",
-  authDomain: "aluminios-88a45.firebaseapp.com",
-  projectId: "aluminios-88a45",
-  storageBucket: "aluminios-88a45.firebasestorage.app",
-  messagingSenderId: "38740849156",
-  appId: "1:38740849156:web:14f5ae306c63557f15fb51",
-  measurementId: "G-SWD0MFTRCH"
+  apiKey: process.env.FIREBASE_MIGRATION_API_KEY,
+  authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,
+  projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
+  storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET,
+  messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
+  appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
+  measurementId: process.env.NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID
 };
 
 // Initialize Firebase
