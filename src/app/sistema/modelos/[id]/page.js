@@ -470,19 +470,7 @@ const totalGlassMeterage = model.glasses.reduce((acc, glass) => {
       {/* Combobox independiente para seleccionar vidrio */}
 
       
-      <Box sx={{ mb: 2 }}>
-        <Typography variant="h6" align="center" sx={{ color: "black", mb: 1 }}>
-          Seleccionar Vidrio
-        </Typography>
-        <Autocomplete
-          options={glassesOptions}
-          getOptionLabel={(option) => option.name || ""}
-                    isOptionEqualToValue={(option, value) => option.id === value.id}
-          value={selectedGlass}
-          onChange={(event, newValue) => setSelectedGlass(newValue)}
-          renderInput={(params) => <TextField {...params} label="Vidrio" variant="outlined" />}
-        />
-      </Box>
+
 
       {/* Botón para retroceder */}
       <Box sx={{ display: "flex", alignItems: "center", marginBottom: 2 }}>
@@ -586,7 +574,19 @@ const totalGlassMeterage = model.glasses.reduce((acc, glass) => {
           Guardar Cambios
         </Button>
       </Box>
-
+      <Box sx={{ mb: 2 }}>
+        <Typography variant="h6" align="center" sx={{ color: "black", mb: 1 }}>
+          Seleccionar Vidrio
+        </Typography>
+        <Autocomplete
+          options={glassesOptions}
+          getOptionLabel={(option) => option.name || ""}
+                    isOptionEqualToValue={(option, value) => option.id === value.id}
+          value={selectedGlass}
+          onChange={(event, newValue) => setSelectedGlass(newValue)}
+          renderInput={(params) => <TextField {...params} label="Vidrio" variant="outlined" />}
+        />
+      </Box>
       {/* Sección para Materiales */}
       <Typography variant="h4" sx={{ mb: 1, color: "black", mt: 10 }}>
         Materiales
