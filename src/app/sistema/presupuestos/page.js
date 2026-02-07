@@ -1,5 +1,5 @@
 "use client";
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef, useMemo } from "react";
 import { collection, getDocs, getDoc, doc, addDoc, serverTimestamp } from "firebase/firestore";
 import { db } from "../../../../firebase";
 import { getModelImageURL } from "../../../utils/imageStorage";
@@ -38,7 +38,8 @@ import {
   Radio,
   Chip,
   Paper,
-  CircularProgress
+  CircularProgress,
+  Pagination
 } from "@mui/material";
 import Image from "next/image";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
@@ -49,6 +50,8 @@ export default function CotizadorApp() {
   const [models, setModels] = useState([]);
   const [filteredModels, setFilteredModels] = useState([]);
   const [searchQuery, setSearchQuery] = useState("");
+  const [modelsPage, setModelsPage] = useState(1);
+  const MODELS_PER_PAGE = 12;
 
   // Estados para el modelo seleccionado (para cotizar)
   const [selectedModel, setSelectedModel] = useState(null);
@@ -62,8 +65,8 @@ export default function CotizadorApp() {
   const [selectedGlass, setSelectedGlass] = useState(null);
   const [selectedColor, setSelectedColor] = useState(null);
 
-  // Estado para caché de imágenes
-  const [imageCache, setImageCache] = useState(new Set());
+  // Caché de URLs de imágenes (ref para evitar re-renders que causan parpadeo)
+  const imageUrlCacheRef = useRef(new Map());
 
   // Estados para el carrito y proyecto
   const [cart, setCart] = useState([]);
@@ -86,107 +89,84 @@ export default function CotizadorApp() {
   const [itemQuantityType, setItemQuantityType] = useState("metros"); // metros, tramos, piezas, m2
   const [itemDimensions, setItemDimensions] = useState({ height: "", width: "" });
 
+  // Estados para configuración global del carrito
+  const [globalColor, setGlobalColor] = useState(null);
+  const [globalGlass, setGlobalGlass] = useState(null);
+  const [isRecalculating, setIsRecalculating] = useState(false);
+
   // Estado para mensajes (snackbar)
   const [snackbar, setSnackbar] = useState({ open: false, message: "", severity: "success" });
-  // Componente de imagen con caché mejorado
-  const CachedImage = ({ modelId, modelName, height = 200, width = "100%" }) => {
-    const [imageLoaded, setImageLoaded] = useState(imageCache.has(modelId));
-    const [imageError, setImageError] = useState(false);
-    const [imageSrc, setImageSrc] = useState('');
 
-    useEffect(() => {
-      const loadImage = async () => {
-        try {
-          const imageUrl = await getModelImageURL(modelId);
-          setImageSrc(imageUrl || '/images/placeholder.png');
-        } catch (error) {
-          console.error('Error loading image:', error);
-          setImageSrc('/images/placeholder.png');
-          setImageError(true);
+  // Componente de imagen con caché en ref (evita parpadeo al no provocar re-renders del padre)
+  const CachedImage = useMemo(() => {
+    const Component = ({ modelId, modelName, height = 200, width = "100%", cacheRef }) => {
+      const cachedUrl = cacheRef.current.get(modelId);
+      const [imageSrc, setImageSrc] = useState(cachedUrl || "");
+      const [imageLoaded, setImageLoaded] = useState(!!cachedUrl);
+      const [imageError, setImageError] = useState(false);
+      const loadedRef = useRef(false);
+
+      useEffect(() => {
+        if (cachedUrl) {
+          setImageSrc(cachedUrl);
+          setImageLoaded(true);
+          return;
         }
-      };
+        if (loadedRef.current) return;
+        loadedRef.current = true;
 
-      loadImage();
-    }, [modelId]);
+        const loadImage = async () => {
+          try {
+            const imageUrl = await getModelImageURL(modelId);
+            const url = imageUrl || '/images/placeholder.png';
+            cacheRef.current.set(modelId, url);
+            setImageSrc(url);
+            setImageLoaded(true);
+            if (!imageUrl) setImageError(true);
+          } catch (error) {
+            console.error('Error loading image:', error);
+            cacheRef.current.set(modelId, '/images/placeholder.png');
+            setImageSrc('/images/placeholder.png');
+            setImageError(true);
+            setImageLoaded(true);
+          }
+        };
 
-    const handleImageLoad = () => {
-      if (!imageLoaded) {
-        setImageLoaded(true);
-        setImageCache(prev => new Set([...prev, modelId]));
-      }
-    };
+        loadImage();
+      }, [modelId, cachedUrl]);
 
-    const handleImageError = () => {
-      setImageError(true);
-    };
-
-    if (imageError) {
-      return (
-        <Box sx={{ 
-          height, 
-          width, 
-          display: 'flex', 
-          alignItems: 'center', 
-          justifyContent: 'center',
-          backgroundColor: 'grey.100',
-          borderRadius: 1
-        }}>
-          <Typography variant="body2" color="textSecondary">
-            Sin imagen
-          </Typography>
-        </Box>
-      );
-    }
-
-    // Don't render Image component if imageSrc is empty to avoid the error
-    if (!imageSrc) {
-      return (
-        <Box sx={{ 
-          height, 
-          width, 
-          display: 'flex', 
-          alignItems: 'center', 
-          justifyContent: 'center',
-          backgroundColor: 'grey.100',
-          borderRadius: 1
-        }}>
-          <CircularProgress size={24} />
-        </Box>
-      );
-    }
-
-    return (
-      <Box sx={{ position: 'relative', height, width, overflow: 'hidden', borderRadius: 1 }}>
-        <Image
-          src={imageSrc}
-          alt={`Imagen de ${modelName}`}
-          fill
-          style={{ objectFit: 'cover' }}
-          onLoad={handleImageLoad}
-          onError={handleImageError}
-          priority={imageCache.has(modelId)}
-          loading={imageCache.has(modelId) ? "eager" : "lazy"}
-        />
-        {!imageLoaded && !imageCache.has(modelId) && (
-          <Box sx={{ 
-            position: 'absolute',
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            backgroundColor: 'grey.100'
-          }}>
-            <Typography variant="body2" color="textSecondary">
-              Cargando...
-            </Typography>
+      if (imageError) {
+        return (
+          <Box sx={{ height, width, display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: 'grey.100', borderRadius: 1 }}>
+            <Typography variant="body2" color="textSecondary">Sin imagen</Typography>
           </Box>
-        )}
-      </Box>
-    );
-  };
+        );
+      }
+
+      return (
+        <Box sx={{ position: 'relative', height, width, overflow: 'hidden', borderRadius: 1, minHeight: height }}>
+          {imageSrc && (
+            <Image
+              src={imageSrc}
+              alt={`Imagen de ${modelName}`}
+              fill
+              style={{ objectFit: 'cover', opacity: imageLoaded ? 1 : 0 }}
+              onLoad={() => setImageLoaded(true)}
+              onError={() => setImageError(true)}
+              loading="lazy"
+              sizes="(max-width: 768px) 100vw, 345px"
+            />
+          )}
+          {!imageLoaded && (
+            <Box sx={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: 'grey.100' }}>
+              <CircularProgress size={24} />
+            </Box>
+          )}
+        </Box>
+      );
+    };
+    return React.memo(Component);
+  }, []);
 
   // ––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––
   // BÚSQUEDA DE MODELOS
@@ -214,7 +194,13 @@ export default function CotizadorApp() {
         model.name.toLowerCase().includes(searchQuery.toLowerCase())
       )
     );
+    setModelsPage(1); // Resetear página al cambiar búsqueda
   }, [searchQuery, models]);
+
+  const paginatedModels = useMemo(() => {
+    const start = (modelsPage - 1) * MODELS_PER_PAGE;
+    return filteredModels.slice(start, start + MODELS_PER_PAGE);
+  }, [filteredModels, modelsPage]);
 
   // Persistencia del carrito
   const saveCartToStorage = (cartData) => {
@@ -232,6 +218,12 @@ export default function CotizadorApp() {
         const parsedCart = JSON.parse(savedCart);
         setCart(parsedCart);
       }
+      const savedGlobals = localStorage.getItem('aluminios-cart-globals');
+      if (savedGlobals) {
+        const parsedGlobals = JSON.parse(savedGlobals);
+        setGlobalColor(parsedGlobals.globalColor || null);
+        setGlobalGlass(parsedGlobals.globalGlass || null);
+      }
     } catch (error) {
       console.error('Error loading cart from localStorage:', error);
     }
@@ -241,6 +233,15 @@ export default function CotizadorApp() {
   useEffect(() => {
     saveCartToStorage(cart);
   }, [cart]);
+
+  // Persistir configuración global del carrito
+  useEffect(() => {
+    try {
+      localStorage.setItem('aluminios-cart-globals', JSON.stringify({ globalColor, globalGlass }));
+    } catch (error) {
+      console.error('Error saving global settings:', error);
+    }
+  }, [globalColor, globalGlass]);
 
   // ––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––
   // CARGA DE OPCIONES DE MATERIALES, CHAPES Y VIDRIOS
@@ -367,6 +368,15 @@ export default function CotizadorApp() {
       selectedColor: selectedColor ? { ...selectedColor } : null,
       calculations: { ...calculations },
       m2: modelData.m2 || 100, // Costo por m² de vidrio del modelo
+      // Almacenar fórmulas del modelo para recálculo rápido en carrito
+      modelFormulas: {
+        materials: modelData.materials || [],
+        chapes: modelData.chapes || [],
+        glasses: modelData.glasses || [],
+        manpower: modelData.manpower,
+        manpowerActual: modelData.manpowerActual,
+        m2: modelData.m2
+      },
       timestamp: new Date().toISOString()
     };
 
@@ -521,6 +531,9 @@ export default function CotizadorApp() {
       itemType: addItemType,
       itemId: selectedItem.id,
       itemData: itemData,
+      // Almacenar color/vidrio para recálculo global
+      selectedColor: addItemType === "material" ? null : undefined,
+      selectedGlass: addItemType === "vidrio" ? { ...selectedVidrio } : undefined,
       timestamp: new Date().toISOString()
     };
 
@@ -533,6 +546,8 @@ export default function CotizadorApp() {
 
     setShowAddItemDialog(false);
   };
+  const round2 = (n) => (typeof n === "number" && !Number.isNaN(n)) ? Math.round(n * 100) / 100 : 0;
+
   const getCartTotal = () => {
     return cart.reduce((total, item) => {
       if (item.type === "individual") {
@@ -545,10 +560,21 @@ export default function CotizadorApp() {
   };
 
   // Función para obtener resúmenes de materiales, chapes y vidrios del carrito
+  // Incluye optimización de tramos: cada material viene en tramos de 6.1m (o stretch del material)
   const getCartSummaries = () => {
     const materialsSummary = {};
     const chapesSummary = {};
     const glassesSummary = {};
+    const TRAMO_DEFAULT = 6.1;
+
+    const getMaterialStretch = (materialName, materialId) => {
+      if (materialId) {
+        const mat = materialsOptions.find(m => m.id === materialId);
+        if (mat) return parseFloat(mat.stretch || TRAMO_DEFAULT);
+      }
+      const mat = materialsOptions.find(m => m.name === materialName);
+      return mat ? parseFloat(mat.stretch || TRAMO_DEFAULT) : TRAMO_DEFAULT;
+    };
 
     cart.forEach(item => {
       if (item.type === "individual") {
@@ -559,10 +585,12 @@ export default function CotizadorApp() {
               materialsSummary[item.itemData.name].meterage += item.itemData.meters;
               materialsSummary[item.itemData.name].price += item.itemData.total;
             } else {
+              const stretch = getMaterialStretch(item.itemData.name, item.itemId);
               materialsSummary[item.itemData.name] = {
                 name: item.itemData.name,
                 meterage: item.itemData.meters,
                 price: item.itemData.total,
+                stretch,
                 isIndividual: true
               };
             }
@@ -595,8 +623,11 @@ export default function CotizadorApp() {
             break;
         }
       } else {
-        // Elementos de modelo
-        item.calculations.materialsCalc.items.forEach(material => {
+        // Elementos de modelo - obtener id de material desde modelFormulas si existe
+        const modelMaterials = item.modelFormulas?.materials || [];
+        item.calculations.materialsCalc.items.forEach((material, idx) => {
+          const matId = modelMaterials[idx]?.id || null;
+          const stretch = getMaterialStretch(material.name, matId);
           if (materialsSummary[material.name]) {
             materialsSummary[material.name].meterage += material.meterage;
             materialsSummary[material.name].price += material.price;
@@ -605,6 +636,7 @@ export default function CotizadorApp() {
               name: material.name,
               meterage: material.meterage,
               price: material.price,
+              stretch,
               isIndividual: false
             };
           }
@@ -642,11 +674,295 @@ export default function CotizadorApp() {
       }
     });
 
+    // Calcular tramos para cada material (optimización: redondear hacia arriba)
+    const materialsWithTramos = Object.values(materialsSummary).map(m => ({
+      ...m,
+      tramos: Math.ceil(m.meterage / (m.stretch || TRAMO_DEFAULT))
+    }));
+
     return {
-      materials: Object.values(materialsSummary),
+      materials: materialsWithTramos,
       chapes: Object.values(chapesSummary),
       glasses: Object.values(glassesSummary)
     };
+  };
+
+  // ––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––
+  // FUNCIONES DE RECÁLCULO PARA CONFIGURACIÓN GLOBAL
+  // ––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––
+
+  // Recalcular un item de modelo con nuevo color y/o vidrio
+  const recalculateModelItem = async (item, newColor, newGlass) => {
+    let formulas = item.modelFormulas;
+
+    // Fallback: obtener fórmulas de la base de datos si no están almacenadas
+    if (!formulas) {
+      try {
+        const modelDoc = await getDoc(doc(db, "models", item.modelId));
+        if (modelDoc.exists()) {
+          const data = modelDoc.data();
+          const materials = data.materials ? await resolveNames(data.materials, "materials") : [];
+          const chapes = data.chapes ? await resolveNames(data.chapes, "chapes") : [];
+          const glasses = data.glasses ? await resolveNames(data.glasses, "glasses") : [];
+          formulas = {
+            materials,
+            chapes,
+            glasses,
+            manpower: data.manpower,
+            manpowerActual: data.manpowerActual,
+            m2: data.m2
+          };
+        } else {
+          return item; // No se puede recalcular
+        }
+      } catch (error) {
+        console.error("Error fetching model for recalculation:", error);
+        return item;
+      }
+    }
+
+    // Determinar color y vidrio efectivos (undefined = mantener actual)
+    const effectiveColor = newColor !== undefined ? newColor : item.selectedColor;
+    const effectiveGlass = newGlass !== undefined ? newGlass : item.selectedGlass;
+
+    const heightInMeters = parseFloat(item.dimensions.height) / 100;
+    const widthInMeters = parseFloat(item.dimensions.width) / 100;
+
+    // MATERIALES
+    const materialsCalc = (formulas.materials || []).reduce((acc, material) => {
+      const matOption = materialsOptions.find(m => m.id === material.id);
+      const basePrice = matOption ? parseFloat(matOption.price || "0") : 0;
+      const tramo = matOption ? parseFloat(matOption.stretch || "6.1") : 6.1;
+
+      const colorIncrement = effectiveColor ? parseFloat(effectiveColor.percentage || "0") : 0;
+      const currentPrice = basePrice * (1 + colorIncrement / 100);
+
+      const meterage = calculatePrice(material.formula, {
+        PRECIO: 1, ALTO: heightInMeters, ANCHO: widthInMeters, TRAMO: 1
+      });
+
+      const basePriceTotal = calculatePrice(material.formula, {
+        PRECIO: basePrice, ALTO: heightInMeters, ANCHO: widthInMeters, TRAMO: tramo
+      });
+
+      const priceWithColor = calculatePrice(material.formula, {
+        PRECIO: currentPrice, ALTO: heightInMeters, ANCHO: widthInMeters, TRAMO: tramo
+      });
+
+      return {
+        price: acc.price + priceWithColor,
+        basePrice: acc.basePrice + basePriceTotal,
+        meterage: acc.meterage + meterage,
+        items: [...acc.items, {
+          name: material.name,
+          meterage,
+          price: priceWithColor,
+          basePrice: basePriceTotal,
+          colorName: effectiveColor?.name || "Natural",
+          colorPercentage: colorIncrement
+        }]
+      };
+    }, { price: 0, basePrice: 0, meterage: 0, items: [] });
+
+    // CHAPES (herrajes)
+    const chapesCalc = (formulas.chapes || []).reduce((acc, chape) => {
+      const chapeOption = chapesOptions.find(c => c.id === chape.id);
+      const currentPrice = chapeOption ? parseFloat(chapeOption.price || "0") : 0;
+
+      const pieces = calculatePrice(chape.formula, {
+        PRECIO: 1, ALTO: heightInMeters, ANCHO: widthInMeters, TRAMO: 1
+      });
+
+      const price = calculatePrice(chape.formula, {
+        PRECIO: currentPrice, ALTO: heightInMeters, ANCHO: widthInMeters, TRAMO: 1
+      });
+
+      return {
+        price: acc.price + price,
+        pieces: acc.pieces + pieces,
+        items: [...acc.items, { name: chape.name, pieces, price }]
+      };
+    }, { price: 0, pieces: 0, items: [] });
+
+    // VIDRIOS
+    const glassesCalc = (formulas.glasses || []).reduce((acc, glass) => {
+      const meterage = calculatePrice(glass.formula, {
+        PRECIO: 1, ALTO: heightInMeters, ANCHO: widthInMeters
+      });
+
+      const glassPrice = effectiveGlass ? parseFloat(effectiveGlass.priceInstalled || effectiveGlass.price || "0") : 0;
+      const price = meterage * glassPrice;
+
+      return {
+        price: acc.price + price,
+        meterage: acc.meterage + meterage,
+        items: [...acc.items, { name: effectiveGlass ? effectiveGlass.name : glass.name, meterage, price }]
+      };
+    }, { price: 0, meterage: 0, items: [] });
+
+    // Mano de obra
+    const laborCost = parseFloat(formulas.manpower || "0") * materialsCalc.basePrice;
+    const laborCostActual = Math.round(parseFloat(formulas.manpowerActual || "0"));
+    const glassLaborCostPerM2 = formulas.m2 || 100;
+    const glassLaborCost = Math.round(glassesCalc.meterage * glassLaborCostPerM2);
+    const totalLaborActual = laborCostActual + glassLaborCost;
+    const totalGeneral = materialsCalc.price + chapesCalc.price + glassesCalc.price + laborCost;
+
+    return {
+      ...item,
+      selectedColor: effectiveColor,
+      selectedGlass: effectiveGlass,
+      modelFormulas: formulas, // Asegurar que las fórmulas se guarden
+      calculations: {
+        materialsCalc,
+        chapesCalc,
+        glassesCalc,
+        laborCost,
+        laborCostActual,
+        glassLaborCost,
+        totalLaborActual,
+        totalGeneral
+      }
+    };
+  };
+
+  // Recalcular un item individual con nuevo color y/o vidrio
+  const recalculateIndividualItem = (item, newColor, newGlass) => {
+    if (item.itemType === "material" && newColor !== undefined) {
+      const matOption = materialsOptions.find(m => m.id === item.itemId);
+      if (!matOption) return { ...item, selectedColor: newColor };
+
+      const basePrice = parseFloat(matOption.price || 0);
+      const tramo = parseFloat(matOption.stretch || 6.1);
+      const colorIncrement = newColor ? parseFloat(newColor.percentage || 0) : 0;
+      const adjustedPrice = basePrice * (1 + colorIncrement / 100);
+
+      let newTotal;
+      if (item.itemData.quantityType === "tramos") {
+        newTotal = item.itemData.quantity * adjustedPrice;
+      } else {
+        // metros
+        newTotal = (item.itemData.quantity / tramo) * adjustedPrice;
+      }
+
+      return {
+        ...item,
+        selectedColor: newColor,
+        itemData: {
+          ...item.itemData,
+          unitPrice: item.itemData.quantityType === "tramos" ? adjustedPrice : adjustedPrice / tramo,
+          total: newTotal
+        }
+      };
+    }
+
+    if (item.itemType === "vidrio" && newGlass !== undefined) {
+      if (!newGlass) return item;
+      const area = item.itemData.area;
+      const newPrice = parseFloat(newGlass.priceInstalled || 0);
+
+      return {
+        ...item,
+        selectedGlass: newGlass,
+        itemData: {
+          ...item.itemData,
+          name: newGlass.name,
+          unitPrice: newPrice,
+          total: area * newPrice
+        }
+      };
+    }
+
+    return item;
+  };
+
+  // Aplicar configuración global a todos los items del carrito
+  const applyGlobalSettings = async () => {
+    if (cart.length === 0) return;
+
+    setIsRecalculating(true);
+    try {
+      const updatedCart = [];
+      for (const item of cart) {
+        if (item.type === "individual") {
+          let updatedItem = item;
+          if (item.itemType === "material" && globalColor !== undefined) {
+            updatedItem = recalculateIndividualItem(updatedItem, globalColor, undefined);
+          }
+          if (item.itemType === "vidrio" && globalGlass) {
+            updatedItem = recalculateIndividualItem(updatedItem, undefined, globalGlass);
+          }
+          updatedCart.push(updatedItem);
+        } else {
+          // Item de modelo - recalcular con ambos globales
+          const updatedItem = await recalculateModelItem(item, globalColor, globalGlass);
+          updatedCart.push(updatedItem);
+        }
+      }
+      setCart(updatedCart);
+      setSnackbar({
+        open: true,
+        message: "Carrito recalculado con la configuración global.",
+        severity: "success"
+      });
+    } catch (error) {
+      console.error("Error applying global settings:", error);
+      setSnackbar({
+        open: true,
+        message: "Error al recalcular el carrito.",
+        severity: "error"
+      });
+    } finally {
+      setIsRecalculating(false);
+    }
+  };
+
+  // Actualizar color de un item individual del carrito
+  const updateCartItemColor = async (itemId, newColor) => {
+    setIsRecalculating(true);
+    try {
+      const updatedCart = [];
+      for (const item of cart) {
+        if (item.id !== itemId) {
+          updatedCart.push(item);
+          continue;
+        }
+        if (item.type === "individual") {
+          updatedCart.push(recalculateIndividualItem(item, newColor, undefined));
+        } else {
+          updatedCart.push(await recalculateModelItem(item, newColor, undefined));
+        }
+      }
+      setCart(updatedCart);
+    } catch (error) {
+      console.error("Error updating item color:", error);
+    } finally {
+      setIsRecalculating(false);
+    }
+  };
+
+  // Actualizar vidrio de un item individual del carrito
+  const updateCartItemGlass = async (itemId, newGlass) => {
+    setIsRecalculating(true);
+    try {
+      const updatedCart = [];
+      for (const item of cart) {
+        if (item.id !== itemId) {
+          updatedCart.push(item);
+          continue;
+        }
+        if (item.type === "individual") {
+          updatedCart.push(recalculateIndividualItem(item, undefined, newGlass));
+        } else {
+          updatedCart.push(await recalculateModelItem(item, undefined, newGlass));
+        }
+      }
+      setCart(updatedCart);
+    } catch (error) {
+      console.error("Error updating item glass:", error);
+    } finally {
+      setIsRecalculating(false);
+    }
   };
 
   const handleSaveProject = async () => {
@@ -701,14 +1017,33 @@ export default function CotizadorApp() {
         return;
       }
 
-      // Crear el proyecto
+      // Crear el proyecto (precios limitados a 2 decimales)
+      const roundDetails = (calc) => {
+        if (!calc) return calc;
+        const r = (n) => round2(n);
+        const roundItems = (items) =>
+          (items || []).map((i) => ({
+            ...i,
+            price: r(i.price),
+            ...(i.basePrice !== undefined && { basePrice: r(i.basePrice) }),
+            ...(i.meterage !== undefined && { meterage: r(i.meterage) }),
+            ...(i.pieces !== undefined && { pieces: r(i.pieces) })
+          }));
+        return {
+          ...calc,
+          price: r(calc.price),
+          basePrice: calc.basePrice !== undefined ? r(calc.basePrice) : undefined,
+          meterage: calc.meterage !== undefined ? r(calc.meterage) : undefined,
+          pieces: calc.pieces !== undefined ? r(calc.pieces) : undefined,
+          items: calc.items ? roundItems(calc.items) : calc.items
+        };
+      };
       const projectData = {
         name: projectName.trim(),
         customerId: finalCustomerId,
         customerName: createNewCustomer ? newCustomerName.trim() : selectedCustomer.name,
         items: cart.map(item => {
           if (item.type === "individual") {
-            // Elemento individual
             return {
               type: "individual",
               itemType: item.itemType,
@@ -716,17 +1051,17 @@ export default function CotizadorApp() {
               itemName: item.itemData.name,
               quantity: item.itemData.quantity,
               quantityType: item.itemData.quantityType,
-              unitPrice: item.itemData.unitPrice,
-              total: item.itemData.total,
+              unitPrice: round2(item.itemData.unitPrice),
+              total: round2(item.itemData.total),
               dimensions: item.itemData.dimensions || null,
-              area: item.itemData.area || null,
-              meters: item.itemData.meters || null,
-              tramo: item.itemData.tramo || null,
+              area: item.itemData.area != null ? round2(item.itemData.area) : null,
+              meters: item.itemData.meters != null ? round2(item.itemData.meters) : null,
+              tramo: item.itemData.tramo != null ? round2(item.itemData.tramo) : null,
               status: "cotizacion",
               assignedEmployeeId: ""
             };
           } else {
-            // Elemento de modelo
+            const c = item.calculations;
             return {
               type: "model",
               modelId: item.modelId,
@@ -734,28 +1069,28 @@ export default function CotizadorApp() {
               dimensions: item.dimensions,
               selectedGlass: item.selectedGlass,
               selectedColor: item.selectedColor || null,
-              total: item.calculations.totalGeneral,
-              m2: item.m2 || 100, // Costo por m² de vidrio del modelo
+              total: round2(c.totalGeneral),
+              m2: round2(item.m2 || 100),
               details: {
-                materials: item.calculations.materialsCalc,
-                chapes: item.calculations.chapesCalc,
-                glasses: item.calculations.glassesCalc,
-                laborCost: item.calculations.laborCost,
-                laborCostActual: item.calculations.laborCostActual,
-                glassLaborCost: item.calculations.glassLaborCost,
-                totalLaborActual: item.calculations.totalLaborActual
+                materials: roundDetails(c.materialsCalc),
+                chapes: roundDetails(c.chapesCalc),
+                glasses: roundDetails(c.glassesCalc),
+                laborCost: round2(c.laborCost),
+                laborCostActual: round2(c.laborCostActual),
+                glassLaborCost: round2(c.glassLaborCost),
+                totalLaborActual: round2(c.totalLaborActual)
               },
-              laborCostSelected: item.calculations.laborCost,
-              laborCostActual: item.calculations.laborCostActual,
-              glassLaborCost: item.calculations.glassLaborCost,
-              totalLaborActual: item.calculations.totalLaborActual,
+              laborCostSelected: round2(c.laborCost),
+              laborCostActual: round2(c.laborCostActual),
+              glassLaborCost: round2(c.glassLaborCost),
+              totalLaborActual: round2(c.totalLaborActual),
               status: "cotizacion",
               area: "",
               assignedEmployeeId: ""
             };
           }
         }),
-        total: getCartTotal(),
+        total: round2(getCartTotal()),
         createdAt: new Date().toISOString(),
         date: serverTimestamp(),
         status: "quotation"
@@ -772,6 +1107,9 @@ export default function CotizadorApp() {
       // Limpiar estados
       setCart([]);
       localStorage.removeItem('aluminios-cart'); // Limpiar también el localStorage
+      localStorage.removeItem('aluminios-cart-globals');
+      setGlobalColor(null);
+      setGlobalGlass(null);
       setProjectName("");
       setSelectedCustomer(null);
       setNewCustomerName("");
@@ -955,12 +1293,14 @@ export default function CotizadorApp() {
           sx={{ mb: 2 }}
         />
         <Grid container spacing={3}>
-          {filteredModels.map((model) => (            <Grid item xs={12} sm={6} md={4} lg={3} key={model.id}>
+          {paginatedModels.map((model) => (
+            <Grid item xs={12} sm={6} md={4} lg={3} key={model.id}>
               <Card sx={{ maxWidth: 345, boxShadow: 3, height: '100%', display: 'flex', flexDirection: 'column' }}>
-                <CachedImage 
+<CachedImage
                   modelId={model.id}
                   modelName={model.name}
                   height={200}
+                  cacheRef={imageUrlCacheRef}
                 />
                 <CardContent sx={{ flexGrow: 1, display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
                   <Typography
@@ -984,7 +1324,23 @@ export default function CotizadorApp() {
             </Grid>
           ))}
         </Grid>
-        
+
+        {filteredModels.length > MODELS_PER_PAGE && (
+          <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 2, mt: 3, mb: 2 }}>
+            <Typography variant="body2" color="textSecondary">
+              Mostrando {((modelsPage - 1) * MODELS_PER_PAGE) + 1}-{Math.min(modelsPage * MODELS_PER_PAGE, filteredModels.length)} de {filteredModels.length} modelos
+            </Typography>
+            <Pagination
+              count={Math.ceil(filteredModels.length / MODELS_PER_PAGE)}
+              page={modelsPage}
+              onChange={(_, page) => setModelsPage(page)}
+              color="primary"
+              showFirstButton
+              showLastButton
+            />
+          </Box>
+        )}
+
         {/* Botones flotantes para agregar elementos individuales */}
         <Box sx={{
           position: "fixed",
@@ -1441,6 +1797,98 @@ export default function CotizadorApp() {
                 </Typography>
               </Box>
             </Paper>
+
+            {/* Configuración Global del Proyecto */}
+            <Paper sx={{ p: 2, mb: 3, border: '1px solid #1976d2', backgroundColor: '#f5f9ff' }}>
+              <Typography variant="h6" sx={{ mb: 2, color: '#1565c0', fontWeight: 'bold' }}>
+                Configuración Global del Proyecto
+              </Typography>
+              <Typography variant="caption" color="textSecondary" sx={{ display: 'block', mb: 2 }}>
+                Selecciona un color y/o vidrio para aplicar a todos los elementos del carrito de una sola vez. También puedes cambiar cada elemento individualmente en la tabla.
+              </Typography>
+              <Grid container spacing={2} alignItems="center">
+                <Grid item xs={12} sm={5}>
+                  <Autocomplete
+                    options={colorsOptions}
+                    getOptionLabel={(option) => `${option.name} ${option.percentage > 0 ? `(+${option.percentage}%)` : option.percentage < 0 ? `(${option.percentage}%)` : '(Base)'}`}
+                    isOptionEqualToValue={(option, value) => option.id === value.id}
+                    value={globalColor}
+                    onChange={(event, newValue) => setGlobalColor(newValue)}
+                    renderOption={(props, option) => (
+                      <li {...props}>
+                        <Box>
+                          <Typography variant="body2">{option.name}</Typography>
+                          <Typography variant="caption" color="textSecondary">
+                            {option.percentage === 0 ? 'Precio base' :
+                             option.percentage > 0 ? `+${option.percentage}% sobre precio base` :
+                             `${option.percentage}% sobre precio base`}
+                          </Typography>
+                        </Box>
+                      </li>
+                    )}
+                    renderInput={(params) => (
+                      <TextField {...params} label="Color Global" variant="outlined" size="small" />
+                    )}
+                  />
+                </Grid>
+                <Grid item xs={12} sm={5}>
+                  <Autocomplete
+                    options={glassesOptions}
+                    getOptionLabel={(option) => `${option.name} - $${option.priceInstalled || option.price || 0}/m²`}
+                    isOptionEqualToValue={(option, value) => option.id === value.id}
+                    value={globalGlass}
+                    onChange={(event, newValue) => setGlobalGlass(newValue)}
+                    renderOption={(props, option) => (
+                      <li {...props}>
+                        <Box>
+                          <Typography variant="body2">{option.name}</Typography>
+                          <Typography variant="caption" color="textSecondary">
+                            ${option.priceInstalled || option.price || 0}/m²
+                          </Typography>
+                        </Box>
+                      </li>
+                    )}
+                    renderInput={(params) => (
+                      <TextField {...params} label="Vidrio Global" variant="outlined" size="small" />
+                    )}
+                  />
+                </Grid>
+                <Grid item xs={12} sm={2}>
+                  <Button
+                    variant="contained"
+                    fullWidth
+                    onClick={applyGlobalSettings}
+                    disabled={isRecalculating || cart.length === 0 || (!globalColor && !globalGlass)}
+                    sx={{ height: '40px', fontWeight: 'bold' }}
+                  >
+                    {isRecalculating ? <CircularProgress size={20} /> : "Aplicar a Todo"}
+                  </Button>
+                </Grid>
+              </Grid>
+              {(globalColor || globalGlass) && (
+                <Box sx={{ mt: 1, display: 'flex', gap: 1, flexWrap: 'wrap' }}>
+                  {globalColor && (
+                    <Chip
+                      label={`Color: ${globalColor.name} (${globalColor.percentage > 0 ? '+' : ''}${globalColor.percentage}%)`}
+                      color="primary"
+                      size="small"
+                      variant="outlined"
+                      onDelete={() => setGlobalColor(null)}
+                    />
+                  )}
+                  {globalGlass && (
+                    <Chip
+                      label={`Vidrio: ${globalGlass.name}`}
+                      color="info"
+                      size="small"
+                      variant="outlined"
+                      onDelete={() => setGlobalGlass(null)}
+                    />
+                  )}
+                </Box>
+              )}
+            </Paper>
+
             {cart.length === 0 ? (
               <Typography>El carrito está vacío</Typography>
             ) : (
@@ -1450,13 +1898,15 @@ export default function CotizadorApp() {
                   Elementos en el Carrito ({cart.length})
                 </Typography>
                 <TableContainer sx={{ mb: 4 }}>
-                  <Table>
+                  <Table size="small">
                     <TableHead>
                       <TableRow>
                         <TableCell>Tipo</TableCell>
                         <TableCell>Nombre</TableCell>
+                        <TableCell sx={{ minWidth: 160 }}>Color</TableCell>
+                        <TableCell sx={{ minWidth: 180 }}>Vidrio</TableCell>
                         <TableCell>Detalles</TableCell>
-                        <TableCell>Total</TableCell>
+                        <TableCell align="right">Total</TableCell>
                         <TableCell>Acciones</TableCell>
                       </TableRow>
                     </TableHead>
@@ -1471,56 +1921,109 @@ export default function CotizadorApp() {
                             />
                           </TableCell>
                           <TableCell>
-                            {item.type === "individual" ? item.itemData.name : item.modelName}
+                            <Typography variant="body2" sx={{ fontWeight: 500 }}>
+                              {item.type === "individual" ? item.itemData.name : item.modelName}
+                            </Typography>
+                            {item.type !== "individual" && (
+                              <Typography variant="caption" color="textSecondary">
+                                {item.dimensions.height} x {item.dimensions.width} cm
+                              </Typography>
+                            )}
                           </TableCell>
+                          {/* Columna Color */}
+                          <TableCell>
+                            {(item.type !== "individual" || item.itemType === "material") ? (
+                              <Autocomplete
+                                size="small"
+                                options={colorsOptions}
+                                getOptionLabel={(option) => `${option.name} (${option.percentage > 0 ? '+' : ''}${option.percentage}%)`}
+                                isOptionEqualToValue={(option, value) => option.id === value.id}
+                                value={item.selectedColor || null}
+                                onChange={(e, newValue) => updateCartItemColor(item.id, newValue)}
+                                disabled={isRecalculating}
+                                renderInput={(params) => (
+                                  <TextField
+                                    {...params}
+                                    placeholder="Natural"
+                                    variant="outlined"
+                                    size="small"
+                                    sx={{ '& .MuiOutlinedInput-root': { fontSize: '0.8rem' } }}
+                                  />
+                                )}
+                                sx={{ minWidth: 140 }}
+                              />
+                            ) : (
+                              <Typography variant="caption" color="textSecondary">—</Typography>
+                            )}
+                          </TableCell>
+                          {/* Columna Vidrio */}
+                          <TableCell>
+                            {(item.type !== "individual" || item.itemType === "vidrio") ? (
+                              <Autocomplete
+                                size="small"
+                                options={glassesOptions}
+                                getOptionLabel={(option) => `${option.name}`}
+                                isOptionEqualToValue={(option, value) => option.id === value.id}
+                                value={item.selectedGlass || null}
+                                onChange={(e, newValue) => updateCartItemGlass(item.id, newValue)}
+                                disabled={isRecalculating}
+                                renderInput={(params) => (
+                                  <TextField
+                                    {...params}
+                                    placeholder="Vidrio"
+                                    variant="outlined"
+                                    size="small"
+                                    sx={{ '& .MuiOutlinedInput-root': { fontSize: '0.8rem' } }}
+                                  />
+                                )}
+                                sx={{ minWidth: 160 }}
+                              />
+                            ) : (
+                              <Typography variant="caption" color="textSecondary">—</Typography>
+                            )}
+                          </TableCell>
+                          {/* Columna Detalles */}
                           <TableCell>
                             {item.type === "individual" ? (
                               <Box>
-                                <Typography variant="body2">
-                                  {item.itemData.quantity} {item.itemData.quantityType}
+                                <Typography variant="caption">
+                                  {item.itemType === "vidrio" && item.itemData.area
+                                    ? `${item.itemData.area.toFixed(2)} m²`
+                                    : `${item.itemData.quantity} ${item.itemData.quantityType}`}
                                 </Typography>
                                 {item.itemData.dimensions && (
-                                  <Typography variant="caption" color="textSecondary">
+                                  <Typography variant="caption" color="textSecondary" sx={{ display: 'block' }}>
                                     {item.itemData.dimensions.height} x {item.itemData.dimensions.width} cm
                                   </Typography>
                                 )}
                               </Box>
                             ) : (
                               <Box>
-                                <Typography variant="body2">
-                                  {item.dimensions.height} x {item.dimensions.width} cm
-                                </Typography>
-                                <Typography variant="caption" color="textSecondary">
-                                  Vidrio: {item.selectedGlass.name} (${item.selectedGlass.priceInstalled || item.selectedGlass.price || 0}/m²)
-                                </Typography>
-                                {item.selectedColor && (
-                                  <Typography variant="caption" color="textSecondary" sx={{ display: 'block' }}>
-                                    Color: {item.selectedColor.name} (+{item.selectedColor.percentage}%)
-                                  </Typography>
-                                )}
                                 <Typography variant="caption" color="textSecondary" sx={{ display: 'block' }}>
                                   Mat: ${item.calculations.materialsCalc.price.toFixed(2)} | 
-                                  Her: ${item.calculations.chapesCalc.price.toFixed(2)} | 
+                                  Her: ${item.calculations.chapesCalc.price.toFixed(2)}
+                                </Typography>
+                                <Typography variant="caption" color="textSecondary" sx={{ display: 'block' }}>
                                   Vid: ${item.calculations.glassesCalc.price.toFixed(2)} | 
                                   M.O.: ${item.calculations.laborCost.toFixed(2)}
                                 </Typography>
                               </Box>
                             )}
                           </TableCell>
-                          <TableCell>
-                            ${(item.type === "individual" ? item.itemData.total : item.calculations.totalGeneral).toFixed(2)}
+                          <TableCell align="right">
+                            <Typography variant="body2" sx={{ fontWeight: 'bold' }}>
+                              ${(item.type === "individual" ? item.itemData.total : item.calculations.totalGeneral).toFixed(2)}
+                            </Typography>
                           </TableCell>
                           <TableCell>
-                            <Box sx={{ display: 'flex', gap: 1 }}>
-                              
-                              <IconButton 
-                                color="error" 
-                                onClick={() => removeFromCart(item.id)}
-                                title="Eliminar"
-                              >
-                                <Delete />
-                              </IconButton>
-                            </Box>
+                            <IconButton 
+                              color="error" 
+                              onClick={() => removeFromCart(item.id)}
+                              title="Eliminar"
+                              size="small"
+                            >
+                              <Delete fontSize="small" />
+                            </IconButton>
                           </TableCell>
                         </TableRow>
                       ))}
@@ -1546,7 +2049,8 @@ export default function CotizadorApp() {
                               <TableHead>
                                 <TableRow>
                                   <TableCell>Material</TableCell>
-                                  <TableCell align="right">Metraje Total</TableCell>
+                                  <TableCell align="right">Metraje (m)</TableCell>
+                                  <TableCell align="right" title="Cantidad de tramos a ordenar (según m/tramo del material)">Tramos</TableCell>
                                   <TableCell align="right">Precio Total</TableCell>
                                 </TableRow>
                               </TableHead>
@@ -1555,6 +2059,7 @@ export default function CotizadorApp() {
                                   <TableRow key={index}>
                                     <TableCell>{material.name}</TableCell>
                                     <TableCell align="right">{material.meterage.toFixed(2)} m</TableCell>
+                                    <TableCell align="right">{material.tramos} tramos</TableCell>
                                     <TableCell align="right">${material.price.toFixed(2)}</TableCell>
                                   </TableRow>
                                 ))}
@@ -1562,6 +2067,9 @@ export default function CotizadorApp() {
                                   <TableCell sx={{ fontWeight: 'bold' }}>Total Materiales:</TableCell>
                                   <TableCell align="right" sx={{ fontWeight: 'bold' }}>
                                     {summaries.materials.reduce((sum, m) => sum + m.meterage, 0).toFixed(2)} m
+                                  </TableCell>
+                                  <TableCell align="right" sx={{ fontWeight: 'bold' }}>
+                                    {summaries.materials.reduce((sum, m) => sum + m.tramos, 0)} tramos
                                   </TableCell>
                                   <TableCell align="right" sx={{ fontWeight: 'bold' }}>
                                     ${summaries.materials.reduce((sum, m) => sum + m.price, 0).toFixed(2)}
@@ -1664,6 +2172,9 @@ export default function CotizadorApp() {
                     if (window.confirm('¿Está seguro de que desea limpiar todo el carrito? Esta acción no se puede deshacer.')) {
                       setCart([]);
                       localStorage.removeItem('aluminios-cart');
+                      localStorage.removeItem('aluminios-cart-globals');
+                      setGlobalColor(null);
+                      setGlobalGlass(null);
                       setSnackbar({ 
                         open: true, 
                         message: "Carrito limpiado exitosamente.", 

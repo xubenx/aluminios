@@ -36,13 +36,17 @@ export function useOrdenesController() {
 
   // Estados para gestión de órdenes (ahora desde projects)
   const [selectedOrder, setSelectedOrder] = useState(null);
-  const [showOrdersManagement, setShowOrdersManagement] = useState(false);
   const [selectedEmployeeFilter, setSelectedEmployeeFilter] = useState("");
   const [confirmPaymentDialog, setConfirmPaymentDialog] = useState({
     open: false,
     projectId: null,
     itemIndex: null,
     itemData: null
+  });
+  const [markAllAsPaidDialog, setMarkAllAsPaidDialog] = useState({
+    open: false,
+    orders: [],
+    totalAmount: 0
   });
 
   // Estados del diálogo
@@ -102,15 +106,75 @@ export function useOrdenesController() {
     }
   };
 
-  // Función para obtener todas las órdenes desde los proyectos
+  // Obtener TODOS los items asignados (con o sin orden de trabajo) para el desglose
+  const getAllAssignedItemsFromProjects = () => {
+    const all = [];
+    activeProjects.forEach(project => {
+      if (project.items) {
+        project.items.forEach((item, itemIndex) => {
+          if (item.assignedEmployeeId) {
+            const aluminumLaborCost = item.laborCostActual || item.details?.laborCostActual || 0;
+            const glassLaborCost = item.details?.glassLaborCost || 0;
+            const totalLaborCost = aluminumLaborCost + glassLaborCost;
+            all.push({
+              id: `${project.id}_${itemIndex}`,
+              projectId: project.id,
+              projectName: project.name || project.projectName || "Sin nombre",
+              client: project.customerName || project.client || "Sin cliente",
+              employeeId: item.assignedEmployeeId,
+              employee: getEmployeeName(item.assignedEmployeeId),
+              itemIndex,
+              itemName: item.modelName || item.itemName || "Item sin nombre",
+              area: item.area || "Sin área especificada",
+              totalLaborCost,
+              aluminumLaborCost,
+              glassLaborCost,
+              hasWorkOrder: !!item.workOrder,
+              paymentStatus: item.workOrder?.paymentStatus || "sin_orden",
+              paidDate: item.workOrder?.paidDate || null,
+              status: item.status || "pendiente",
+              createdAt: item.workOrder?.createdAt || project.date || new Date()
+            });
+          }
+        });
+      }
+    });
+    all.sort((a, b) => {
+      const dA = a.createdAt?.toDate?.() || new Date(a.createdAt);
+      const dB = b.createdAt?.toDate?.() || new Date(b.createdAt);
+      return dB - dA;
+    });
+    return all;
+  };
+
+  // Estadísticas para dashboard general
+  const getGeneralDashboardStats = () => {
+    const all = getAllAssignedItemsFromProjects();
+    const withOrder = all.filter(i => i.hasWorkOrder);
+    const paid = withOrder.filter(i => i.paymentStatus === "paid");
+    const unpaid = withOrder.filter(i => i.paymentStatus === "unpaid");
+    const sinOrden = all.filter(i => !i.hasWorkOrder);
+    return {
+      totalItems: all.length,
+      conOrden: withOrder.length,
+      pagados: paid.length,
+      pendientesPago: unpaid.length,
+      sinOrden: sinOrden.length,
+      montoTotal: all.reduce((s, i) => s + (i.totalLaborCost || 0), 0),
+      montoPagado: paid.reduce((s, i) => s + (i.totalLaborCost || 0), 0),
+      montoPendiente: unpaid.reduce((s, i) => s + (i.totalLaborCost || 0), 0),
+      empleadosConTrabajo: [...new Set(all.map(i => i.employeeId))].length
+    };
+  };
+
+  // Órdenes = items asignados. Cada asignación es una orden (no se "crea" aparte)
   const getAllOrdersFromProjects = () => {
     const allOrders = [];
     
     activeProjects.forEach(project => {
       if (project.items) {
         project.items.forEach((item, itemIndex) => {
-          // Solo incluir items que tienen orden de trabajo creada
-          if (item.workOrder && item.assignedEmployeeId) {
+          if (item.assignedEmployeeId) {
             const aluminumLaborCost = item.laborCostActual || item.details?.laborCostActual || 0;
             const glassLaborCost = item.details?.glassLaborCost || 0;
             const totalLaborCost = aluminumLaborCost + glassLaborCost;
@@ -128,10 +192,10 @@ export function useOrdenesController() {
               totalLaborCost: totalLaborCost,
               aluminumLaborCost: aluminumLaborCost,
               glassLaborCost: glassLaborCost,
-              paymentStatus: item.workOrder.paymentStatus || "unpaid",
-              paidDate: item.workOrder.paidDate || null,
-              paidBy: item.workOrder.paidBy || null,
-              createdAt: item.workOrder.createdAt || new Date(),
+              paymentStatus: item.workOrder?.paymentStatus || "unpaid",
+              paidDate: item.workOrder?.paidDate || null,
+              paidBy: item.workOrder?.paidBy || null,
+              createdAt: item.workOrder?.createdAt || new Date(),
               status: item.status || "pendiente"
             });
           }
@@ -459,6 +523,11 @@ export function useOrdenesController() {
     return null;
   };
 
+  const canPayOrder = (orderOrItem) => {
+    const status = orderOrItem?.status || orderOrItem?.item?.status;
+    return status === "instalado" || status === "revisado";
+  };
+
   // Función para mostrar confirmación de pago
   const showPaymentConfirmation = async (projectId, itemIndex) => {
     try {
@@ -473,18 +542,17 @@ export function useOrdenesController() {
       }
       
       const item = project.items[itemIndex];
-      
-      // Validar que el item tenga una orden de trabajo y no esté pagada
-      if (!item.workOrder) {
+
+      if (!canPayOrder(item)) {
         setSnackbar({
           open: true,
-          message: "Este item no tiene una orden de trabajo",
+          message: "Solo se puede pagar si el estado es 'Instalado' o 'Revisado'. Cambia el estado en Proyectos.",
           severity: "warning"
         });
         return;
       }
 
-      if (item.workOrder.paymentStatus === "paid") {
+      if (item.workOrder?.paymentStatus === "paid") {
         setSnackbar({
           open: true,
           message: "Esta orden ya está marcada como pagada",
@@ -533,15 +601,15 @@ export function useOrdenesController() {
       const glassLaborCost = itemData.details?.glassLaborCost || 0;
       const totalLaborCost = aluminumLaborCost + glassLaborCost;
 
-      // Actualizar el estado de pago en el item
       const updatedItems = [...project.items];
+      const currentItem = updatedItems[itemIndex];
       updatedItems[itemIndex] = {
-        ...updatedItems[itemIndex],
+        ...currentItem,
         workOrder: {
-          ...updatedItems[itemIndex].workOrder,
+          ...(currentItem.workOrder || {}),
           paymentStatus: "paid",
           paidDate: new Date().toISOString(),
-          paidBy: "admin" // Aquí podrías poner el ID del usuario actual
+          paidBy: "admin"
         }
       };
 
@@ -551,9 +619,9 @@ export function useOrdenesController() {
         items: updatedItems
       });
       
-      // Registrar el gasto en el diario contable
-      const diaryRef = collection(db, "diary");
-      await addDoc(diaryRef, {
+      // Registrar el gasto en el diario contable (journal - mismo que Diario)
+      const journalRef = collection(db, "journal");
+      await addDoc(journalRef, {
         fecha: new Date().toISOString().split('T')[0],
         tipo: "gasto",
         categoria: "Mano de Obra",
@@ -561,7 +629,10 @@ export function useOrdenesController() {
         monto: totalLaborCost,
         activo: true,
         projectId: projectId,
-        itemIndex: itemIndex, // Referencia al item específico
+        itemIndex: itemIndex,
+        source: "order",
+        orderPayment: true,
+        employeeName: itemData.employeeName,
         createdAt: new Date()
       });
       
@@ -652,14 +723,15 @@ export function useOrdenesController() {
         items: updatedItems
       });
       
-      // Buscar y eliminar el gasto correspondiente en el diario
-      const diaryRef = collection(db, "diary");
-      const q = query(diaryRef, where("projectId", "==", projectId), where("itemIndex", "==", itemIndex));
+      // Buscar y desactivar el gasto correspondiente en el journal
+      const journalRef = collection(db, "journal");
+      const q = query(journalRef, where("projectId", "==", projectId), where("itemIndex", "==", itemIndex), where("source", "==", "order"));
       const snapshot = await getDocs(q);
       
       for (const docSnap of snapshot.docs) {
-        await updateDoc(doc(db, "diary", docSnap.id), {
-          activo: false // Soft delete
+        await updateDoc(doc(db, "journal", docSnap.id), {
+          activo: false,
+          inactivatedAt: new Date().toISOString()
         });
       }
       
@@ -685,12 +757,115 @@ export function useOrdenesController() {
   // Función para filtrar órdenes por empleado
   const getFilteredOrders = () => {
     const allOrders = getAllOrdersFromProjects();
-    
-    if (!selectedEmployeeFilter) {
-      return allOrders;
-    }
-    
+    if (!selectedEmployeeFilter) return allOrders;
     return allOrders.filter(order => order.employeeId === selectedEmployeeFilter);
+  };
+
+  // Órdenes no pagadas que pueden pagarse (estado instalado o revisado)
+  const getPayableUnpaidOrders = () => {
+    return getFilteredOrders().filter(
+      o => o.paymentStatus === "unpaid" && canPayOrder(o)
+    );
+  };
+
+  const handleOpenMarkAllPaid = () => {
+    const payable = getPayableUnpaidOrders();
+    const total = payable.reduce((s, o) => s + (o.totalLaborCost || 0), 0);
+    setMarkAllAsPaidDialog({ open: true, orders: payable, totalAmount: total });
+  };
+
+  const handleCloseMarkAllPaid = () => {
+    setMarkAllAsPaidDialog({ open: false, orders: [], totalAmount: 0 });
+  };
+
+  const markAllAsPaid = async () => {
+    const { orders } = markAllAsPaidDialog;
+    if (!orders.length) {
+      handleCloseMarkAllPaid();
+      return;
+    }
+    try {
+      setLoading(true);
+      const projectUpdates = {};
+      for (const order of orders) {
+        if (!projectUpdates[order.projectId]) {
+          const project = activeProjects.find(p => p.id === order.projectId);
+          if (project && project.items) {
+            projectUpdates[order.projectId] = { project, updates: [] };
+          }
+        }
+        const entry = projectUpdates[order.projectId];
+        if (!entry) continue;
+        const { project, updates } = entry;
+        const item = project.items[order.itemIndex];
+        if (!item || item.workOrder?.paymentStatus === "paid") continue;
+        if (!canPayOrder(item)) continue;
+        updates.push({ itemIndex: order.itemIndex, item });
+      }
+      for (const projectId of Object.keys(projectUpdates)) {
+        const { project, updates } = projectUpdates[projectId];
+        const updatedItems = [...project.items];
+        for (const { itemIndex, item } of updates) {
+          const current = updatedItems[itemIndex];
+          updatedItems[itemIndex] = {
+            ...current,
+            workOrder: {
+              ...(current.workOrder || {}),
+              paymentStatus: "paid",
+              paidDate: new Date().toISOString(),
+              paidBy: "admin"
+            }
+          };
+        }
+        const projectRef = doc(db, "projects", projectId);
+        await updateDoc(projectRef, { items: updatedItems });
+        let totalForProject = 0;
+        const employeeNames = new Set();
+        for (const { item } of updates) {
+          const aluminumLaborCost = item.laborCostActual || item.details?.laborCostActual || 0;
+          const glassLaborCost = item.details?.glassLaborCost || 0;
+          totalForProject += aluminumLaborCost + glassLaborCost;
+          employeeNames.add(getEmployeeName(item.assignedEmployeeId));
+        }
+        const journalRef = collection(db, "journal");
+        await addDoc(journalRef, {
+          fecha: new Date().toISOString().split("T")[0],
+          tipo: "gasto",
+          categoria: "Mano de Obra",
+          descripcion: `Pago múltiple - ${[...employeeNames].join(", ")} - Proyecto: ${project.name || project.projectName}`,
+          monto: totalForProject,
+          activo: true,
+          projectId,
+          source: "order",
+          orderPayment: true,
+          batchPayment: true,
+          createdAt: new Date()
+        });
+      }
+      handleCloseMarkAllPaid();
+      loadActiveProjects();
+      setSnackbar({
+        open: true,
+        message: `${orders.length} órdenes marcadas como pagadas`,
+        severity: "success"
+      });
+    } catch (err) {
+      console.error("Error marking all as paid:", err);
+      setSnackbar({
+        open: true,
+        message: "Error al marcar órdenes como pagadas",
+        severity: "error"
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Filtrar todos los items asignados (para desglose completo)
+  const getFilteredAssignedItems = () => {
+    const all = getAllAssignedItemsFromProjects();
+    if (!selectedEmployeeFilter) return all;
+    return all.filter(i => i.employeeId === selectedEmployeeFilter);
   };
 
   // Función para obtener estadísticas de órdenes
@@ -792,7 +967,6 @@ export function useOrdenesController() {
     selectedProject,
     selectedEmployee,
     selectedOrder,
-    showOrdersManagement,
     selectedEmployeeFilter,
     confirmPaymentDialog,
     loading,
@@ -815,21 +989,30 @@ export function useOrdenesController() {
     getProjectsForEmployee,
     getEmployeeName,
     getAllOrdersFromProjects,
+    getAllAssignedItemsFromProjects,
+    getFilteredAssignedItems,
+    getGeneralDashboardStats,
+    selectedEmployeeFilter,
+    handleEmployeeFilterChange,
     showPaymentConfirmation,
     markOrderAsPaid,
     undoOrderPayment,
     canUndoPayment,
     getFilteredOrders,
+    getPayableUnpaidOrders,
     getOrdersStats,
     getEmployeeOrderStats,
     checkDuplicateOrder,
     getExistingOrder,
+    canPayOrder,
+    markAllAsPaid,
+    markAllAsPaidDialog,
+    handleOpenMarkAllPaid,
+    handleCloseMarkAllPaid,
     handleCloseDialog,
     handleCloseSnackbar,
     handleSelectProject,
     handleSelectEmployee,
-    handleShowOrdersManagement,
-    handleHideOrdersManagement,
     handleSelectOrder,
     handleEmployeeFilterChange,
     handleClosePaymentConfirmation,

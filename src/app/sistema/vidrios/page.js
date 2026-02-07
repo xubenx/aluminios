@@ -12,9 +12,9 @@ import {
   TableRow,
   TextField,
   Dialog,
-  DialogActions,
-  DialogContent,
   DialogTitle,
+  DialogContent,
+  DialogActions,
   Snackbar,
   Alert,
   Fab,
@@ -22,6 +22,7 @@ import {
   Typography,
   Box,
 } from "@mui/material";
+import CrudStepperDialog from "../components/CrudStepperDialog";
 import { Add, Edit, Delete, Calculate } from "@mui/icons-material";
 import { useRouter } from "next/navigation";
 
@@ -368,106 +369,109 @@ export default function GlassesPage() {
         <Add />
       </Fab>
 
-      {/* Dialog para CRUD */}
-      <Dialog open={openDialog} onClose={handleCloseDialog}>
-        <DialogTitle>{currentGlass ? "Editar Vidrio" : "Agregar Vidrio"}</DialogTitle>
-        <DialogContent>
-          <TextField
-            autoFocus
-            margin="dense"
-            name="name"
-            label="Nombre"
-            type="text"
-            fullWidth
-            value={formData.name}
-            onChange={handleInputChange}
-          />
-          {formData.options.map((option, index) => (
-            <Box key={index} sx={{ marginBottom: "2rem", padding: "1rem", border: "1px solid #ddd", borderRadius: "8px" }}>
-              <Typography variant="subtitle2" sx={{ marginBottom: "1rem", color: "primary.main" }}>
-                Variante {index + 1}
-              </Typography>
-              
-              <Box sx={{ display: "flex", alignItems: "center", marginBottom: "1rem" }}>
-                <TextField
-                  margin="dense"
-                  label="Grosor (mm)"
-                  type="number"
-                  value={option.tickness}
-                  onChange={(e) => handleInputChange(e, index, "tickness")}
-                  sx={{ marginRight: "1rem", flex: 1 }}
-                />
-                <TextField
-                  margin="dense"
-                  label="Precio al Costo"
-                  type="number"
-                  value={option.priceCost}
-                  onChange={(e) => handleInputChange(e, index, "priceCost")}
-                  sx={{ marginRight: "1rem", flex: 1 }}
-                  helperText="Los precios de corte e instalado se calculan automáticamente"
-                />
-              </Box>
-
-              <Box sx={{ display: "flex", alignItems: "center", marginBottom: "1rem" }}>
-                <TextField
-                  margin="dense"
-                  label="Precio al Corte (Auto: +60%)"
-                  type="number"
-                  value={option.priceCut}
-                  onChange={(e) => handleInputChange(e, index, "priceCut")}
-                  sx={{ marginRight: "1rem", flex: 1 }}
-                  InputProps={{
-                    style: { backgroundColor: '#f0f8ff' }
-                  }}
-                />
-                <TextField
-                  margin="dense"
-                  label="Precio Instalado (Auto: +100%)"
-                  type="number"
-                  value={option.priceInstalled}
-                  onChange={(e) => handleInputChange(e, index, "priceInstalled")}
-                  sx={{ marginRight: "1rem", flex: 1 }}
-                  InputProps={{
-                    style: { backgroundColor: '#f0f8ff' }
-                  }}
-                />
-                <Button 
-                  variant="outlined" 
-                  size="small"
-                  onClick={() => {
-                    const suggestedPrices = calculateSuggestedPrices(option.priceCost);
-                    const updatedOptions = [...formData.options];
-                    updatedOptions[index].priceCut = suggestedPrices.priceCut;
-                    updatedOptions[index].priceInstalled = suggestedPrices.priceInstalled;
-                    setFormData({ ...formData, options: updatedOptions });
-                  }}
-                  sx={{ marginRight: "1rem", minWidth: "120px" }}
-                >
-                  Recalcular
+      {/* Dialog para CRUD con Stepper */}
+      <CrudStepperDialog
+        open={openDialog}
+        onClose={handleCloseDialog}
+        title={currentGlass ? "Editar Vidrio" : "Agregar Vidrio"}
+        steps={[
+          {
+            label: "Información básica",
+            content: (
+              <TextField
+                autoFocus
+                margin="dense"
+                name="name"
+                label="Nombre"
+                type="text"
+                fullWidth
+                value={formData.name}
+                onChange={handleInputChange}
+              />
+            ),
+          },
+          {
+            label: "Variantes de grosor y precios",
+            content: (
+              <Box>
+                {formData.options.map((option, index) => (
+                  <Box key={index} sx={{ marginBottom: "1.5rem", padding: "1rem", border: "1px solid #ddd", borderRadius: "8px" }}>
+                    <Typography variant="subtitle2" sx={{ marginBottom: "1rem", color: "primary.main" }}>
+                      Variante {index + 1}
+                    </Typography>
+                    <Box sx={{ display: "flex", alignItems: "center", marginBottom: "1rem", flexWrap: "wrap", gap: 1 }}>
+                      <TextField
+                        margin="dense"
+                        label="Grosor (mm)"
+                        type="number"
+                        value={option.tickness}
+                        onChange={(e) => handleInputChange(e, index, "tickness")}
+                        sx={{ flex: 1, minWidth: 120 }}
+                      />
+                      <TextField
+                        margin="dense"
+                        label="Precio al Costo"
+                        type="number"
+                        value={option.priceCost}
+                        onChange={(e) => handleInputChange(e, index, "priceCost")}
+                        sx={{ flex: 1, minWidth: 120 }}
+                        helperText="Los precios de corte e instalado se calculan automáticamente"
+                      />
+                    </Box>
+                    <Box sx={{ display: "flex", alignItems: "center", flexWrap: "wrap", gap: 1 }}>
+                      <TextField
+                        margin="dense"
+                        label="Precio al Corte (Auto: +60%)"
+                        type="number"
+                        value={option.priceCut}
+                        onChange={(e) => handleInputChange(e, index, "priceCut")}
+                        sx={{ flex: 1, minWidth: 140 }}
+                        InputProps={{ style: { backgroundColor: "#f0f8ff" } }}
+                      />
+                      <TextField
+                        margin="dense"
+                        label="Precio Instalado (Auto: +100%)"
+                        type="number"
+                        value={option.priceInstalled}
+                        onChange={(e) => handleInputChange(e, index, "priceInstalled")}
+                        sx={{ flex: 1, minWidth: 140 }}
+                        InputProps={{ style: { backgroundColor: "#f0f8ff" } }}
+                      />
+                      <Button
+                        variant="outlined"
+                        size="small"
+                        onClick={() => {
+                          const suggestedPrices = calculateSuggestedPrices(option.priceCost);
+                          const updatedOptions = [...formData.options];
+                          updatedOptions[index].priceCut = suggestedPrices.priceCut;
+                          updatedOptions[index].priceInstalled = suggestedPrices.priceInstalled;
+                          setFormData({ ...formData, options: updatedOptions });
+                        }}
+                        sx={{ minWidth: "100px" }}
+                      >
+                        Recalcular
+                      </Button>
+                      <Button
+                        color="error"
+                        variant="outlined"
+                        size="small"
+                        onClick={() => handleRemoveOption(index)}
+                        sx={{ minWidth: "80px" }}
+                      >
+                        Eliminar
+                      </Button>
+                    </Box>
+                  </Box>
+                ))}
+                <Button onClick={handleAddOption} color="azulote" sx={{ mt: 1 }}>
+                  Agregar Variante
                 </Button>
-                <Button 
-                  color="error" 
-                  variant="outlined"
-                  size="small"
-                  onClick={() => handleRemoveOption(index)}
-                  sx={{ minWidth: "100px" }}
-                >
-                  Eliminar
-                </Button>
               </Box>
-            </Box>
-          ))}
-          <Button onClick={handleAddOption} color="azulote">
-            Agregar Variante
-          </Button>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={handleCloseDialog}>Cancelar</Button>
-          <Button onClick={handleSave} color="primary">
-            Guardar
-          </Button>
-        </DialogActions>
-      </Dialog>
+            ),
+          },
+        ]}
+        onSave={handleSave}
+      />
 
       {/* Dialog de confirmación */}
       <Dialog open={openConfirmDialog} onClose={handleCloseConfirmDialog}>

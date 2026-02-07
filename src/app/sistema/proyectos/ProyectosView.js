@@ -25,7 +25,15 @@ import {
   Paper,
   Collapse,
   Autocomplete,
-  MenuItem
+  MenuItem,
+  CircularProgress,
+  Stepper,
+  Step,
+  StepLabel,
+  StepContent,
+  Tabs,
+  Tab,
+  Badge
 } from "@mui/material";
 import {
   Visibility,
@@ -38,9 +46,10 @@ import {
   ExpandLess,
   Assignment,
   LocationOn,
-  FilterList,
   Add,
   Block,
+  PhotoCamera,
+  Delete,
 } from "@mui/icons-material";
 
 // Componente de imagen con caché mejorado
@@ -126,6 +135,8 @@ const CachedImage = ({ modelId, modelName, height = 200, width = "100%", imageCa
   );
 };
 
+const STEPS = ["Resumen", "Trabajos", "Materiales y más", "Galería"];
+
 const ProyectosView = ({
   // Estados del controlador
   filteredProjects,
@@ -162,8 +173,9 @@ const ProyectosView = ({
   setInitialPayment,
   adjustedTotal,
   setAdjustedTotal,
-  showInactive,
-  setShowInactive,
+  statusFilter,
+  setStatusFilter,
+  projectCountByStatus,
   showAddModelDialog,
   setShowAddModelDialog,
   addingToProject,
@@ -229,6 +241,18 @@ const ProyectosView = ({
   individualItemTotal,
   imageCache,
   setImageCache,
+  quotationGlobalColor,
+  setQuotationGlobalColor,
+  quotationGlobalGlass,
+  setQuotationGlobalGlass,
+  isQuotationRecalculating,
+  getProjectSummaries,
+  applyGlobalSettingsToProject,
+  updateProjectItemColorInProject,
+  updateProjectItemGlassInProject,
+  updateProjectItemAssignee,
+  addProjectImage,
+  removeProjectImage,
 
   // Funciones del controlador
   getProjectCategoricalTotals,
@@ -263,7 +287,26 @@ const ProyectosView = ({
   getStatusText,
   handleMassStatusChange,
   confirmMassStatusChange,
+  showAssignAllDialog,
+  setShowAssignAllDialog,
+  assignAllProject,
+  assignAllEmployeeId,
+  setAssignAllEmployeeId,
+  handleAssignAllToCollaborator,
+  confirmAssignAllToCollaborator,
+  getAssignAllWarning,
 }) => {
+  const [detailsStep, setDetailsStep] = React.useState(0);
+  const [editModelStep, setEditModelStep] = React.useState(0);
+
+  React.useEffect(() => {
+    if (showModelEditDialog) setEditModelStep(0);
+  }, [showModelEditDialog]);
+
+  React.useEffect(() => {
+    if (showDetailsDialog) setDetailsStep(0);
+  }, [showDetailsDialog]);
+
   return (
     <Box sx={{ 
       padding: { xs: 2, sm: 3 }, 
@@ -279,39 +322,39 @@ const ProyectosView = ({
         Gestión de Proyectos
       </Typography>
 
-      {/* Barra de búsqueda y filtros */}
-      <Box sx={{ mb: 3 }}>
+      {/* Barra de búsqueda */}
+      <Box sx={{ mb: 2 }}>
         <TextField
           fullWidth
           label="Buscar proyectos por nombre o cliente"
           variant="outlined"
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
-          sx={{ mb: 2 }}
+          size="small"
         />
-        
-        <Box sx={{ 
-          display: 'flex', 
-          gap: 2, 
-          alignItems: 'center', 
-          flexWrap: 'wrap',
-          justifyContent: { xs: 'center', sm: 'flex-start' }
-        }}>
-          <FilterList sx={{ color: 'gray' }} />
-          <Button
-            variant={showInactive ? "contained" : "outlined"}
-            size="small"
-            startIcon={<Block />}
-            onClick={() => setShowInactive(!showInactive)}
-            color="error"
-            sx={{ minWidth: 'auto' }}
-          >
-            {showInactive ? 'Ocultar Inactivos' : 'Mostrar Inactivos'}
-          </Button>
-          
-        
-        </Box>
       </Box>
+
+      {/* Tabulación por estado del proyecto */}
+      <Paper variant="outlined" sx={{ mb: 3, borderBottom: 1, borderColor: 'divider' }}>
+        <Tabs
+          value={statusFilter}
+          onChange={(_, v) => setStatusFilter(v)}
+          variant="scrollable"
+          scrollButtons="auto"
+          allowScrollButtonsMobile
+          sx={{
+            minHeight: 48,
+            '& .MuiTab-root': { minHeight: 48, textTransform: 'none', fontWeight: 500 }
+          }}
+        >
+          <Tab value="all" label={<Badge badgeContent={projectCountByStatus?.all ?? 0} color="primary" max={999}><span>Todos</span></Badge>} />
+          <Tab value="quotation" label={<Badge badgeContent={projectCountByStatus?.quotation ?? 0} color="warning" max={999}><span>Cotización</span></Badge>} />
+          <Tab value="active" label={<Badge badgeContent={projectCountByStatus?.active ?? 0} color="info" max={999}><span>Activos</span></Badge>} />
+          <Tab value="completed" label={<Badge badgeContent={projectCountByStatus?.completed ?? 0} color="success" max={999}><span>Completados</span></Badge>} />
+          <Tab value="cancelled" label={<Badge badgeContent={projectCountByStatus?.cancelled ?? 0} color="error" max={999}><span>Cancelados</span></Badge>} />
+          <Tab value="inactive" label={<Badge badgeContent={projectCountByStatus?.inactive ?? 0} color="default" max={999}><span>Inactivos</span></Badge>} />
+        </Tabs>
+      </Paper>
 
       {/* Lista de proyectos */}
       <Grid container spacing={3}>
@@ -463,6 +506,23 @@ const ProyectosView = ({
         <DialogContent>
           {selectedProject && (
             <Box>
+              {/* Stepper para navegación intuitiva */}
+              <Stepper activeStep={detailsStep} sx={{ mb: 3, pt: 1 }}>
+                {STEPS.map((label, index) => (
+                  <Step key={label} completed={detailsStep > index}>
+                    <StepLabel
+                      onClick={() => setDetailsStep(index)}
+                      sx={{ cursor: 'pointer', '& .MuiStepLabel-label': { cursor: 'pointer' } }}
+                    >
+                      {label}
+                    </StepLabel>
+                  </Step>
+                ))}
+              </Stepper>
+
+              {/* Paso 0: Resumen del proyecto */}
+              {detailsStep === 0 && (
+                <Box>
               {/* Información general del proyecto */}
               <Paper sx={{ p: 2, mb: 3 }}>
                 <Grid container spacing={2}>
@@ -552,6 +612,95 @@ const ProyectosView = ({
                 })()}
               </Paper>
 
+              <Box sx={{ display: 'flex', gap: 2, mt: 2, flexWrap: 'wrap' }}>
+                <Button variant="outlined" onClick={() => setDetailsStep(1)}>Ir a Trabajos →</Button>
+                <Button variant="outlined" onClick={() => setDetailsStep(3)}>Ir a Galería</Button>
+              </Box>
+                </Box>
+              )}
+
+              {/* Paso 1: Trabajos - Lista de items con asignación rápida */}
+              {detailsStep === 1 && (
+                <Box>
+              {selectedProject.status === 'active' && (
+                <Paper sx={{ p: 2, mb: 2, backgroundColor: '#e3f2fd', border: '1px solid #2196f3' }}>
+                  <Typography variant="body2" sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                    <Assignment sx={{ color: '#1976d2' }} />
+                    <strong>Asignar trabajos:</strong> Selecciona un colaborador en el campo correspondiente de cada item, o usa &quot;Configurar&quot; para más opciones (ubicación, estado).
+                  </Typography>
+                </Paper>
+              )}
+              {/* Configuración Global - Solo para proyectos en cotización (igual que carrito) */}
+              {selectedProject.status === 'quotation' && (
+                <Paper sx={{ p: 2, mb: 3, border: '1px solid #1976d2', backgroundColor: '#f5f9ff' }}>
+                  <Typography variant="h6" sx={{ mb: 2, color: '#1565c0', fontWeight: 'bold' }}>
+                    Configuración Global del Proyecto
+                  </Typography>
+                  <Typography variant="caption" color="textSecondary" sx={{ display: 'block', mb: 2 }}>
+                    Selecciona un color y/o vidrio para aplicar a todos los elementos de una sola vez. También puedes cambiar cada elemento individualmente.
+                  </Typography>
+                  <Grid container spacing={2} alignItems="center">
+                    <Grid item xs={12} sm={5}>
+                      <Autocomplete
+                        options={colorsOptions}
+                        getOptionLabel={(option) => `${option.name} ${option.percentage > 0 ? `(+${option.percentage}%)` : option.percentage < 0 ? `(${option.percentage}%)` : '(Base)'}`}
+                        isOptionEqualToValue={(option, value) => option.id === value?.id}
+                        value={quotationGlobalColor}
+                        onChange={(e, newValue) => setQuotationGlobalColor(newValue)}
+                        renderInput={(params) => (
+                          <TextField {...params} label="Color Global" variant="outlined" size="small" />
+                        )}
+                      />
+                    </Grid>
+                    <Grid item xs={12} sm={5}>
+                      <Autocomplete
+                        options={glassesOptions}
+                        getOptionLabel={(option) => `${option.name} - $${option.priceInstalled || option.price || 0}/m²`}
+                        isOptionEqualToValue={(option, value) => option.id === value?.id}
+                        value={quotationGlobalGlass}
+                        onChange={(e, newValue) => setQuotationGlobalGlass(newValue)}
+                        renderInput={(params) => (
+                          <TextField {...params} label="Vidrio Global" variant="outlined" size="small" />
+                        )}
+                      />
+                    </Grid>
+                    <Grid item xs={12} sm={2}>
+                      <Button
+                        variant="contained"
+                        fullWidth
+                        onClick={() => applyGlobalSettingsToProject(selectedProject.id)}
+                        disabled={isQuotationRecalculating || !selectedProject?.items?.length || (!quotationGlobalColor && !quotationGlobalGlass)}
+                        sx={{ height: '40px', fontWeight: 'bold' }}
+                      >
+                        {isQuotationRecalculating ? <CircularProgress size={20} /> : "Aplicar a Todo"}
+                      </Button>
+                    </Grid>
+                  </Grid>
+                  {(quotationGlobalColor || quotationGlobalGlass) && (
+                    <Box sx={{ mt: 1, display: 'flex', gap: 1, flexWrap: 'wrap' }}>
+                      {quotationGlobalColor && (
+                        <Chip
+                          label={`Color: ${quotationGlobalColor.name} (${quotationGlobalColor.percentage > 0 ? '+' : ''}${quotationGlobalColor.percentage}%)`}
+                          color="primary"
+                          size="small"
+                          variant="outlined"
+                          onDelete={() => setQuotationGlobalColor(null)}
+                        />
+                      )}
+                      {quotationGlobalGlass && (
+                        <Chip
+                          label={`Vidrio: ${quotationGlobalGlass.name}`}
+                          color="info"
+                          size="small"
+                          variant="outlined"
+                          onDelete={() => setQuotationGlobalGlass(null)}
+                        />
+                      )}
+                    </Box>
+                  )}
+                </Paper>
+              )}
+
               {/* Lista de modelos en el proyecto */}
               <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 2, flexWrap: 'wrap', gap: 2 }}>
                 <Typography variant="h6">
@@ -580,6 +729,16 @@ const ProyectosView = ({
                       >
                         Cambiar Estados
                       </Button>
+                      <Button
+                        variant="outlined"
+                        color="secondary"
+                        startIcon={<Person />}
+                        onClick={() => handleAssignAllToCollaborator(selectedProject)}
+                        size="small"
+                        sx={{ minWidth: 'auto' }}
+                      >
+                        Asignar Todo
+                      </Button>
                     </>
                   )}
                   <Button
@@ -591,7 +750,7 @@ const ProyectosView = ({
                   >
                     Agregar Modelo
                   </Button>
-                  {selectedProject.status === 'quotation' && (
+                  {(selectedProject.status === 'quotation' || selectedProject.status === 'active') && (
                     <Button
                       variant="outlined"
                       color="secondary"
@@ -600,7 +759,7 @@ const ProyectosView = ({
                       size="small"
                       sx={{ minWidth: 'auto' }}
                     >
-                      Agregar Elemento
+                      Agregar Material/Herraje/Vidrio
                     </Button>
                   )}
                 </Box>
@@ -661,11 +820,13 @@ const ProyectosView = ({
                         
                         <Button
                           size="small"
-                          startIcon={<Edit />}
+                          startIcon={<Assignment />}
                           onClick={() => handleEditModel(selectedProject, index)}
                           sx={{ minWidth: 'auto' }}
+                          color={selectedProject.status === 'active' ? 'primary' : 'inherit'}
+                          variant={selectedProject.status === 'active' ? 'contained' : 'outlined'}
                         >
-                          Editar
+                          {selectedProject.status === 'active' ? 'Configurar' : 'Editar'}
                         </Button>
                         <IconButton
                           onClick={() => toggleModelExpansion(selectedProject.id, index)}
@@ -685,8 +846,44 @@ const ProyectosView = ({
                         </Grid>
                         <Grid item xs={6} sm={3}>
                           <Typography variant="subtitle2" color="textSecondary">Cantidad:</Typography>
-                          <Typography>{item.quantity || 1}</Typography>
+                          <Typography>{item.quantity || 1}{item.quantityType ? ` ${item.quantityType}` : ''}{item.area != null ? ` (${item.area?.toFixed(2)} m²)` : ''}</Typography>
                         </Grid>
+                        {selectedProject.status === 'quotation' && item.itemType === 'material' && (
+                          <Grid item xs={6} sm={3}>
+                            <Typography variant="subtitle2" color="textSecondary">Color:</Typography>
+                            <Autocomplete
+                              size="small"
+                              options={colorsOptions}
+                              getOptionLabel={(option) => `${option.name} (${option.percentage > 0 ? '+' : ''}${option.percentage}%)`}
+                              isOptionEqualToValue={(option, value) => option.id === value?.id}
+                              value={item.selectedColor || null}
+                              onChange={(e, newValue) => updateProjectItemColorInProject(selectedProject.id, index, newValue)}
+                              disabled={isQuotationRecalculating}
+                              renderInput={(params) => (
+                                <TextField {...params} placeholder="Natural" variant="outlined" size="small" />
+                              )}
+                              sx={{ minWidth: 140 }}
+                            />
+                          </Grid>
+                        )}
+                        {selectedProject.status === 'quotation' && item.itemType === 'vidrio' && (
+                          <Grid item xs={6} sm={3}>
+                            <Typography variant="subtitle2" color="textSecondary">Vidrio:</Typography>
+                            <Autocomplete
+                              size="small"
+                              options={glassesOptions}
+                              getOptionLabel={(option) => option.name || ''}
+                              isOptionEqualToValue={(option, value) => option.id === value?.id}
+                              value={item.selectedGlass || glassesOptions.find(g => g.name === item.itemName)}
+                              onChange={(e, newValue) => updateProjectItemGlassInProject(selectedProject.id, index, newValue)}
+                              disabled={isQuotationRecalculating}
+                              renderInput={(params) => (
+                                <TextField {...params} placeholder="Vidrio" variant="outlined" size="small" />
+                              )}
+                              sx={{ minWidth: 140 }}
+                            />
+                          </Grid>
+                        )}
                         <Grid item xs={6} sm={3}>
                           <Typography variant="subtitle2" color="textSecondary">Precio Unitario:</Typography>
                           <Typography>{formatCurrency(item.unitPrice || 0)}</Typography>
@@ -695,6 +892,12 @@ const ProyectosView = ({
                           <Typography variant="subtitle2" color="textSecondary">Total:</Typography>
                           <Typography variant="h6" sx={{ color: 'green' }}>
                             {formatCurrency(item.total || 0)}
+                          </Typography>
+                        </Grid>
+                        <Grid item xs={6} sm={3}>
+                          <Typography variant="subtitle2" color="textSecondary">Mano de obra (trabajador):</Typography>
+                          <Typography sx={{ color: item.laborCostActual || item.details?.laborCostActual ? 'orange' : 'textSecondary', fontWeight: 'bold' }}>
+                            {formatCurrency(item.laborCostActual || item.details?.laborCostActual || 0)}
                           </Typography>
                         </Grid>
                         {item.dimensions && (
@@ -716,10 +919,25 @@ const ProyectosView = ({
                         </Grid>
                         <Grid item xs={6} sm={3}>
                           <Typography variant="subtitle2" color="textSecondary">Colaborador:</Typography>
-                          <Typography sx={{ display: 'flex', alignItems: 'center' }}>
-                            <Assignment sx={{ fontSize: 16, mr: 0.5, color: 'gray' }} />
-                            {getEmployeeName(item.assignedEmployeeId)}
-                          </Typography>
+                          {selectedProject.status === 'active' ? (
+                            <Autocomplete
+                              size="small"
+                              options={employees}
+                              getOptionLabel={(option) => option?.name || 'Sin asignar'}
+                              isOptionEqualToValue={(option, value) => option?.id === value?.id}
+                              value={employees.find(e => e.id === item.assignedEmployeeId) || null}
+                              onChange={(e, newValue) => updateProjectItemAssignee(selectedProject.id, index, newValue?.id || '')}
+                              renderInput={(params) => (
+                                <TextField {...params} placeholder="Asignar..." variant="outlined" size="small" />
+                              )}
+                              sx={{ minWidth: 140 }}
+                            />
+                          ) : (
+                            <Typography sx={{ display: 'flex', alignItems: 'center' }}>
+                              <Assignment sx={{ fontSize: 16, mr: 0.5, color: 'gray' }} />
+                              {getEmployeeName(item.assignedEmployeeId)}
+                            </Typography>
+                          )}
                         </Grid>
                       </Grid>
                     ) : (
@@ -733,15 +951,47 @@ const ProyectosView = ({
                         </Grid>
                         <Grid item xs={6} sm={3}>
                           <Typography variant="subtitle2" color="textSecondary">Vidrio:</Typography>
-                          <Typography>
-                            {item.selectedGlass ? item.selectedGlass.name : 'N/A'}
-                          </Typography>
+                          {selectedProject.status === 'quotation' ? (
+                            <Autocomplete
+                              size="small"
+                              options={glassesOptions}
+                              getOptionLabel={(option) => option.name || ''}
+                              isOptionEqualToValue={(option, value) => option.id === value?.id}
+                              value={item.selectedGlass || null}
+                              onChange={(e, newValue) => updateProjectItemGlassInProject(selectedProject.id, index, newValue)}
+                              disabled={isQuotationRecalculating}
+                              renderInput={(params) => (
+                                <TextField {...params} placeholder="Vidrio" variant="outlined" size="small" />
+                              )}
+                              sx={{ minWidth: 140 }}
+                            />
+                          ) : (
+                            <Typography>
+                              {item.selectedGlass ? item.selectedGlass.name : 'N/A'}
+                            </Typography>
+                          )}
                         </Grid>
                         <Grid item xs={6} sm={3}>
                           <Typography variant="subtitle2" color="textSecondary">Color:</Typography>
-                          <Typography>
-                            {item.selectedColor ? item.selectedColor.name : 'N/A'}
-                          </Typography>
+                          {selectedProject.status === 'quotation' ? (
+                            <Autocomplete
+                              size="small"
+                              options={colorsOptions}
+                              getOptionLabel={(option) => `${option.name} (${option.percentage > 0 ? '+' : ''}${option.percentage}%)`}
+                              isOptionEqualToValue={(option, value) => option.id === value?.id}
+                              value={item.selectedColor || null}
+                              onChange={(e, newValue) => updateProjectItemColorInProject(selectedProject.id, index, newValue)}
+                              disabled={isQuotationRecalculating}
+                              renderInput={(params) => (
+                                <TextField {...params} placeholder="Natural" variant="outlined" size="small" />
+                              )}
+                              sx={{ minWidth: 140 }}
+                            />
+                          ) : (
+                            <Typography>
+                              {item.selectedColor ? item.selectedColor.name : 'N/A'}
+                            </Typography>
+                          )}
                         </Grid>
                         <Grid item xs={6} sm={3}>
                           <Typography variant="subtitle2" color="textSecondary">Área/Ubicación:</Typography>
@@ -752,15 +1002,42 @@ const ProyectosView = ({
                         </Grid>
                         <Grid item xs={6} sm={3}>
                           <Typography variant="subtitle2" color="textSecondary">Colaborador:</Typography>
-                          <Typography sx={{ display: 'flex', alignItems: 'center' }}>
-                            <Assignment sx={{ fontSize: 16, mr: 0.5, color: 'gray' }} />
-                            {getEmployeeName(item.assignedEmployeeId)}
-                          </Typography>
+                          {selectedProject.status === 'active' ? (
+                            <Autocomplete
+                              size="small"
+                              options={employees}
+                              getOptionLabel={(option) => option?.name || 'Sin asignar'}
+                              isOptionEqualToValue={(option, value) => option?.id === value?.id}
+                              value={employees.find(e => e.id === item.assignedEmployeeId) || null}
+                              onChange={(e, newValue) => updateProjectItemAssignee(selectedProject.id, index, newValue?.id || '')}
+                              renderInput={(params) => (
+                                <TextField {...params} placeholder="Asignar..." variant="outlined" size="small" />
+                              )}
+                              sx={{ minWidth: 140 }}
+                            />
+                          ) : (
+                            <Typography sx={{ display: 'flex', alignItems: 'center' }}>
+                              <Assignment sx={{ fontSize: 16, mr: 0.5, color: 'gray' }} />
+                              {getEmployeeName(item.assignedEmployeeId)}
+                            </Typography>
+                          )}
                         </Grid>
                         <Grid item xs={12} sm={6}>
                           <Typography variant="subtitle2" color="textSecondary">Total:</Typography>
                           <Typography variant="h6" sx={{ color: 'green' }}>
                             {formatCurrency(item.total || 0)}
+                          </Typography>
+                        </Grid>
+                        <Grid item xs={12} sm={6}>
+                          <Typography variant="subtitle2" color="textSecondary">Mano de obra (trabajador):</Typography>
+                          <Typography variant="h6" sx={{ color: 'orange', fontWeight: 'bold' }}>
+                            {formatCurrency(
+                              (item.laborCostActual || item.details?.laborCostActual || 0) +
+                              (item.details?.glassLaborCost || 0)
+                            )}
+                          </Typography>
+                          <Typography variant="caption" color="textSecondary">
+                            {getEmployeeName(item.assignedEmployeeId) || 'Sin asignar'}
                           </Typography>
                         </Grid>
                       </Grid>
@@ -873,6 +1150,199 @@ const ProyectosView = ({
                   </Paper>
                 );
               })}
+
+              <Box sx={{ display: 'flex', gap: 2, mt: 3 }}>
+                <Button variant="outlined" onClick={() => setDetailsStep(0)}>← Resumen</Button>
+                <Button variant="outlined" onClick={() => setDetailsStep(2)}>Materiales →</Button>
+              </Box>
+                </Box>
+              )}
+
+              {/* Paso 2: Materiales y más */}
+              {detailsStep === 2 && (
+                <Box>
+              {/* Resumen de Materiales con tramos - Para cotización y activos (igual que carrito) */}
+              {(selectedProject.status === 'quotation' || selectedProject.status === 'active') && (() => {
+                const summaries = getProjectSummaries(selectedProject);
+                if (summaries.materials.length === 0 && summaries.chapes.length === 0 && summaries.glasses.length === 0) return null;
+                return (
+                  <Box sx={{ mt: 3 }}>
+                    <Typography variant="h6" sx={{ mb: 2 }}>Resumen de Materiales</Typography>
+                    {summaries.materials.length > 0 && (
+                      <Box sx={{ mb: 3 }}>
+                        <Typography variant="subtitle1" sx={{ mb: 1, fontWeight: 'bold' }}>Materiales:</Typography>
+                        <TableContainer>
+                          <Table size="small">
+                            <TableHead>
+                              <TableRow>
+                                <TableCell>Material</TableCell>
+                                <TableCell align="right">Metraje (m)</TableCell>
+                                <TableCell align="right" title="Cantidad de tramos a ordenar">Tramos</TableCell>
+                                <TableCell align="right">Precio Total</TableCell>
+                              </TableRow>
+                            </TableHead>
+                            <TableBody>
+                              {summaries.materials.map((material, idx) => (
+                                <TableRow key={idx}>
+                                  <TableCell>{material.name}</TableCell>
+                                  <TableCell align="right">{material.meterage.toFixed(2)} m</TableCell>
+                                  <TableCell align="right">{material.tramos} tramos</TableCell>
+                                  <TableCell align="right">${material.price.toFixed(2)}</TableCell>
+                                </TableRow>
+                              ))}
+                              <TableRow>
+                                <TableCell sx={{ fontWeight: 'bold' }}>Total Materiales:</TableCell>
+                                <TableCell align="right" sx={{ fontWeight: 'bold' }}>{summaries.materials.reduce((s, m) => s + m.meterage, 0).toFixed(2)} m</TableCell>
+                                <TableCell align="right" sx={{ fontWeight: 'bold' }}>{summaries.materials.reduce((s, m) => s + m.tramos, 0)} tramos</TableCell>
+                                <TableCell align="right" sx={{ fontWeight: 'bold' }}>${summaries.materials.reduce((s, m) => s + m.price, 0).toFixed(2)}</TableCell>
+                              </TableRow>
+                            </TableBody>
+                          </Table>
+                        </TableContainer>
+                      </Box>
+                    )}
+                    {summaries.chapes.length > 0 && (
+                      <Box sx={{ mb: 3 }}>
+                        <Typography variant="subtitle1" sx={{ mb: 1, fontWeight: 'bold' }}>Herrajes:</Typography>
+                        <TableContainer>
+                          <Table size="small">
+                            <TableHead>
+                              <TableRow>
+                                <TableCell>Herraje</TableCell>
+                                <TableCell align="right">Piezas</TableCell>
+                                <TableCell align="right">Precio Total</TableCell>
+                              </TableRow>
+                            </TableHead>
+                            <TableBody>
+                              {summaries.chapes.map((chape, idx) => (
+                                <TableRow key={idx}>
+                                  <TableCell>{chape.name}</TableCell>
+                                  <TableCell align="right">{chape.pieces.toFixed(2)}</TableCell>
+                                  <TableCell align="right">${chape.price.toFixed(2)}</TableCell>
+                                </TableRow>
+                              ))}
+                            </TableBody>
+                          </Table>
+                        </TableContainer>
+                      </Box>
+                    )}
+                    {summaries.glasses.length > 0 && (
+                      <Box sx={{ mb: 3 }}>
+                        <Typography variant="subtitle1" sx={{ mb: 1, fontWeight: 'bold' }}>Vidrios:</Typography>
+                        <TableContainer>
+                          <Table size="small">
+                            <TableHead>
+                              <TableRow>
+                                <TableCell>Vidrio</TableCell>
+                                <TableCell align="right">m²</TableCell>
+                                <TableCell align="right">Precio Total</TableCell>
+                              </TableRow>
+                            </TableHead>
+                            <TableBody>
+                              {summaries.glasses.map((glass, idx) => (
+                                <TableRow key={idx}>
+                                  <TableCell>{glass.name}</TableCell>
+                                  <TableCell align="right">{glass.meterage.toFixed(2)} m²</TableCell>
+                                  <TableCell align="right">${glass.price.toFixed(2)}</TableCell>
+                                </TableRow>
+                              ))}
+                            </TableBody>
+                          </Table>
+                        </TableContainer>
+                      </Box>
+                    )}
+                  </Box>
+                );
+              })()}
+
+              <Box sx={{ display: 'flex', gap: 2, mt: 3, flexWrap: 'wrap' }}>
+                <Button variant="outlined" onClick={() => setDetailsStep(1)}>← Volver a Trabajos</Button>
+                <Button variant="outlined" onClick={() => setDetailsStep(3)}>Galería →</Button>
+              </Box>
+                </Box>
+              )}
+
+              {/* Paso 3: Galería de fotos del proyecto */}
+              {detailsStep === 3 && (
+                <Box>
+                  <Typography variant="h6" sx={{ mb: 2 }}>Galería de fotos</Typography>
+                  <Typography variant="body2" color="textSecondary" sx={{ mb: 2 }}>
+                    Sube fotos del proyecto (avance de obra, instalación, etc.).
+                  </Typography>
+                  <input
+                    accept="image/*"
+                    type="file"
+                    id="project-gallery-upload"
+                    style={{ display: 'none' }}
+                    onChange={(e) => {
+                      const file = e.target?.files?.[0];
+                      if (file && addProjectImage && selectedProject?.id) {
+                        addProjectImage(selectedProject.id, file);
+                        e.target.value = '';
+                      }
+                    }}
+                  />
+                  <Button
+                    variant="contained"
+                    startIcon={<PhotoCamera />}
+                    onClick={() => document.getElementById('project-gallery-upload')?.click()}
+                    sx={{ mb: 3 }}
+                  >
+                    Subir imagen
+                  </Button>
+                  <Grid container spacing={2}>
+                    {(selectedProject?.images || []).map((img) => (
+                      <Grid item xs={6} sm={4} md={3} key={img.id}>
+                        <Box
+                          sx={{
+                            position: 'relative',
+                            borderRadius: 1,
+                            overflow: 'hidden',
+                            aspectRatio: '1',
+                            '&:hover .delete-btn': { opacity: 1 }
+                          }}
+                        >
+                          <img
+                            src={img.url}
+                            alt=""
+                            style={{
+                              width: '100%',
+                              height: '100%',
+                              objectFit: 'cover',
+                              display: 'block'
+                            }}
+                          />
+                          <IconButton
+                            className="delete-btn"
+                            size="small"
+                            onClick={() => removeProjectImage && selectedProject?.id && removeProjectImage(selectedProject.id, img)}
+                            sx={{
+                              position: 'absolute',
+                              top: 8,
+                              right: 8,
+                              backgroundColor: 'rgba(0,0,0,0.5)',
+                              color: 'white',
+                              opacity: 0.8,
+                              '&:hover': { backgroundColor: 'rgba(220,0,0,0.8)' }
+                            }}
+                          >
+                            <Delete fontSize="small" />
+                          </IconButton>
+                        </Box>
+                      </Grid>
+                    ))}
+                  </Grid>
+                  {(selectedProject?.images || []).length === 0 && (
+                    <Typography variant="body2" color="textSecondary" sx={{ mt: 2 }}>
+                      No hay imágenes en la galería. Usa el botón para subir.
+                    </Typography>
+                  )}
+                  <Box sx={{ display: 'flex', gap: 2, mt: 3 }}>
+                    <Button variant="outlined" onClick={() => setDetailsStep(2)}>← Materiales</Button>
+                    <Button variant="outlined" onClick={() => setDetailsStep(0)}>Ir a Resumen</Button>
+                  </Box>
+                </Box>
+              )}
             </Box>
           )}
         </DialogContent>
@@ -1042,104 +1512,183 @@ const ProyectosView = ({
           </DialogActions>
         </Dialog>
 
-          <Dialog open={showModelEditDialog} onClose={() => setShowModelEditDialog(false)} maxWidth="lg" fullWidth>
-            <DialogTitle>Editar Modelo</DialogTitle>
+        <Dialog open={showAssignAllDialog} onClose={() => setShowAssignAllDialog(false)} maxWidth="sm" fullWidth>
+          <DialogTitle>Asignar Todos los Elementos</DialogTitle>
+          <DialogContent>
+            {assignAllProject && (
+              <Box>
+                <Typography variant="body1" sx={{ mb: 2 }}>
+                  Asignar los {assignAllProject.items?.length || 0} elementos del proyecto &quot;{assignAllProject.name}&quot; a un colaborador.
+                </Typography>
+                {(() => {
+                  const warning = getAssignAllWarning && getAssignAllWarning();
+                  if (warning) {
+                    return (
+                      <Box sx={{ mb: 2, p: 2, bgcolor: 'warning.light', borderRadius: 1 }}>
+                        <Typography variant="body2" color="warning.contrastText" fontWeight="bold">
+                          Advertencia: {warning.count} elemento(s) ya están asignados a otros colaboradores:
+                        </Typography>
+                        <Typography variant="body2" color="warning.contrastText" sx={{ mt: 0.5 }}>
+                          {warning.names}
+                        </Typography>
+                        <Typography variant="body2" color="warning.contrastText" sx={{ mt: 1 }}>
+                          Al confirmar, todos serán reasignados al colaborador que selecciones.
+                        </Typography>
+                      </Box>
+                    );
+                  }
+                  return null;
+                })()}
+                <Autocomplete
+                  options={employees}
+                  getOptionLabel={(opt) => opt?.name || opt?.displayName || ""}
+                  value={employees.find(e => e.id === assignAllEmployeeId) || null}
+                  onChange={(e, v) => setAssignAllEmployeeId(v?.id || "")}
+                  renderInput={(params) => (
+                    <TextField {...params} label="Colaborador" variant="outlined" fullWidth placeholder="Selecciona colaborador" />
+                  )}
+                  sx={{ mt: 1 }}
+                />
+              </Box>
+            )}
+          </DialogContent>
+          <DialogActions>
+            <Button onClick={() => setShowAssignAllDialog(false)}>Cancelar</Button>
+            <Button variant="contained" onClick={confirmAssignAllToCollaborator} color="primary" disabled={!assignAllEmployeeId}>
+              Asignar Todo
+            </Button>
+          </DialogActions>
+        </Dialog>
+
+          <Dialog 
+            open={showModelEditDialog} 
+            onClose={() => { setShowModelEditDialog(false); setEditModelStep(0); }} 
+            maxWidth="md" 
+            fullWidth
+            fullScreen={isMobile}
+          >
+            <DialogTitle>Configurar trabajo</DialogTitle>
             <DialogContent>
           {editingModel && (
             <Box>
-          <Typography variant="h6" sx={{ mb: 2 }}>
+          <Typography variant="h6" sx={{ mb: 2, color: 'primary.main' }}>
             {editingModel.modelName || editingModel.itemName}
           </Typography>
-          
-          <Grid container spacing={2}>
-            <Grid item xs={12} sm={6}>
-          <TextField
-            label="Área/Ubicación"
-            fullWidth
-            variant="outlined"
-            value={editingModel.area || ''}
-            onChange={(e) => setEditingModel({ ...editingModel, area: e.target.value })}
-            sx={{ mb: 2 }}
-          />
-            </Grid>
-            
-            <Grid item xs={12} sm={6}>
-          <Autocomplete
-            options={employees}
-            getOptionLabel={(option) => option.name || ''}
-            value={employees.find(emp => emp.id === editingModel.assignedEmployeeId) || null}
-            onChange={(event, newValue) => {
-              setEditingModel({ ...editingModel, assignedEmployeeId: newValue ? newValue.id : '' });
-            }}
-            renderInput={(params) => (
-              <TextField
-            {...params}
-            label="Colaborador Asignado"
-            variant="outlined"
-            fullWidth
-              />
+
+          <Stepper activeStep={editModelStep} orientation="vertical" sx={{ mb: 2 }}>
+            <Step>
+              <StepLabel>1. Asignar colaborador</StepLabel>
+              <StepContent>
+                <Typography variant="body2" color="textSecondary" sx={{ mb: 2 }}>
+                  Selecciona quién realizará este trabajo
+                </Typography>
+                <Autocomplete
+                  options={employees}
+                  getOptionLabel={(option) => option.name || ''}
+                  value={employees.find(emp => emp.id === editingModel.assignedEmployeeId) || null}
+                  onChange={(event, newValue) => {
+                    setEditingModel({ ...editingModel, assignedEmployeeId: newValue ? newValue.id : '' });
+                  }}
+                  renderInput={(params) => (
+                    <TextField {...params} label="Colaborador" variant="outlined" fullWidth />
+                  )}
+                  sx={{ mb: 2 }}
+                />
+                <Button variant="contained" onClick={() => setEditModelStep(1)} size="small">
+                  Siguiente
+                </Button>
+              </StepContent>
+            </Step>
+            <Step>
+              <StepLabel>2. Ubicación / Área</StepLabel>
+              <StepContent>
+                <Typography variant="body2" color="textSecondary" sx={{ mb: 2 }}>
+                  Indica dónde se instalará (ej: Sala, Habitación 2)
+                </Typography>
+                <TextField
+                  label="Área o Ubicación"
+                  fullWidth
+                  variant="outlined"
+                  value={editingModel.area || ''}
+                  onChange={(e) => setEditingModel({ ...editingModel, area: e.target.value })}
+                  placeholder="Ej: Sala principal, Ventana norte..."
+                  sx={{ mb: 2 }}
+                />
+                <Box sx={{ display: 'flex', gap: 1 }}>
+                  <Button variant="outlined" onClick={() => setEditModelStep(0)} size="small">Atrás</Button>
+                  <Button variant="contained" onClick={() => setEditModelStep(2)} size="small">Siguiente</Button>
+                </Box>
+              </StepContent>
+            </Step>
+            <Step>
+              <StepLabel>3. Estado y costos</StepLabel>
+              <StepContent>
+                <Typography variant="body2" color="textSecondary" sx={{ mb: 2 }}>
+                  Ajusta el estado del trabajo y los costos de mano de obra si es necesario
+                </Typography>
+                <Grid container spacing={2}>
+                  <Grid item xs={12} sm={6}>
+                    <TextField
+                      select
+                      label="Estado"
+                      fullWidth
+                      variant="outlined"
+                      value={editingModel.status}
+                      onChange={(e) => setEditingModel({ ...editingModel, status: e.target.value })}
+                      SelectProps={{ native: true }}
+                    >
+                      <option value="cotizacion">Cotización</option>
+                      <option value="pendiente">Pendiente</option>
+                      <option value="enProceso">En Proceso</option>
+                      <option value="instalado">Instalado</option>
+                      <option value="revisado">Revisado</option>
+                      <option value="pagada">Pagada</option>
+                    </TextField>
+                  </Grid>
+                  <Grid item xs={12} sm={6}>
+                    <TextField
+                      label="Costo M.O. Real (Trabajador)"
+                      type="number"
+                      fullWidth
+                      variant="outlined"
+                      value={editingModel.laborCostActual || 0}
+                      onChange={(e) => setEditingModel({ ...editingModel, laborCostActual: parseFloat(e.target.value) || 0 })}
+                      inputProps={{ step: "0.01" }}
+                    />
+                  </Grid>
+                  <Grid item xs={12} sm={6}>
+                    <TextField
+                      label="Costo M.O. por m² (Vidrio)"
+                      type="number"
+                      fullWidth
+                      variant="outlined"
+                      value={editingModel.m2 || 100}
+                      onChange={(e) => setEditingModel({ ...editingModel, m2: parseFloat(e.target.value) || 100 })}
+                      inputProps={{ step: "0.01" }}
+                    />
+                  </Grid>
+                </Grid>
+                <Box sx={{ display: 'flex', gap: 1, mt: 2 }}>
+                  <Button variant="outlined" onClick={() => setEditModelStep(1)} size="small">Atrás</Button>
+                  <Button variant="contained" onClick={handleSaveModelEdit} size="small">
+                    Guardar
+                  </Button>
+                </Box>
+              </StepContent>
+            </Step>
+          </Stepper>
+
+          <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 1, mt: 2 }}>
+            <Button onClick={() => { setShowModelEditDialog(false); setEditModelStep(0); }}>Cancelar</Button>
+            {editModelStep < 2 && (
+              <Button variant="contained" onClick={() => setEditModelStep(2)} size="small">
+                Ir directo a guardar
+              </Button>
             )}
-            sx={{ mb: 2 }}
-          />
-            </Grid>
-            
-            <Grid item xs={12} sm={6}>
-          <TextField
-            select
-            label="Estado"
-            fullWidth
-            variant="outlined"
-            value={editingModel.status}
-            onChange={(e) => setEditingModel({ ...editingModel, status: e.target.value })}
-            SelectProps={{
-              native: true,
-            }}
-            sx={{ mb: 2 }}
-          >
-            <option value="cotizacion">Cotización</option>
-            <option value="pendiente">Pendiente</option>
-            <option value="enProceso">En Proceso</option>
-            <option value="instalado">Instalado</option>
-            <option value="revisado">Revisado</option>
-            <option value="pagada">Pagada</option>
-          </TextField>
-            </Grid>
-            
-          
-            
-            <Grid item xs={12} sm={6}>
-          <TextField
-            label="Costo M.O. Real (Trabajador)"
-            type="number"
-            fullWidth
-            variant="outlined"
-            value={editingModel.laborCostActual || 0}
-            onChange={(e) => setEditingModel({ ...editingModel, laborCostActual: parseFloat(e.target.value) || 0 })}
-            sx={{ mb: 2 }}
-            inputProps={{ step: "0.01" }}
-          />
-            </Grid>
-            
-            <Grid item xs={12} sm={6}>
-          <TextField
-            label="Costo M.O. por m² (Vidrio)"
-            type="number"
-            fullWidth
-            variant="outlined"
-            value={editingModel.m2 || 100}
-            onChange={(e) => setEditingModel({ ...editingModel, m2: parseFloat(e.target.value) || 100 })}
-            sx={{ mb: 2 }}
-            inputProps={{ step: "0.01" }}
-          />
-            </Grid>
-          </Grid>
+          </Box>
             </Box>
           )}
             </DialogContent>
-            <DialogActions>
-          <Button onClick={() => setShowModelEditDialog(false)}>Cancelar</Button>
-          <Button variant="contained" onClick={handleSaveModelEdit}>Guardar Cambios</Button>
-            </DialogActions>
           </Dialog>
 
           {/* Diálogo de gestión de pagos */}

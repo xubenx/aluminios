@@ -166,3 +166,52 @@ export const modelImageExists = async (modelId) => {
     return false;
   }
 };
+
+// ─── Imágenes de Proyectos (galería) ─────────────────────────────────────────
+
+/**
+ * Sube una imagen a la galería de un proyecto
+ * @param {File|Object} file - Archivo de imagen a subir
+ * @param {string} projectId - ID del proyecto
+ * @param {string} imageId - ID único de la imagen (ej: timestamp o uuid)
+ * @returns {Promise<string>} URL de descarga de la imagen subida
+ */
+export const uploadProjectImage = async (file, projectId, imageId) => {
+  try {
+    let fileData;
+    let fileExtension;
+    if (file.buffer) {
+      fileData = file.buffer;
+      fileExtension = file.originalname.split('.').pop() || 'png';
+    } else {
+      fileData = file;
+      fileExtension = file.name.split('.').pop() || 'png';
+    }
+    const imageRef = ref(storage, `projects/${projectId}/images/${imageId}.${fileExtension}`);
+    const snapshot = await uploadBytes(imageRef, fileData);
+    const downloadURL = await getDownloadURL(snapshot.ref);
+    return downloadURL;
+  } catch (error) {
+    console.error("Error subiendo imagen de proyecto:", error);
+    throw new Error(`Error al subir la imagen: ${error.message}`);
+  }
+};
+
+/**
+ * Elimina una imagen de la galería de un proyecto
+ * @param {string} projectId - ID del proyecto
+ * @param {string} imagePath - Ruta completa o nombre del archivo (ej: "abc123.png")
+ * @returns {Promise<boolean>} true si se eliminó exitosamente
+ */
+export const deleteProjectImage = async (projectId, imagePath) => {
+  try {
+    const fullPath = imagePath.startsWith("projects/") ? imagePath : `projects/${projectId}/images/${imagePath}`;
+    const imageRef = ref(storage, fullPath);
+    await deleteObject(imageRef);
+    return true;
+  } catch (error) {
+    if (error.code === "storage/object-not-found") return false;
+    console.error("Error eliminando imagen de proyecto:", error);
+    throw new Error(`Error al eliminar la imagen: ${error.message}`);
+  }
+};

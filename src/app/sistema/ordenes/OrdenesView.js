@@ -8,9 +8,6 @@ import {
   Card,
   CardContent,
   Button,
-  List,
-  ListItem,
-  ListItemText,
   Chip,
   Divider,
   Dialog,
@@ -28,30 +25,28 @@ import {
   Accordion,
   AccordionSummary,
   AccordionDetails,
-  Snackbar
+  Snackbar,
+  FormControl,
+  InputLabel,
+  Select,
+  MenuItem,
+  Tooltip
 } from "@mui/material";
 import {
   ExpandMore as ExpandMoreIcon,
   Print as PrintIcon,
   Work as WorkIcon,
-  Person as PersonIcon,
-  Assignment as AssignmentIcon,
   AttachMoney as MoneyIcon,
   Payment as PaymentIcon,
-  ManageAccounts as ManageAccountsIcon,
   CheckCircle as CheckCircleIcon,
   Cancel as CancelIcon,
-  ArrowBack as ArrowBackIcon,
-  Warning as WarningIcon,
-  Block as BlockIcon,
+  DoneAll as DoneAllIcon,
   Done as DoneIcon
 } from "@mui/icons-material";
 
 export default function OrdenesView({
   activeProjects,
-  employees,
-  selectedEmployee,
-  showOrdersManagement,
+  employees = [],
   confirmPaymentDialog,
   loading,
   error,
@@ -59,25 +54,25 @@ export default function OrdenesView({
   openDialog,
   dialogType,
   snackbar,
-  calculateLaborCostForEmployee,
-  getItemsForEmployee,
-  createWorkOrder,
-  confirmWorkOrder,
   printWorkOrder,
-  getProjectsForEmployee,
+  confirmWorkOrder,
   showPaymentConfirmation,
   markOrderAsPaid,
   undoOrderPayment,
   canUndoPayment,
+  canPayOrder,
   getFilteredOrders,
-  getEmployeeOrderStats,
-  checkDuplicateOrder,
-  getExistingOrder,
+  getFilteredAssignedItems,
+  getGeneralDashboardStats,
+  getPayableUnpaidOrders,
+  markAllAsPaid,
+  markAllAsPaidDialog,
+  handleOpenMarkAllPaid,
+  handleCloseMarkAllPaid,
+  selectedEmployeeFilter,
+  handleEmployeeFilterChange,
   handleCloseDialog,
   handleCloseSnackbar,
-  handleSelectEmployee,
-  handleShowOrdersManagement,
-  handleHideOrdersManagement,
   handleSelectOrder,
   handleClosePaymentConfirmation
 }) {
@@ -108,7 +103,7 @@ export default function OrdenesView({
     <Box sx={{ padding: 3, bgcolor: "#f5f5f5", minHeight: "100vh" }}>
       {/* Header */}
       <Paper elevation={3} sx={{ padding: 3, marginBottom: 3 }}>
-        <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 2 }}>
+        <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
           <Box sx={{ display: "flex", alignItems: "center" }}>
             <WorkIcon sx={{ fontSize: 40, marginRight: 2, color: "primary.main" }} />
             <Box>
@@ -116,327 +111,168 @@ export default function OrdenesView({
                 Órdenes de Trabajo
               </Typography>
               <Typography variant="subtitle1" color="text.secondary">
-                {showOrdersManagement 
-                  ? "Administra los pagos de las órdenes de trabajo"
-                  : "Gestiona las órdenes de trabajo basadas en la mano de obra por empleado"
-                }
+                Administra los pagos de los elementos asignados en Proyectos
               </Typography>
             </Box>
           </Box>
-          
-          <Button
-            variant={showOrdersManagement ? "outlined" : "contained"}
-            color="primary"
-            startIcon={showOrdersManagement ? <ArrowBackIcon /> : <ManageAccountsIcon />}
-            onClick={showOrdersManagement ? handleHideOrdersManagement : handleShowOrdersManagement}
-            size="large"
-          >
-            {showOrdersManagement ? "Crear Órdenes" : "Administrar Órdenes"}
-          </Button>
         </Box>
       </Paper>
 
+      {/* Dashboard general */}
+      {getGeneralDashboardStats && (() => {
+        const stats = getGeneralDashboardStats();
+        return (
+          <Grid container spacing={2} sx={{ mb: 3 }}>
+            <Grid item xs={6} sm={4} md={2}>
+              <Card sx={{ bgcolor: "#1976d2", color: "white", height: "100%" }}>
+                <CardContent>
+                  <Typography variant="overline">Items Asignados</Typography>
+                  <Typography variant="h4">{stats.totalItems}</Typography>
+                </CardContent>
+              </Card>
+            </Grid>
+            <Grid item xs={6} sm={4} md={2}>
+              <Card sx={{ bgcolor: "#0288d1", color: "white", height: "100%" }}>
+                <CardContent>
+                  <Typography variant="overline">Con Orden</Typography>
+                  <Typography variant="h4">{stats.conOrden}</Typography>
+                </CardContent>
+              </Card>
+            </Grid>
+            <Grid item xs={6} sm={4} md={2}>
+              <Card sx={{ bgcolor: "#2e7d32", color: "white", height: "100%" }}>
+                <CardContent>
+                  <Typography variant="overline">Pagados</Typography>
+                  <Typography variant="h4">{stats.pagados}</Typography>
+                </CardContent>
+              </Card>
+            </Grid>
+            <Grid item xs={6} sm={4} md={2}>
+              <Card sx={{ bgcolor: "#ed6c02", color: "white", height: "100%" }}>
+                <CardContent>
+                  <Typography variant="overline">Pendientes</Typography>
+                  <Typography variant="h4">{stats.pendientesPago}</Typography>
+                </CardContent>
+              </Card>
+            </Grid>
+            <Grid item xs={6} sm={4} md={2}>
+              <Card sx={{ bgcolor: "#424242", color: "white", height: "100%" }}>
+                <CardContent>
+                  <Typography variant="overline">Monto Pagado</Typography>
+                  <Typography variant="h6">${(stats.montoPagado || 0).toLocaleString()}</Typography>
+                </CardContent>
+              </Card>
+            </Grid>
+            <Grid item xs={6} sm={4} md={2}>
+              <Card sx={{ bgcolor: "#c62828", color: "white", height: "100%" }}>
+                <CardContent>
+                  <Typography variant="overline">Monto Pendiente</Typography>
+                  <Typography variant="h6">${(stats.montoPendiente || 0).toLocaleString()}</Typography>
+                </CardContent>
+              </Card>
+            </Grid>
+          </Grid>
+        );
+      })()}
+
       <Grid container spacing={3}>
-        {!showOrdersManagement ? (
-          <>
-            {/* Panel de Empleados */}
-            <Grid item xs={12} md={4}>
-          <Paper elevation={3} sx={{ padding: 2, height: "fit-content" }}>
-            <Typography variant="h6" gutterBottom sx={{ display: "flex", alignItems: "center" }}>
-              <PersonIcon sx={{ marginRight: 1 }} />
-              Empleados
-            </Typography>
-            <Divider sx={{ marginBottom: 2 }} />
-            
-            {employees.length === 0 ? (
-              <Typography color="text.secondary" align="center">
-                No hay empleados registrados
-              </Typography>
-            ) : (
-              <List>
-                {employees.map((employee) => {
-                  const employeeProjects = getProjectsForEmployee(employee.id);
-                  const totalLaborCost = employeeProjects.reduce(
-                    (total, project) => total + (calculateLaborCostForEmployee(project, employee.id) || 0),
-                    0
-                  );
-                  const orderStats = getEmployeeOrderStats(employee.id) || { totalOrders: 0, unpaidOrders: 0, paidOrders: 0 };
-
-                  return (
-                    <ListItem
-                      key={employee.id}
-                      sx={{
-                        border: selectedEmployee === employee.id ? "2px solid" : "1px solid",
-                        borderColor: selectedEmployee === employee.id ? "primary.main" : "grey.300",
-                        borderRadius: 1,
-                        marginBottom: 1,
-                        cursor: "pointer",
-                        "&:hover": { bgcolor: "grey.50" }
-                      }}
-                      onClick={() => handleSelectEmployee(employee.id)}
-                    >
-                      <ListItemText
-                        primary={
-                          <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                            <Typography variant="subtitle2">
-                              {employee.name || employee.displayName || "Sin nombre"}
-                            </Typography>
-                            <Box sx={{ display: "flex", gap: 0.5 }}>
-                              <Chip 
-                                label={`${employeeProjects.length} proyectos`}
-                                size="small"
-                                color="primary"
-                                variant="outlined"
-                              />
-                              {orderStats.totalOrders > 0 && (
-                                <Chip 
-                                  label={`${orderStats.totalOrders} órdenes`}
-                                  size="small"
-                                  color="secondary"
-                                  variant="outlined"
-                                />
-                              )}
-                            </Box>
-                          </Box>
-                        }
-                        secondary={
-                          <span>
-                            Costo total M.O.: ${(totalLaborCost || 0).toLocaleString()}
-                            {orderStats.totalOrders > 0 && (
-                              <span style={{ display: "block", marginTop: "4px" }}>
-                                {orderStats.unpaidOrders > 0 && (
-                                  <Chip 
-                                    label={`${orderStats.unpaidOrders} sin pagar`}
-                                    size="small"
-                                    color="warning"
-                                    variant="filled"
-                                    style={{ marginRight: "4px" }}
-                                  />
-                                )}
-                                {orderStats.paidOrders > 0 && (
-                                  <Chip 
-                                    label={`${orderStats.paidOrders} pagadas`}
-                                    size="small"
-                                    color="success"
-                                    variant="filled"
-                                  />
-                                )}
-                              </span>
-                            )}
-                          </span>
-                        }
-                      />
-                    </ListItem>
-                  );
-                })}
-              </List>
-            )}
-          </Paper>
-        </Grid>
-
-        {/* Panel de Proyectos */}
-        <Grid item xs={12} md={8}>
-          {selectedEmployee ? (
+        <Grid item xs={12}>
             <Paper elevation={3} sx={{ padding: 2 }}>
-              <Typography variant="h6" gutterBottom sx={{ display: "flex", alignItems: "center" }}>
-                <AssignmentIcon sx={{ marginRight: 1 }} />
-                Proyectos para {employees.find(emp => emp.id === selectedEmployee)?.name || "Empleado"}
-              </Typography>
-              <Divider sx={{ marginBottom: 2 }} />
-
-              {getProjectsForEmployee(selectedEmployee).length === 0 ? (
-                <Typography color="text.secondary" align="center">
-                  Este empleado no tiene proyectos asignados
+              <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 2, mb: 2 }}>
+                <Typography variant="h6" sx={{ display: "flex", alignItems: "center" }}>
+                  <PaymentIcon sx={{ marginRight: 1 }} />
+                  Administración de Órdenes de Trabajo
                 </Typography>
-              ) : (
-                getProjectsForEmployee(selectedEmployee).map((project) => {
-                  const laborCost = calculateLaborCostForEmployee(project, selectedEmployee) || 0;
-                  const items = getItemsForEmployee(project, selectedEmployee) || [];
-                  const selectedEmployeeData = employees.find(emp => emp.id === selectedEmployee);
+                <Box sx={{ display: "flex", gap: 2, alignItems: "center", flexWrap: "wrap" }}>
+                  {getPayableUnpaidOrders && getPayableUnpaidOrders().length > 0 && (
+                    <Button
+                      variant="contained"
+                      color="success"
+                      startIcon={<DoneAllIcon />}
+                      onClick={handleOpenMarkAllPaid}
+                    >
+                      Marcar todas pagadas (${(getPayableUnpaidOrders().reduce((s, o) => s + (o.totalLaborCost || 0), 0)).toLocaleString()})
+                    </Button>
+                  )}
+                <FormControl size="small" sx={{ minWidth: 220 }}>
+                  <InputLabel>Filtrar por colaborador</InputLabel>
+                  <Select
+                    value={selectedEmployeeFilter || ""}
+                    label="Filtrar por colaborador"
+                    onChange={(e) => handleEmployeeFilterChange(e.target.value)}
+                  >
+                    <MenuItem value="">Todos</MenuItem>
+                    {employees.map((emp) => (
+                      <MenuItem key={emp.id} value={emp.id}>
+                        {emp.name || emp.displayName || "Sin nombre"}
+                      </MenuItem>
+                    ))}
+                  </Select>
+                </FormControl>
+                </Box>
+              </Box>
+              <Divider sx={{ mb: 2 }} />
 
-                  return (
-                    <Accordion key={project.id} sx={{ marginBottom: 2 }}>
-                      <AccordionSummary expandIcon={<ExpandMoreIcon />}>
-                        <Box sx={{ width: "100%" }}>
-                          <Typography variant="h6" sx={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                            <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                              <span>{project.name || project.projectName || "Sin nombre"}</span>
-                              {(() => {
-                                const hasExistingOrder = checkDuplicateOrder(project.id, selectedEmployee);
-                                const existingOrder = hasExistingOrder ? getExistingOrder(project.id, selectedEmployee) : null;
-                                
-                                if (hasExistingOrder && existingOrder) {
-                                  return (
-                                    <Chip
-                                      icon={existingOrder.paymentStatus === "paid" ? <DoneIcon /> : <WarningIcon />}
-                                      label={existingOrder.paymentStatus === "paid" ? "Pagado" : "Pendiente"}
-                                      color={existingOrder.paymentStatus === "paid" ? "success" : "warning"}
-                                      size="small"
-                                      variant="outlined"
-                                    />
-                                  );
-                                }
-                                return null;
-                              })()}
-                            </Box>
-                            <Chip 
-                              icon={<MoneyIcon />}
-                              label={`$${laborCost.toLocaleString()}`}
-                              color="success"
-                              variant="outlined"
-                            />
-                          </Typography>
-                          <Typography variant="body2" color="text.secondary">
-                            Cliente: {project.client || "Sin cliente"} • {items.length} items
-                          </Typography>
-                        </Box>
-                      </AccordionSummary>
-                      
-                      <AccordionDetails>
-                        <Box sx={{ marginBottom: 2 }}>
-                          <Typography variant="subtitle2" gutterBottom>
-                            Detalles de Mano de Obra:
-                          </Typography>
-                          
-                          {items.length === 0 ? (
-                            <Typography color="text.secondary">
-                              No hay items asignados a este empleado
-                            </Typography>
-                          ) : (
-                            <TableContainer>
-                              <Table size="small">
-                                <TableHead>
-                                  <TableRow>
-                                    <TableCell>Item</TableCell>
-                                    <TableCell>Área</TableCell>
-                                    <TableCell>Estado</TableCell>
-                                    <TableCell align="right">M.O. Aluminio</TableCell>
-                                    <TableCell align="right">M.O. Vidrio</TableCell>
-                                    <TableCell align="right">Total M.O.</TableCell>
-                                  </TableRow>
-                                </TableHead>
-                                <TableBody>
-                                  {items.map((item, index) => (
-                                    <TableRow key={index}>
-                                      <TableCell>
-                                        <Box>
-                                          <Typography variant="body2" fontWeight="medium">
-                                            {item.modelName || item.itemName || item.employeeName}
-                                          </Typography>
-                                          {item.type === "model" && item.dimensions && (
-                                            <Typography variant="caption" color="text.secondary">
-                                              {item.dimensions.height}cm × {item.dimensions.width}cm
-                                            </Typography>
-                                          )}
-                                        </Box>
-                                      </TableCell>
-                                      <TableCell>{item.area}</TableCell>
-                                      <TableCell>
-                                        <Chip 
-                                          label={item.status} 
-                                          size="small" 
-                                          color={
-                                            item.status === "revisado" ? "success" :
-                                            item.status === "instalado" ? "info" :
-                                            item.status === "enProceso" ? "warning" :
-                                            "default"
-                                          }
-                                        />
-                                      </TableCell>
-                                      <TableCell align="right">
-                                        <Typography variant="body2">
-                                          ${(item.aluminumLaborCost || item.employeeLaborCost || 0).toLocaleString()}
-                                        </Typography>
-                                      </TableCell>
-                                      <TableCell align="right">
-                                        <Typography variant="body2">
-                                          ${(item.glassLaborCost || 0).toLocaleString()}
-                                        </Typography>
-                                      </TableCell>
-                                      <TableCell align="right">
-                                        <Typography variant="body2" fontWeight="medium">
-                                          ${(item.employeeLaborCost || item.totalLaborCost || 0).toLocaleString()}
-                                        </Typography>
-                                      </TableCell>
-                                    </TableRow>
-                                  ))}
-                                  <TableRow>
-                                    <TableCell colSpan={5}><strong>Total</strong></TableCell>
-                                    <TableCell align="right">
-                                      <strong>${(laborCost || 0).toLocaleString()}</strong>
-                                    </TableCell>
-                                  </TableRow>
-                                </TableBody>
-                              </Table>
-                            </TableContainer>
-                          )}
-                        </Box>
-
-                        <Box sx={{ display: "flex", justifyContent: "flex-end", gap: 2, alignItems: "center" }}>
-                          {/* Mostrar estado de orden existente si la hay */}
-                          {(() => {
-                            const hasExistingOrder = checkDuplicateOrder(project.id, selectedEmployee);
-                            const existingOrder = hasExistingOrder ? getExistingOrder(project.id, selectedEmployee) : null;
-                            
-                            if (hasExistingOrder && existingOrder) {
-                              return (
-                                <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                                  <Chip
-                                    icon={existingOrder.paymentStatus === "paid" ? <DoneIcon /> : <BlockIcon />}
-                                    label={existingOrder.paymentStatus === "paid" ? "Orden Pagada" : "Orden Pendiente"}
-                                    color={existingOrder.paymentStatus === "paid" ? "success" : "warning"}
-                                    size="small"
-                                  />
-                                  <Typography variant="caption" color="text.secondary">
-                                    {new Date(existingOrder.createdAt?.toDate?.() || existingOrder.date).toLocaleDateString()}
-                                  </Typography>
-                                </Box>
-                              );
-                            }
-                            
-                            return (
-                              <Button
-                                variant="contained"
-                                color="primary"
-                                startIcon={<WorkIcon />}
-                                onClick={() => createWorkOrder(project, selectedEmployeeData)}
-                                disabled={items.length === 0}
-                              >
-                                Crear Orden de Trabajo
-                              </Button>
-                            );
-                          })()}
-                        </Box>
-                      </AccordionDetails>
-                    </Accordion>
-                  );
-                })
+              {/* Desglose completo de items asignados */}
+              {getFilteredAssignedItems && getFilteredAssignedItems().length > 0 && (
+                <Accordion sx={{ mb: 2 }}>
+                  <AccordionSummary expandIcon={<ExpandMoreIcon />}>
+                    <Typography variant="subtitle1" fontWeight="bold">
+                      Desglose completo ({getFilteredAssignedItems().length} items)
+                    </Typography>
+                  </AccordionSummary>
+                  <AccordionDetails>
+                    <TableContainer>
+                      <Table size="small">
+                        <TableHead>
+                          <TableRow>
+                            <TableCell>Proyecto</TableCell>
+                            <TableCell>Cliente</TableCell>
+                            <TableCell>Colaborador</TableCell>
+                            <TableCell>Item</TableCell>
+                            <TableCell>Área</TableCell>
+                            <TableCell>Estado</TableCell>
+                            <TableCell>Orden</TableCell>
+                            <TableCell>Pago</TableCell>
+                            <TableCell align="right">Monto</TableCell>
+                          </TableRow>
+                        </TableHead>
+                        <TableBody>
+                          {getFilteredAssignedItems().map((row) => (
+                            <TableRow key={row.id}>
+                              <TableCell>{row.projectName}</TableCell>
+                              <TableCell>{row.client}</TableCell>
+                              <TableCell>{row.employee}</TableCell>
+                              <TableCell>{row.itemName}</TableCell>
+                              <TableCell>{row.area}</TableCell>
+                              <TableCell>
+                                <Chip label={row.status} size="small" color="default" variant="outlined" />
+                              </TableCell>
+                              <TableCell>
+                                {row.hasWorkOrder ? (
+                                  <Chip label="Sí" size="small" color="info" variant="outlined" />
+                                ) : (
+                                  <Chip label="No" size="small" color="default" variant="outlined" />
+                                )}
+                              </TableCell>
+                              <TableCell>
+                                {row.paymentStatus === "paid" && <Chip label="Pagado" size="small" color="success" />}
+                                {row.paymentStatus === "unpaid" && <Chip label="Pendiente" size="small" color="warning" />}
+                                {row.paymentStatus === "sin_orden" && <Chip label="Sin orden" size="small" color="default" />}
+                              </TableCell>
+                              <TableCell align="right">${(row.totalLaborCost || 0).toLocaleString()}</TableCell>
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
+                    </TableContainer>
+                  </AccordionDetails>
+                </Accordion>
               )}
-            </Paper>
-          ) : (
-            <Paper elevation={3} sx={{ padding: 4, textAlign: "center" }}>
-              <Typography variant="h6" color="text.secondary">
-                Selecciona un empleado para ver sus proyectos
-              </Typography>
-              <Typography variant="body2" color="text.secondary" sx={{ marginTop: 1 }}>
-                Elige un empleado del panel izquierdo para ver los proyectos asignados y crear órdenes de trabajo
-              </Typography>
-            </Paper>
-          )}
-        </Grid>
-        </>
-        ) : (
-          // Vista de Administración de Órdenes
-          <Grid item xs={12}>
-            <Paper elevation={3} sx={{ padding: 2 }}>
-              <Typography variant="h6" gutterBottom sx={{ display: "flex", alignItems: "center" }}>
-                <PaymentIcon sx={{ marginRight: 1 }} />
-                Administración de Órdenes de Trabajo
-              </Typography>
-              
+
               {getFilteredOrders().length === 0 ? (
                 <Typography color="text.secondary" align="center" sx={{ py: 4 }}>
-                  No hay órdenes de trabajo registradas
+                  No hay órdenes. Asigna colaboradores a los elementos en Proyectos para que aparezcan aquí.
                 </Typography>
               ) : (
                 <Grid container spacing={2}>
@@ -493,18 +329,23 @@ export default function OrdenesView({
                             </Typography>
                             
                             {order.paymentStatus === "unpaid" ? (
-                              <Button
-                                variant="contained"
-                                color="success"
-                                size="small"
-                                startIcon={<PaymentIcon />}
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  showPaymentConfirmation(order.projectId, order.itemIndex);
-                                }}
-                              >
-                                Marcar Pagado
-                              </Button>
+                              <Tooltip title={canPayOrder && !canPayOrder(order) ? "Solo se puede pagar si el estado es Instalado o Revisado" : ""}>
+                                <span>
+                                  <Button
+                                    variant="contained"
+                                    color="success"
+                                    size="small"
+                                    startIcon={<PaymentIcon />}
+                                    disabled={canPayOrder ? !canPayOrder(order) : false}
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      showPaymentConfirmation(order.projectId, order.itemIndex);
+                                    }}
+                                  >
+                                    Marcar Pagado
+                                  </Button>
+                                </span>
+                              </Tooltip>
                             ) : canUndoPayment(activeProjects.find(p => p.id === order.projectId)?.items?.[order.itemIndex]) ? (
                               <Button
                                 variant="outlined"
@@ -535,7 +376,6 @@ export default function OrdenesView({
               )}
             </Paper>
           </Grid>
-        )}
       </Grid>
 
       {/* Dialog para crear/ver orden de trabajo */}
@@ -742,6 +582,37 @@ export default function OrdenesView({
             color="success"
           >
             Confirmar Pago
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Dialog Marcar todas como pagadas */}
+      <Dialog
+        open={markAllAsPaidDialog?.open ?? false}
+        onClose={handleCloseMarkAllPaid}
+        maxWidth="sm"
+        fullWidth
+      >
+        <DialogTitle>Marcar todas como pagadas</DialogTitle>
+        <DialogContent>
+          {markAllAsPaidDialog?.orders?.length > 0 ? (
+            <Box>
+              <Typography gutterBottom>
+                Se marcarán {markAllAsPaidDialog.orders.length} órdenes como pagadas.
+              </Typography>
+              <Typography variant="h6" color="primary" sx={{ mt: 2 }}>
+                Monto total: ${(markAllAsPaidDialog.totalAmount || 0).toLocaleString()}
+              </Typography>
+              <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
+                Solo se incluyen órdenes con estado Instalado o Revisado. Se registrará un gasto en el diario.
+              </Typography>
+            </Box>
+          ) : null}
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleCloseMarkAllPaid}>Cancelar</Button>
+          <Button variant="contained" color="success" onClick={markAllAsPaid}>
+            Confirmar
           </Button>
         </DialogActions>
       </Dialog>

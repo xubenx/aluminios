@@ -11,10 +11,6 @@ import {
   TableHead,
   TableRow,
   TextField,
-  Dialog,
-  DialogActions,
-  DialogContent,
-  DialogTitle,
   Snackbar,
   Alert,
   Fab,
@@ -22,6 +18,7 @@ import {
   Typography,
   Chip,
 } from "@mui/material";
+import CrudStepperDialog from "../components/CrudStepperDialog";
 import { Add, Edit, Delete } from "@mui/icons-material";
 
 export default function ColorsPage() {
@@ -251,40 +248,47 @@ export default function ColorsPage() {
         <Add />
       </Fab>
 
-      {/* Dialog */}
-      <Dialog open={openDialog} onClose={handleCloseDialog} maxWidth="sm" fullWidth>
-        <DialogTitle>{currentColor ? "Editar Color" : "Agregar Color"}</DialogTitle>
-        <DialogContent>
-          <TextField
-            autoFocus
-            margin="dense"
-            name="name"
-            label="Nombre del Color"
-            type="text"
-            fullWidth
-            value={formData.name}
-            onChange={handleInputChange}
-            helperText="Ej: Natural, Blanco, Negro, Café, etc."
-          />
-          <TextField
-            margin="dense"
-            name="percentage"
-            label="Porcentaje de Incremento"
-            type="number"
-            fullWidth
-            value={formData.percentage}
-            onChange={handleInputChange}
-            inputProps={{ step: 0.1 }}
-            helperText="0 = precio natural, 10 = +10% sobre precio base, -5 = -5% sobre precio base"
-          />
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={handleCloseDialog}>Cancelar</Button>
-          <Button onClick={handleSave} color="primary">
-            Guardar
-          </Button>
-        </DialogActions>
-      </Dialog>
+      {/* Dialog con Stepper */}
+      <CrudStepperDialog
+        open={openDialog}
+        onClose={handleCloseDialog}
+        title={currentColor ? "Editar Color" : "Agregar Color"}
+        steps={[
+          {
+            label: "Identificación",
+            content: (
+              <TextField
+                autoFocus
+                margin="dense"
+                name="name"
+                label="Nombre del Color"
+                type="text"
+                fullWidth
+                value={formData.name}
+                onChange={handleInputChange}
+                helperText="Ej: Natural, Blanco, Negro, Café, etc."
+              />
+            ),
+          },
+          {
+            label: "Porcentaje de incremento",
+            content: (
+              <TextField
+                margin="dense"
+                name="percentage"
+                label="Porcentaje de Incremento"
+                type="number"
+                fullWidth
+                value={formData.percentage}
+                onChange={handleInputChange}
+                inputProps={{ step: 0.1 }}
+                helperText="0 = precio natural, 10 = +10% sobre precio base, -5 = -5% sobre precio base"
+              />
+            ),
+          },
+        ]}
+        onSave={handleSave}
+      />
 
       {/* Snackbar */}
       <Snackbar

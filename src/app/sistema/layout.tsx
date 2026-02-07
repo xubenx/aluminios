@@ -1,9 +1,12 @@
 "use client";
 
-import Head from "next/head"; // Importa Head para configurar metaetiquetas
+import Head from "next/head";
 import type { ReactNode } from "react";
-import { AppBar, Toolbar, Typography, Container, Box, IconButton, Drawer, List, ListItem, ListItemIcon, ListItemText } from "@mui/material";
+import { usePathname, useRouter } from "next/navigation";
+import { useState, useEffect } from "react";
+import { AppBar, Toolbar, Typography, Container, Box, IconButton, Drawer, List, ListItem, ListItemIcon, ListItemText, CircularProgress, Button } from "@mui/material";
 import MenuIcon from "@mui/icons-material/Menu";
+import LogoutIcon from "@mui/icons-material/Logout";
 import Link from "next/link";
 import WindowIcon from "@mui/icons-material/Window";
 import ConstructionIcon from "@mui/icons-material/Carpenter";
@@ -14,14 +17,32 @@ import PaletteIcon from "@mui/icons-material/Palette";
 import RequestQuote from "@mui/icons-material/RequestQuote";
 import AssignmentIcon from "@mui/icons-material/Assignment";
 import AccountBalanceWalletIcon from "@mui/icons-material/AccountBalanceWallet";
+import WorkIcon from "@mui/icons-material/Work";
 import PersonIcon from "@mui/icons-material/Person";
 import NotificationsIcon from "@mui/icons-material/Notifications";
-import { useState } from "react";
+import { useAuth } from "../../contexts/AuthContext";
 import Image from "next/image";
-
 
 export default function RootLayout({ children }: { children: ReactNode }) {
   const [drawerOpen, setDrawerOpen] = useState(false);
+  const pathname = usePathname();
+  const router = useRouter();
+  const { user, loading, logout } = useAuth();
+  const isLoginPage = pathname === "/sistema/login";
+
+  useEffect(() => {
+    if (loading) return;
+    if (!isLoginPage && !user) router.replace("/sistema/login");
+  }, [loading, user, isLoginPage, router]);
+
+  if (isLoginPage) return <>{children}</>;
+  if (loading || !user) {
+    return (
+      <Box sx={{ display: "flex", justifyContent: "center", alignItems: "center", minHeight: "100vh" }}>
+        <CircularProgress size={48} />
+      </Box>
+    );
+  }
 
   const toggleDrawer = (open: boolean) => () => {
     setDrawerOpen(open);
@@ -31,6 +52,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
 
     { text: "Presupuestos", href: "/sistema/presupuestos", icon: <RequestQuote /> },
     { text: "Proyectos", href: "/sistema/proyectos", icon: <AssignmentIcon /> },
+    { text: "Órdenes", href: "/sistema/ordenes", icon: <WorkIcon /> },
     { text: "Clientes", href: "/sistema/clientes", icon: <PersonIcon /> },
     { text: "Diario", href: "/sistema/diario", icon: <AccountBalanceWalletIcon /> },
     { text: "Modelos", href: "/sistema/modelos", icon: <WindowIcon /> },
@@ -77,7 +99,14 @@ export default function RootLayout({ children }: { children: ReactNode }) {
             </Box>
           </Box>
 
-          {/* Icono de menú para todas las pantallas */}
+          <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+            <Typography variant="body2" sx={{ color: "rgba(255,255,255,0.9)", display: { xs: "none", sm: "block" } }}>
+              {user?.name || user?.usuario}
+            </Typography>
+            <Button color="inherit" size="small" startIcon={<LogoutIcon />} onClick={() => { logout(); router.replace("/sistema/login"); }}>
+              Salir
+            </Button>
+          </Box>
           <IconButton
             color="inherit"
             edge="start"

@@ -1,8 +1,29 @@
 "use client";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { db } from "../../../../firebase";
 import { evaluate } from "mathjs";
-import { collection, getDocs, doc, updateDoc, getDoc, query, orderBy } from "firebase/firestore";
+import { collection, getDocs, doc, updateDoc, getDoc, addDoc, query, orderBy } from "firebase/firestore";
+import { uploadProjectImage, deleteProjectImage } from "../../../utils/imageStorage";
+
+// Redondear montos a 2 decimales
+const round2 = (n) => (typeof n === "number" && !Number.isNaN(n)) ? Math.round(n * 100) / 100 : 0;
+
+// Quitar undefined para Firestore (rechaza undefined)
+const stripUndefined = (obj) => {
+  if (obj === null || obj === undefined) return obj;
+  if (Array.isArray(obj)) return obj.map(stripUndefined);
+  if (typeof obj === "object") {
+    const out = {};
+    for (const [k, v] of Object.entries(obj)) {
+      if (v !== undefined) {
+        const cleaned = stripUndefined(v);
+        if (cleaned !== undefined) out[k] = cleaned;
+      }
+    }
+    return out;
+  }
+  return obj;
+};
 
 // Helper functions to avoid import issues
 const loadProjects = async () => {
@@ -119,18 +140,20 @@ const updateProject = async (projectId, projectData) => {
 
 const activateProject = async (projectId, project, initialPayment = 0, adjustedTotal = null) => {
   try {
-    const finalTotal = adjustedTotal !== null ? adjustedTotal : project.total;
-    
+    const finalTotal = round2(adjustedTotal !== null ? adjustedTotal : project.total);
+    const amountAnticipo = round2(initialPayment);
+    const debt = round2(finalTotal - amountAnticipo);
+
     const updateData = {
       status: "active",
-      total: finalTotal, // Actualizar el total del proyecto si fue ajustado
-      debt: finalTotal - initialPayment
+      total: finalTotal,
+      debt
     };
 
-    if (initialPayment > 0) {
+    if (amountAnticipo > 0) {
       updateData.payments = [{
         date: new Date().toISOString(),
-        amount: initialPayment,
+        amount: amountAnticipo,
         description: "Anticipo inicial",
         method: "efectivo"
       }];
@@ -145,13 +168,35 @@ const activateProject = async (projectId, project, initialPayment = 0, adjustedT
 
 const addPaymentToProject = async (projectId, project, payment) => {
   try {
+    const amount = round2(payment.amount);
     const currentPayments = project.payments || [];
-    const newPayments = [...currentPayments, payment];
-    const newDebt = Math.max(0, (project.debt || project.total) - payment.amount);
+    const newPayments = [...currentPayments, { ...payment, amount }];
+    const newDebt = round2(Math.max(0, (project.debt ?? project.total) - amount));
 
-    await updateDoc(doc(db, "projects", projectId), {
+    const updateData = {
       payments: newPayments,
       debt: newDebt
+    };
+    if (newDebt <= 0) updateData.status = "completed";
+
+    await updateDoc(doc(db, "projects", projectId), updateData);
+
+    // Registrar ingreso en el Diario (journal) para trazabilidad financiera
+    const fecha = (payment.date || new Date().toISOString()).split("T")[0];
+    await addDoc(collection(db, "journal"), {
+      fecha,
+      tipo: "pago",
+      categoria: "Ingresos de Proyectos",
+      descripcion: `Pago proyecto: ${project.name || project.projectName || "Proyecto"} - Cliente: ${project.customerName || project.client || "Sin cliente"}`,
+      monto: amount,
+      observaciones: payment.description || payment.method || "",
+      activo: true,
+      source: "project",
+      projectId,
+      projectName: project.name || project.projectName,
+      customerName: project.customerName || project.client,
+      metodo: payment.method || "efectivo",
+      createdAt: new Date().toISOString()
     });
   } catch (error) {
     console.error("Error adding payment:", error);
@@ -169,16 +214,17 @@ const formatCurrency = (amount) => {
 };
 
 const calculateProjectTotal = (items) => {
-  return items.reduce((sum, item) => sum + (item.total || 0), 0);
+  const sum = items.reduce((sum, item) => sum + (item.total || 0), 0);
+  return round2(sum);
 };
 
 const updateProjectWithRecalculatedTotal = async (projectId, updatedItems) => {
   try {
-    const newTotal = calculateProjectTotal(updatedItems);
-    await updateDoc(doc(db, "projects", projectId), {
+    const newTotal = round2(calculateProjectTotal(updatedItems));
+    await updateDoc(doc(db, "projects", projectId), stripUndefined({
       items: updatedItems,
       total: newTotal
-    });
+    }));
   } catch (error) {
     console.error("Error updating project with recalculated total:", error);
     throw error;
@@ -205,14 +251,17 @@ const updateProjectItem = async (projectId, itemIndex, updatedData) => {
       }
     });
     
-    updatedItems[itemIndex] = { ...updatedItems[itemIndex], ...cleanedData };
-    console.log("Updated item:", updatedItems[itemIndex]); // Debug log
+    const merged = { ...updatedItems[itemIndex], ...cleanedData };
+    if (merged.assignedEmployeeId && !merged.workOrder) {
+      merged.workOrder = { paymentStatus: "unpaid", createdAt: new Date().toISOString() };
+    }
+    updatedItems[itemIndex] = merged;
 
-    const newTotal = calculateProjectTotal(updatedItems);
-    await updateDoc(doc(db, "projects", projectId), {
+    const newTotal = round2(calculateProjectTotal(updatedItems));
+    await updateDoc(doc(db, "projects", projectId), stripUndefined({
       items: updatedItems,
       total: newTotal
-    });
+    }));
     
     console.log("Project updated successfully"); // Debug log
   } catch (error) {
@@ -232,11 +281,11 @@ const deleteProjectItem = async (projectId, itemIndex) => {
     const updatedItems = [...(projectData.items || [])];
     updatedItems.splice(itemIndex, 1);
 
-    const newTotal = calculateProjectTotal(updatedItems);
-    await updateDoc(doc(db, "projects", projectId), {
+    const newTotal = round2(calculateProjectTotal(updatedItems));
+    await updateDoc(doc(db, "projects", projectId), stripUndefined({
       items: updatedItems,
       total: newTotal
-    });
+    }));
   } catch (error) {
     console.error("Error deleting project item:", error);
     throw error;
@@ -263,33 +312,33 @@ const addModelToProjectService = async (projectId, modelData) => {
       area: "",
       assignedEmployeeId: "",
       status: "cotizacion",
-      laborCostSelected: modelData.calculations.laborCost,
-      laborCostActual: modelData.calculations.laborCostActual,
-      m2: modelData.calculations.m2,
-      total: modelData.calculations.totalGeneral,
+      laborCostSelected: round2(modelData.calculations.laborCost),
+      laborCostActual: round2(modelData.calculations.laborCostActual),
+      m2: round2(modelData.calculations.m2),
+      total: round2(modelData.calculations.totalGeneral),
       details: {
         materials: modelData.calculations.materials,
         chapes: modelData.calculations.chapes,
         glasses: modelData.calculations.glasses,
-        laborCost: modelData.calculations.laborCost,
-        laborCostActual: modelData.calculations.laborCostActual
+        laborCost: round2(modelData.calculations.laborCost),
+        laborCostActual: round2(modelData.calculations.laborCostActual)
       }
     };
 
     const updatedItems = [...currentItems, newItem];
-    const newTotal = calculateProjectTotal(updatedItems);
+    const newTotal = round2(calculateProjectTotal(updatedItems));
 
-    await updateDoc(doc(db, "projects", projectId), {
+    await updateDoc(doc(db, "projects", projectId), stripUndefined({
       items: updatedItems,
       total: newTotal
-    });
+    }));
   } catch (error) {
     console.error("Error adding model to project:", error);
     throw error;
   }
 };
 
-const addIndividualItemToProject = async (projectId, itemData) => {
+const addIndividualItemToProject = async (projectId, itemData, projectStatus = "quotation") => {
   try {
     const projectDoc = await getDoc(doc(db, "projects", projectId));
     if (!projectDoc.exists()) {
@@ -298,6 +347,7 @@ const addIndividualItemToProject = async (projectId, itemData) => {
 
     const projectDataFromDB = projectDoc.data();
     const currentItems = projectDataFromDB.items || [];
+    const status = projectStatus === "active" ? "pendiente" : "cotizacion";
 
     const newItem = {
       type: "individual",
@@ -305,19 +355,23 @@ const addIndividualItemToProject = async (projectId, itemData) => {
       itemId: itemData.itemId,
       itemName: itemData.itemName,
       quantity: itemData.quantity,
-      unitPrice: itemData.unitPrice,
-      total: itemData.total,
+      unitPrice: round2(itemData.unitPrice),
+      total: round2(itemData.total),
       dimensions: itemData.dimensions,
-      status: "cotizacion"
+      quantityType: itemData.quantityType,
+      area: itemData.area,
+      meters: itemData.meters,
+      tramo: itemData.tramo,
+      status
     };
 
     const updatedItems = [...currentItems, newItem];
-    const newTotal = calculateProjectTotal(updatedItems);
+    const newTotal = round2(calculateProjectTotal(updatedItems));
 
-    await updateDoc(doc(db, "projects", projectId), {
+    await updateDoc(doc(db, "projects", projectId), stripUndefined({
       items: updatedItems,
       total: newTotal
-    });
+    }));
   } catch (error) {
     console.error("Error adding individual item to project:", error);
     throw error;
@@ -337,9 +391,7 @@ const updateAllProjectItemsStatus = async (projectId, newStatus) => {
       status: newStatus
     }));
 
-    await updateDoc(doc(db, "projects", projectId), {
-      items: updatedItems
-    });
+    await updateDoc(doc(db, "projects", projectId), stripUndefined({ items: updatedItems }));
   } catch (error) {
     console.error("Error updating all project items status:", error);
     throw error;
@@ -408,8 +460,8 @@ export const useProyectosController = () => {
   const [showActivateDialog, setShowActivateDialog] = useState(false);
   const [activatingProject, setActivatingProject] = useState(null);
 
-  // Estados para filtros de proyectos
-  const [showInactive, setShowInactive] = useState(false);
+  // Estados para filtros de proyectos - tabulación por status
+  const [statusFilter, setStatusFilter] = useState("all"); // 'all' | 'quotation' | 'active' | 'completed' | 'cancelled' | 'inactive'
 
   // Estados para agregar modelo a proyecto
   const [showAddModelDialog, setShowAddModelDialog] = useState(false);
@@ -482,28 +534,43 @@ export const useProyectosController = () => {
     fetchOptions();
   }, []);
 
-  // Filtrar proyectos basado en la búsqueda y filtros
+  // Filtrar proyectos basado en la búsqueda y filtros (tabulación por status)
   useEffect(() => {
     let filtered = projects;
     
-    // Filtrar por estado inactivo
-    if (!showInactive) {
-      filtered = filtered.filter(project => 
-        project.status !== 'inactive' && !project.archived
-      );
+    // Filtrar por estado del proyecto (tab seleccionada)
+    if (statusFilter !== "all") {
+      filtered = filtered.filter(project => project.status === statusFilter);
     }
+    
+    // Excluir archivados
+    filtered = filtered.filter(project => !project.archived);
     
     // Filtrar por búsqueda
     if (searchQuery.trim()) {
-      const query = searchQuery.toLowerCase();
-      filtered = filtered.filter(project => 
-        project.name.toLowerCase().includes(query) ||
-        (project.customerName && project.customerName.toLowerCase().includes(query))
-      );
+      const q = searchQuery.toLowerCase();
+      filtered = filtered.filter(project => {
+        const projName = (project.name || project.projectName || "").toLowerCase();
+        const projCustomer = (project.customerName || project.client || "").toLowerCase();
+        return projName.includes(q) || projCustomer.includes(q);
+      });
     }
     
     setFilteredProjects(filtered);
-  }, [searchQuery, projects, showInactive]);
+  }, [searchQuery, projects, statusFilter]);
+
+  // Conteo de proyectos por status (para badges en tabs)
+  const projectCountByStatus = useMemo(() => {
+    const nonArchived = projects.filter(p => !p.archived);
+    return {
+      all: nonArchived.length,
+      quotation: nonArchived.filter(p => p.status === "quotation").length,
+      active: nonArchived.filter(p => p.status === "active").length,
+      completed: nonArchived.filter(p => p.status === "completed").length,
+      cancelled: nonArchived.filter(p => p.status === "cancelled").length,
+      inactive: nonArchived.filter(p => p.status === "inactive").length
+    };
+  }, [projects]);
 
   // Filtrar modelos para agregar
   useEffect(() => {
@@ -517,6 +584,131 @@ export const useProyectosController = () => {
       setFilteredModels(models);
     }
   }, [modelSearchQuery, models]);
+
+  // Estados para recotización global en proyectos de cotización
+  const [quotationGlobalColor, setQuotationGlobalColor] = useState(null);
+  const [quotationGlobalGlass, setQuotationGlobalGlass] = useState(null);
+  const [isQuotationRecalculating, setIsQuotationRecalculating] = useState(false);
+
+  // Resumen de materiales con optimización de tramos (igual que carrito)
+  const getProjectSummaries = (project) => {
+    if (!project || !project.items) return { materials: [], chapes: [], glasses: [] };
+    const materialsSummary = {};
+    const chapesSummary = {};
+    const glassesSummary = {};
+    const TRAMO_DEFAULT = 6.1;
+
+    const getMaterialStretch = (materialName, materialId) => {
+      if (materialId) {
+        const mat = materialsOptions.find(m => m.id === materialId);
+        if (mat) return parseFloat(mat.stretch || TRAMO_DEFAULT);
+      }
+      const mat = materialsOptions.find(m => m.name === materialName);
+      return mat ? parseFloat(mat.stretch || TRAMO_DEFAULT) : TRAMO_DEFAULT;
+    };
+
+    project.items.forEach(item => {
+      if (item.type === "individual") {
+        switch (item.itemType) {
+          case "material":
+            const meters = item.meters ?? (item.quantityType === "tramos" ? item.quantity * (item.tramo || TRAMO_DEFAULT) : item.quantity);
+            if (materialsSummary[item.itemName]) {
+              materialsSummary[item.itemName].meterage += meters;
+              materialsSummary[item.itemName].price += item.total || 0;
+            } else {
+              materialsSummary[item.itemName] = {
+                name: item.itemName,
+                meterage: meters,
+                price: item.total || 0,
+                stretch: getMaterialStretch(item.itemName, item.itemId),
+                isIndividual: true
+              };
+            }
+            break;
+          case "herraje":
+            if (chapesSummary[item.itemName]) {
+              chapesSummary[item.itemName].pieces += item.quantity || 0;
+              chapesSummary[item.itemName].price += item.total || 0;
+            } else {
+              chapesSummary[item.itemName] = {
+                name: item.itemName,
+                pieces: item.quantity || 0,
+                price: item.total || 0,
+                isIndividual: true
+              };
+            }
+            break;
+          case "vidrio":
+            const area = item.area ?? (item.dimensions ? (item.dimensions.height / 100) * (item.dimensions.width / 100) : item.quantity);
+            if (glassesSummary[item.itemName]) {
+              glassesSummary[item.itemName].meterage += area;
+              glassesSummary[item.itemName].price += item.total || 0;
+            } else {
+              glassesSummary[item.itemName] = {
+                name: item.itemName,
+                meterage: area,
+                price: item.total || 0,
+                isIndividual: true
+              };
+            }
+            break;
+        }
+      } else {
+        (item.details?.materials?.items || []).forEach((material) => {
+          const stretch = getMaterialStretch(material?.name, null);
+          if (materialsSummary[material?.name]) {
+            materialsSummary[material.name].meterage += material.meterage || 0;
+            materialsSummary[material.name].price += material.price || 0;
+          } else {
+            materialsSummary[material.name] = {
+              name: material.name,
+              meterage: material.meterage || 0,
+              price: material.price || 0,
+              stretch,
+              isIndividual: false
+            };
+          }
+        });
+        (item.details?.chapes?.items || []).forEach(chape => {
+          if (chapesSummary[chape.name]) {
+            chapesSummary[chape.name].pieces += chape.pieces || 0;
+            chapesSummary[chape.name].price += chape.price || 0;
+          } else {
+            chapesSummary[chape.name] = {
+              name: chape.name,
+              pieces: chape.pieces || 0,
+              price: chape.price || 0,
+              isIndividual: false
+            };
+          }
+        });
+        (item.details?.glasses?.items || []).forEach(glass => {
+          if (glassesSummary[glass.name]) {
+            glassesSummary[glass.name].meterage += glass.meterage || 0;
+            glassesSummary[glass.name].price += glass.price || 0;
+          } else {
+            glassesSummary[glass.name] = {
+              name: glass.name,
+              meterage: glass.meterage || 0,
+              price: glass.price || 0,
+              isIndividual: false
+            };
+          }
+        });
+      }
+    });
+
+    const materialsWithTramos = Object.values(materialsSummary).map(m => ({
+      ...m,
+      tramos: Math.ceil(m.meterage / (m.stretch || TRAMO_DEFAULT))
+    }));
+
+    return {
+      materials: materialsWithTramos,
+      chapes: Object.values(chapesSummary),
+      glasses: Object.values(glassesSummary)
+    };
+  };
 
   // Función para calcular totales por categorías
   const getProjectCategoricalTotals = (project) => {
@@ -794,8 +986,8 @@ export const useProyectosController = () => {
       
       if (wasQuotation && isBecomingActive) {
         setActivatingProject(editProject);
-        setAdjustedTotal(editProject.total); // Inicializar con el total calculado
-        setInitialPayment(editProject.total * 0.5);
+        setAdjustedTotal(round2(editProject.total));
+        setInitialPayment(round2(editProject.total * 0.5));
         setShowActivateDialog(true);
         return;
       }
@@ -831,7 +1023,7 @@ export const useProyectosController = () => {
         status: "pendiente"
       }));
 
-      await activateProject(activatingProject.id, activatingProject, initialPayment, adjustedTotal);
+      await activateProject(activatingProject.id, activatingProject, round2(Number(initialPayment)), round2(Number(adjustedTotal)));
       
       await updateProjectWithRecalculatedTotal(activatingProject.id, updatedItems);
       
@@ -913,7 +1105,8 @@ export const useProyectosController = () => {
 
   const handleAddPayment = async () => {
     try {
-      if (paymentAmount <= 0) {
+      const amount = round2(Number(paymentAmount));
+      if (amount <= 0) {
         setSnackbar({
           open: true,
           message: "El monto debe ser mayor a 0.",
@@ -924,7 +1117,7 @@ export const useProyectosController = () => {
 
       const payment = {
         date: new Date().toISOString(),
-        amount: paymentAmount,
+        amount,
         method: paymentMethod,
         description: paymentDescription || "Pago registrado"
       };
@@ -934,12 +1127,13 @@ export const useProyectosController = () => {
       // Actualizar el proyecto local en el modal inmediatamente
       const currentPayments = paymentProject.payments || [];
       const newPayments = [...currentPayments, payment];
-      const newDebt = Math.max(0, (paymentProject.debt || paymentProject.total) - payment.amount);
+      const newDebt = round2(Math.max(0, (paymentProject.debt ?? paymentProject.total) - amount));
       
       const updatedPaymentProject = {
         ...paymentProject,
         payments: newPayments,
-        debt: newDebt
+        debt: newDebt,
+        ...(newDebt <= 0 && { status: "completed" })
       };
       
       // Actualizar el estado del proyecto en el modal
@@ -952,7 +1146,7 @@ export const useProyectosController = () => {
       
       setSnackbar({
         open: true,
-        message: `Pago de ${formatCurrency(paymentAmount)} registrado exitosamente.`,
+        message: `Pago de ${formatCurrency(amount)} registrado exitosamente.${newDebt <= 0 ? " Proyecto marcado como completado." : ""}`,
         severity: "success"
       });
       
@@ -974,6 +1168,82 @@ export const useProyectosController = () => {
   };
 
   // Funciones para manejar modelos
+  // Actualizar solo asignación de colaborador (rápido, sin abrir formulario completo)
+  const updateProjectItemAssignee = async (projectId, itemIndex, assignedEmployeeId, area = undefined) => {
+    try {
+      const projectDoc = await getDoc(doc(db, "projects", projectId));
+      if (!projectDoc.exists()) return;
+      const projectData = projectDoc.data();
+      const updatedItems = [...(projectData.items || [])];
+      if (!updatedItems[itemIndex]) return;
+      const item = updatedItems[itemIndex];
+      const updates = {
+        ...item,
+        assignedEmployeeId: assignedEmployeeId || "",
+        ...(area !== undefined && { area })
+      };
+      if (assignedEmployeeId && !item.workOrder) {
+        updates.workOrder = { paymentStatus: "unpaid", createdAt: new Date().toISOString() };
+      }
+      updatedItems[itemIndex] = updates;
+      await updateDoc(doc(db, "projects", projectId), stripUndefined({ items: updatedItems }));
+      await fetchProjects();
+      if (selectedProject?.id === projectId) {
+        const updated = (await loadProjects()).find(p => p.id === projectId);
+        if (updated) setSelectedProject(updated);
+      }
+      setSnackbar({ open: true, message: "Asignación actualizada.", severity: "success" });
+    } catch (err) {
+      console.error("Error updating assignee:", err);
+      setSnackbar({ open: true, message: "Error al actualizar la asignación.", severity: "error" });
+    }
+  };
+
+  // Galería de fotos del proyecto - subir directamente a Firebase Storage
+  const addProjectImage = async (projectId, file) => {
+    try {
+      const imageId = Date.now().toString();
+      const ext = (file.name || "").split(".").pop() || "png";
+      const url = await uploadProjectImage(file, projectId, imageId);
+      const projectDoc = await getDoc(doc(db, "projects", projectId));
+      if (!projectDoc.exists()) return;
+      const data = projectDoc.data();
+      const path = `${imageId}.${ext}`;
+      const images = [...(data.images || []), { id: imageId, url, path, createdAt: new Date().toISOString() }];
+      await updateDoc(doc(db, "projects", projectId), { images });
+      await fetchProjects();
+      if (selectedProject?.id === projectId) {
+        const updated = (await loadProjects()).find(p => p.id === projectId);
+        if (updated) setSelectedProject(updated);
+      }
+      setSnackbar({ open: true, message: "Imagen agregada a la galería.", severity: "success" });
+    } catch (err) {
+      console.error("Error adding project image:", err);
+      setSnackbar({ open: true, message: err.message || "Error al subir la imagen.", severity: "error" });
+    }
+  };
+
+  const removeProjectImage = async (projectId, image) => {
+    try {
+      const path = image.path || `${image.id}.${(image.url || "").split(".").pop()?.split("?")[0] || "png"}`;
+      await deleteProjectImage(projectId, path);
+      const projectDoc = await getDoc(doc(db, "projects", projectId));
+      if (!projectDoc.exists()) return;
+      const data = projectDoc.data();
+      const images = (data.images || []).filter(img => img.id !== image.id);
+      await updateDoc(doc(db, "projects", projectId), { images });
+      await fetchProjects();
+      if (selectedProject?.id === projectId) {
+        const updated = (await loadProjects()).find(p => p.id === projectId);
+        if (updated) setSelectedProject(updated);
+      }
+      setSnackbar({ open: true, message: "Imagen eliminada.", severity: "success" });
+    } catch (err) {
+      console.error("Error removing project image:", err);
+      setSnackbar({ open: true, message: "Error al eliminar la imagen.", severity: "error" });
+    }
+  };
+
   const handleEditModel = (project, modelIndex) => {
     const model = project.items[modelIndex];
     setEditingModel({
@@ -1483,6 +1753,209 @@ export const useProyectosController = () => {
     };
   };
 
+  // Recalcular item de modelo en proyecto (para color/vidrio global o individual)
+  const recalculateProjectModelItem = async (item, newColor, newGlass) => {
+    try {
+      const modelDoc = await getDoc(doc(db, "models", item.modelId));
+      if (!modelDoc.exists()) return item;
+      const data = modelDoc.data();
+      const materials = data.materials ? await resolveNames(data.materials, "materials") : [];
+      const chapes = data.chapes ? await resolveNames(data.chapes, "chapes") : [];
+      const glasses = data.glasses ? await resolveNames(data.glasses, "glasses") : [];
+      const formulas = { materials, chapes, glasses, manpower: data.manpower, manpowerActual: data.manpowerActual, m2: data.m2 };
+
+      const effectiveColor = newColor !== undefined ? newColor : item.selectedColor;
+      const effectiveGlass = newGlass !== undefined ? newGlass : item.selectedGlass;
+      const heightInMeters = parseFloat(item.dimensions?.height || 0) / 100;
+      const widthInMeters = parseFloat(item.dimensions?.width || 0) / 100;
+
+      const materialsCalc = (formulas.materials || []).reduce((acc, material) => {
+        const matOption = materialsOptions.find(m => m.id === material.id);
+        const basePrice = matOption ? parseFloat(matOption.price || "0") : 0;
+        const tramo = matOption ? parseFloat(matOption.stretch || "6.1") : 6.1;
+        const colorIncrement = effectiveColor ? parseFloat(effectiveColor.percentage || "0") : 0;
+        const currentPrice = basePrice * (1 + colorIncrement / 100);
+        const meterage = calculatePrice(material.formula, { PRECIO: 1, ALTO: heightInMeters, ANCHO: widthInMeters, TRAMO: 1 });
+        const basePriceTotal = calculatePrice(material.formula, { PRECIO: basePrice, ALTO: heightInMeters, ANCHO: widthInMeters, TRAMO: tramo });
+        const priceWithColor = calculatePrice(material.formula, { PRECIO: currentPrice, ALTO: heightInMeters, ANCHO: widthInMeters, TRAMO: tramo });
+        return {
+          price: acc.price + priceWithColor,
+          basePrice: acc.basePrice + basePriceTotal,
+          meterage: acc.meterage + meterage,
+          items: [...acc.items, { name: material.name, meterage, price: priceWithColor, basePrice: basePriceTotal }]
+        };
+      }, { price: 0, basePrice: 0, meterage: 0, items: [] });
+
+      const chapesCalc = (formulas.chapes || []).reduce((acc, chape) => {
+        const chapeOption = chapesOptions.find(c => c.id === chape.id);
+        const currentPrice = chapeOption ? parseFloat(chapeOption.price || "0") : 0;
+        const pieces = calculatePrice(chape.formula, { PRECIO: 1, ALTO: heightInMeters, ANCHO: widthInMeters, TRAMO: 1 });
+        const price = calculatePrice(chape.formula, { PRECIO: currentPrice, ALTO: heightInMeters, ANCHO: widthInMeters, TRAMO: 1 });
+        return { price: acc.price + price, pieces: acc.pieces + pieces, items: [...acc.items, { name: chape.name, pieces, price }] };
+      }, { price: 0, pieces: 0, items: [] });
+
+      const glassesCalc = (formulas.glasses || []).reduce((acc, glass) => {
+        const meterage = calculatePrice(glass.formula, { PRECIO: 1, ALTO: heightInMeters, ANCHO: widthInMeters });
+        const glassPrice = effectiveGlass ? parseFloat(effectiveGlass.priceInstalled || effectiveGlass.price || "0") : 0;
+        const price = meterage * glassPrice;
+        return {
+          price: acc.price + price,
+          meterage: acc.meterage + meterage,
+          items: [...acc.items, { name: effectiveGlass ? effectiveGlass.name : glass.name, meterage, price }]
+        };
+      }, { price: 0, meterage: 0, items: [] });
+
+      const laborCost = parseFloat(formulas.manpower || "0") * materialsCalc.basePrice;
+      const laborCostActual = Math.round(parseFloat(formulas.manpowerActual || "0"));
+      const glassLaborCost = Math.round((formulas.m2 || 100) * glassesCalc.meterage);
+      const totalGeneral = materialsCalc.price + chapesCalc.price + glassesCalc.price + laborCost;
+
+      return {
+        ...item,
+        selectedColor: effectiveColor,
+        selectedGlass: effectiveGlass,
+        total: round2(totalGeneral),
+        laborCostSelected: round2(laborCost),
+        laborCostActual: round2(laborCostActual),
+        glassLaborCost: round2(glassLaborCost),
+        totalLaborActual: round2(laborCostActual + glassLaborCost),
+        details: {
+          ...item.details,
+          materials: materialsCalc,
+          chapes: chapesCalc,
+          glasses: glassesCalc,
+          laborCost: round2(laborCost),
+          laborCostActual: round2(laborCostActual),
+          glassLaborCost: round2(glassLaborCost),
+          totalLaborActual: round2(laborCostActual + glassLaborCost)
+        }
+      };
+    } catch (err) {
+      console.error("Error recalculating project model:", err);
+      return item;
+    }
+  };
+
+  const recalculateProjectIndividualItem = (item, newColor, newGlass) => {
+    if (item.itemType === "material" && newColor !== undefined) {
+      const matOption = materialsOptions.find(m => m.id === item.itemId);
+      if (!matOption) return { ...item, selectedColor: newColor };
+      const basePrice = parseFloat(matOption.price || 0);
+      const tramo = parseFloat(matOption.stretch || 6.1);
+      const colorIncrement = newColor ? parseFloat(newColor.percentage || 0) : 0;
+      const adjustedPrice = basePrice * (1 + colorIncrement / 100);
+      const quantityType = item.quantityType || "metros";
+      const newTotal = quantityType === "tramos"
+        ? item.quantity * adjustedPrice
+        : (item.quantity / tramo) * adjustedPrice;
+      return {
+        ...item,
+        selectedColor: newColor,
+        unitPrice: round2(quantityType === "tramos" ? adjustedPrice : adjustedPrice / tramo),
+        total: round2(newTotal)
+      };
+    }
+    if (item.itemType === "vidrio" && newGlass !== undefined && newGlass) {
+      const area = item.area ?? (item.dimensions ? (item.dimensions.height / 100) * (item.dimensions.width / 100) : item.quantity);
+      const newPrice = parseFloat(newGlass.priceInstalled || newGlass.price || 0);
+      return {
+        ...item,
+        selectedGlass: newGlass,
+        itemName: newGlass.name,
+        unitPrice: round2(newPrice),
+        total: round2(area * newPrice)
+      };
+    }
+    return item;
+  };
+
+  const applyGlobalSettingsToProject = async (projectId) => {
+    const project = projects.find(p => p.id === projectId) || selectedProject;
+    if (!project || project.id !== projectId || !project.items?.length) return;
+
+    setIsQuotationRecalculating(true);
+    try {
+      const updatedItems = [];
+      for (let i = 0; i < project.items.length; i++) {
+        const item = project.items[i];
+        if (item.type === "individual") {
+          let updated = item;
+          if (item.itemType === "material" && quotationGlobalColor !== undefined)
+            updated = recalculateProjectIndividualItem(updated, quotationGlobalColor, undefined);
+          if (item.itemType === "vidrio" && quotationGlobalGlass)
+            updated = recalculateProjectIndividualItem(updated, undefined, quotationGlobalGlass);
+          updatedItems.push(updated);
+        } else {
+          updatedItems.push(await recalculateProjectModelItem(item, quotationGlobalColor, quotationGlobalGlass));
+        }
+      }
+      await updateProjectWithRecalculatedTotal(projectId, updatedItems);
+      setSnackbar({ open: true, message: "Proyecto recalculado con la configuración global.", severity: "success" });
+      await fetchProjects();
+      if (selectedProject?.id === projectId) {
+        const updated = (await loadProjects()).find(p => p.id === projectId);
+        if (updated) setSelectedProject(updated);
+      }
+    } catch (err) {
+      console.error("Error applying global settings:", err);
+      setSnackbar({ open: true, message: "Error al recalcular el proyecto.", severity: "error" });
+    } finally {
+      setIsQuotationRecalculating(false);
+    }
+  };
+
+  const updateProjectItemColorInProject = async (projectId, itemIndex, newColor) => {
+    const project = projects.find(p => p.id === projectId) || selectedProject;
+    if (!project || project.id !== projectId) return;
+
+    setIsQuotationRecalculating(true);
+    try {
+      const items = [...(project.items || [])];
+      const item = items[itemIndex];
+      if (!item) return;
+      if (item.type === "individual")
+        items[itemIndex] = recalculateProjectIndividualItem(item, newColor, undefined);
+      else
+        items[itemIndex] = await recalculateProjectModelItem(item, newColor, undefined);
+      await updateProjectWithRecalculatedTotal(projectId, items);
+      await fetchProjects();
+      if (selectedProject?.id === projectId) {
+        const updated = (await loadProjects()).find(p => p.id === projectId);
+        if (updated) setSelectedProject(updated);
+      }
+    } catch (err) {
+      console.error("Error updating item color:", err);
+    } finally {
+      setIsQuotationRecalculating(false);
+    }
+  };
+
+  const updateProjectItemGlassInProject = async (projectId, itemIndex, newGlass) => {
+    const project = projects.find(p => p.id === projectId) || selectedProject;
+    if (!project || project.id !== projectId) return;
+
+    setIsQuotationRecalculating(true);
+    try {
+      const items = [...(project.items || [])];
+      const item = items[itemIndex];
+      if (!item) return;
+      if (item.type === "individual")
+        items[itemIndex] = recalculateProjectIndividualItem(item, undefined, newGlass);
+      else
+        items[itemIndex] = await recalculateProjectModelItem(item, undefined, newGlass);
+      await updateProjectWithRecalculatedTotal(projectId, items);
+      await fetchProjects();
+      if (selectedProject?.id === projectId) {
+        const updated = (await loadProjects()).find(p => p.id === projectId);
+        if (updated) setSelectedProject(updated);
+      }
+    } catch (err) {
+      console.error("Error updating item glass:", err);
+    } finally {
+      setIsQuotationRecalculating(false);
+    }
+  };
+
   const confirmRecalcModel = async () => {
     try {
       const calculations = getRecalcCalculations();
@@ -1503,11 +1976,11 @@ export const useProyectosController = () => {
           width: parseFloat(recalcDimensions.width) || 0
         },
         selectedGlass: recalcSelectedGlass || null,
-        selectedColor: recalcSelectedColor || null, // <-- Asegura que el color se guarde
-        laborCostSelected: calculations.laborCost || 0,
-        laborCostActual: calculations.laborCostActual || 0,
-        m2: calculations.m2 || 100,
-        total: calculations.totalGeneral || 0,
+        selectedColor: recalcSelectedColor || null,
+        laborCostSelected: round2(calculations.laborCost || 0),
+        laborCostActual: round2(calculations.laborCostActual || 0),
+        m2: round2(calculations.m2 || 100),
+        total: round2(calculations.totalGeneral || 0),
         details: {
           materials: calculations.materials || { price: 0, meterage: 0, items: [] },
           chapes: calculations.chapes || { price: 0, pieces: 0, items: [] },
@@ -1582,8 +2055,8 @@ export const useProyectosController = () => {
         case 'material':
           selectedItem = selectedIndividualMaterial;
           unitPrice = parseFloat(selectedItem?.price || "0");
+          const tramo = parseFloat(selectedItem?.stretch || "6.1");
           if (individualItemQuantityType === "metros") {
-            const tramo = parseFloat(selectedItem?.stretch || "6.1");
             total = (individualItemQuantity / tramo) * unitPrice;
             calculationDetails = `${individualItemQuantity}m ÷ ${tramo}m/tramo × $${unitPrice} = $${total.toFixed(2)}`;
           } else {
@@ -1620,18 +2093,33 @@ export const useProyectosController = () => {
         return;
       }
 
-      await addIndividualItemToProject(addingToProject.id, {
+      let itemPayload = {
         itemType: individualItemType,
         itemId: selectedItem.id || '',
         itemName: selectedItem.name || '',
         quantity: individualItemQuantity || 0,
-        unitPrice: unitPrice || 0,
-        total: total || 0,
+        unitPrice: round2(unitPrice || 0),
+        total: round2(total || 0),
         dimensions: (individualItemDimensions.height && individualItemDimensions.width) ? {
           height: parseFloat(individualItemDimensions.height),
           width: parseFloat(individualItemDimensions.width)
         } : null
-      });
+      };
+      if (individualItemType === "material") {
+        const tramoMat = parseFloat(selectedItem?.stretch || "6.1");
+        itemPayload.quantityType = individualItemQuantityType;
+        itemPayload.tramo = tramoMat;
+        itemPayload.meters = individualItemQuantityType === "tramos" ? individualItemQuantity * tramoMat : individualItemQuantity;
+      } else if (individualItemType === "herraje") {
+        itemPayload.quantityType = "piezas";
+      } else if (individualItemType === "vidrio") {
+        const areaVid = individualItemDimensions.height && individualItemDimensions.width
+          ? (parseFloat(individualItemDimensions.height) / 100) * (parseFloat(individualItemDimensions.width) / 100)
+          : individualItemQuantity;
+        itemPayload.quantityType = individualItemQuantityType;
+        itemPayload.area = areaVid;
+      }
+      await addIndividualItemToProject(addingToProject.id, itemPayload, addingToProject.status);
 
       setSnackbar({
         open: true,
@@ -1726,8 +2214,8 @@ export const useProyectosController = () => {
 
       const updatedItem = {
         quantity: recalcIndividualQuantity,
-        unitPrice: unitPrice,
-        total: total,
+        unitPrice: round2(unitPrice),
+        total: round2(total),
         dimensions: recalcIndividualDimensions.height && recalcIndividualDimensions.width ? {
           height: parseFloat(recalcIndividualDimensions.height),
           width: parseFloat(recalcIndividualDimensions.width)
@@ -1806,6 +2294,62 @@ export const useProyectosController = () => {
         message: "Error al cambiar el estado de todos los elementos.",
         severity: "error"
       });
+    }
+  };
+
+  // Asignar todos los elementos del proyecto a un colaborador
+  const [showAssignAllDialog, setShowAssignAllDialog] = useState(false);
+  const [assignAllProject, setAssignAllProject] = useState(null);
+  const [assignAllEmployeeId, setAssignAllEmployeeId] = useState("");
+
+  const handleAssignAllToCollaborator = (project) => {
+    setAssignAllProject(project);
+    setAssignAllEmployeeId("");
+    setShowAssignAllDialog(true);
+  };
+
+  const getAssignAllWarning = () => {
+    if (!assignAllProject?.items?.length) return null;
+    const withAssignee = assignAllProject.items.filter(i => i.assignedEmployeeId);
+    if (withAssignee.length === 0) return null;
+    const others = [...new Set(withAssignee.map(i => i.assignedEmployeeId))].filter(Boolean);
+    const names = others.map(id => employees.find(e => e.id === id)?.name || employees.find(e => e.id === id)?.displayName || id).join(", ");
+    return { count: withAssignee.length, names };
+  };
+
+  const confirmAssignAllToCollaborator = async () => {
+    if (!assignAllProject || !assignAllEmployeeId) {
+      setSnackbar({ open: true, message: "Selecciona un colaborador.", severity: "warning" });
+      return;
+    }
+    try {
+      const projectDoc = await getDoc(doc(db, "projects", assignAllProject.id));
+      if (!projectDoc.exists()) return;
+      const data = projectDoc.data();
+      const updatedItems = (data.items || []).map(item => {
+        const upd = { ...item, assignedEmployeeId: assignAllEmployeeId };
+        if (assignAllEmployeeId && !item.workOrder) {
+          upd.workOrder = { paymentStatus: "unpaid", createdAt: new Date().toISOString() };
+        }
+        return upd;
+      });
+      await updateDoc(doc(db, "projects", assignAllProject.id), stripUndefined({ items: updatedItems }));
+      setSnackbar({
+        open: true,
+        message: `Todos los elementos han sido asignados a ${employees.find(e => e.id === assignAllEmployeeId)?.name || "el colaborador"}.`,
+        severity: "success"
+      });
+      setShowAssignAllDialog(false);
+      setAssignAllProject(null);
+      setAssignAllEmployeeId("");
+      await fetchProjects();
+      if (selectedProject?.id === assignAllProject.id) {
+        const updated = (await loadProjects()).find(p => p.id === assignAllProject.id);
+        if (updated) setSelectedProject(updated);
+      }
+    } catch (err) {
+      console.error("Error assigning all:", err);
+      setSnackbar({ open: true, message: "Error al asignar.", severity: "error" });
     }
   };
 
@@ -1989,8 +2533,9 @@ export const useProyectosController = () => {
     showActivateDialog,
     setShowActivateDialog,
     activatingProject,
-    showInactive,
-    setShowInactive,
+    statusFilter,
+    setStatusFilter,
+    projectCountByStatus,
     showAddModelDialog,
     setShowAddModelDialog,
     addingToProject,
@@ -2064,6 +2609,15 @@ export const useProyectosController = () => {
     setIndividualItemTotal,
     imageCache,
     setImageCache,
+    quotationGlobalColor,
+    setQuotationGlobalColor,
+    quotationGlobalGlass,
+    setQuotationGlobalGlass,
+    isQuotationRecalculating,
+    getProjectSummaries,
+    applyGlobalSettingsToProject,
+    updateProjectItemColorInProject,
+    updateProjectItemGlassInProject,
     showMassStatusDialog,
     setShowMassStatusDialog,
     massStatusProject,
@@ -2120,6 +2674,9 @@ export const useProyectosController = () => {
     handleOpenPaymentDialog,
     handleClosePaymentDialog,
     handleAddPayment,
+    updateProjectItemAssignee,
+    addProjectImage,
+    removeProjectImage,
     handleEditModel,
     handleSaveModelEdit,
     handleDeleteModel,
@@ -2140,5 +2697,13 @@ export const useProyectosController = () => {
     getStatusText,
     handleMassStatusChange,
     confirmMassStatusChange,
+    showAssignAllDialog,
+    setShowAssignAllDialog,
+    assignAllProject,
+    assignAllEmployeeId,
+    setAssignAllEmployeeId,
+    handleAssignAllToCollaborator,
+    confirmAssignAllToCollaborator,
+    getAssignAllWarning,
   };
 };

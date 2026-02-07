@@ -16,16 +16,13 @@ import {
   CardMedia,
   Grid,
   TextField,
-  Dialog,
-  DialogActions,
-  DialogContent,
-  DialogTitle,
   Snackbar,
   Alert,
   Box,
   Typography,
   Fab,
 } from "@mui/material";
+import CrudStepperDialog from "../components/CrudStepperDialog";
 import { useRouter } from "next/navigation";
 import { Add } from "@mui/icons-material";
 
@@ -430,116 +427,102 @@ export default function ModelsPage() {
         ))}
       </Grid>
 
-      {/* Dialogo para Agregar/Editar Modelo */}
-      <Dialog open={openDialog} onClose={handleCloseDialog} maxWidth="sm" fullWidth>
-        <DialogTitle>
-          {currentModel ? `Editar Modelo: ${currentModel.name}` : "Agregar Modelo"}
-        </DialogTitle>
-        <DialogContent>
-          <TextField
-            autoFocus
-            margin="dense"
-            name="name"
-            label="Nombre"
-            type="text"
-            fullWidth
-            value={formData.name}
-            onChange={handleInputChange}
-          />
-          
-          <TextField
-            margin="dense"
-            name="manpower"
-            label="Mano de Obra (% sobre materiales)"
-            type="number"
-            fullWidth
-            value={formData.manpower}
-            onChange={handleInputChange}
-            helperText="Porcentaje que se aplicará sobre el costo de materiales para la cotización"
-            inputProps={{ step: "0.01", min: "0" }}
-          />
-          
-          <TextField
-            margin="dense"
-            name="manpowerActual"
-            label="Mano de Obra Real (Costo Fijo - Entero)"
-            type="number"
-            fullWidth
-            value={formData.manpowerActual}
-            onChange={handleInputChange}
-            helperText="Costo real entero que se pagará al trabajador (solo para órdenes de trabajo). Ej: 450"
-            inputProps={{ step: "1", min: "0" }}
-            placeholder="0"
-          />
-          
-          <TextField
-            margin="dense"
-            name="m2"
-            label="Costo por m² de Vidrio (Entero)"
-            type="number"
-            fullWidth
-            value={formData.m2}
-            onChange={handleInputChange}
-            helperText="Costo por metro cuadrado de mano de obra de vidrio. Default: 100"
-            inputProps={{ step: "1", min: "0" }}
-            placeholder="100"
-          />
-          
-          {/* Información actual si está editando */}
-          {currentModel && (
-            <Box sx={{ mt: 2, p: 2, backgroundColor: "grey.100", borderRadius: 1 }}>
-              <Typography variant="subtitle2" gutterBottom>
-                Valores Actuales:
-              </Typography>
-              <Typography variant="body2">
-                • M.O. Cotización: {currentModel.manpower || "No definido"}%
-              </Typography>
-              <Typography variant="body2">
-                • M.O. Real: {currentModel.manpowerActual && currentModel.manpowerActual !== "0" 
-                  ? `$${currentModel.manpowerActual}` 
-                  : "No configurado (se usará 0)"}
-              </Typography>
-              <Typography variant="body2">
-                • Costo por m² Vidrio: ${currentModel.m2 || 100}/m²
-              </Typography>
-            </Box>
-          )}
-          
-          <Box sx={{ mt: 2 }}>
-            <Button variant="outlined" component="label">
-              Seleccionar Imagen
-              <input
-                type="file"
-                accept="image/*"
-                hidden
-                onChange={handleImageFileChange}
+      {/* Dialogo para Agregar/Editar Modelo con Stepper */}
+      <CrudStepperDialog
+        open={openDialog}
+        onClose={handleCloseDialog}
+        title={currentModel ? `Editar Modelo: ${currentModel.name}` : "Agregar Modelo"}
+        steps={[
+          {
+            label: "Información básica",
+            content: (
+              <TextField
+                autoFocus
+                margin="dense"
+                name="name"
+                label="Nombre"
+                type="text"
+                fullWidth
+                value={formData.name}
+                onChange={handleInputChange}
               />
-            </Button>
-            {formData.previewImage && (
-              <Box sx={{ mt: 2 }}>
-                <Typography variant="subtitle2">Preview:</Typography>
-                <Box
-                  component="img"
-                  src={formData.previewImage}
-                  alt="Preview"
-                  sx={{
-                    width: 200,
-                    height: 200,
-                    objectFit: "cover",
-                    borderRadius: "8px",
-                  }}
+            ),
+          },
+          {
+            label: "Mano de obra y costos",
+            content: (
+              <>
+                <TextField
+                  margin="dense"
+                  name="manpower"
+                  label="Mano de Obra (% sobre materiales)"
+                  type="number"
+                  fullWidth
+                  value={formData.manpower}
+                  onChange={handleInputChange}
+                  helperText="Porcentaje que se aplicará sobre el costo de materiales para la cotización"
+                  inputProps={{ step: "0.01", min: "0" }}
                 />
+                <TextField
+                  margin="dense"
+                  name="manpowerActual"
+                  label="Mano de Obra Real (Costo Fijo - Entero)"
+                  type="number"
+                  fullWidth
+                  value={formData.manpowerActual}
+                  onChange={handleInputChange}
+                  helperText="Costo real entero que se pagará al trabajador. Ej: 450"
+                  inputProps={{ step: "1", min: "0" }}
+                  placeholder="0"
+                />
+                <TextField
+                  margin="dense"
+                  name="m2"
+                  label="Costo por m² de Vidrio (Entero)"
+                  type="number"
+                  fullWidth
+                  value={formData.m2}
+                  onChange={handleInputChange}
+                  helperText="Costo por metro cuadrado de mano de obra de vidrio. Default: 100"
+                  inputProps={{ step: "1", min: "0" }}
+                  placeholder="100"
+                />
+                {currentModel && (
+                  <Box sx={{ mt: 2, p: 2, backgroundColor: "grey.100", borderRadius: 1 }}>
+                    <Typography variant="subtitle2" gutterBottom>Valores actuales:</Typography>
+                    <Typography variant="body2">• M.O. Cotización: {currentModel.manpower || "No definido"}%</Typography>
+                    <Typography variant="body2">• M.O. Real: {currentModel.manpowerActual && currentModel.manpowerActual !== "0" ? `$${currentModel.manpowerActual}` : "No configurado"}</Typography>
+                    <Typography variant="body2">• Costo m² Vidrio: ${currentModel.m2 || 100}/m²</Typography>
+                  </Box>
+                )}
+              </>
+            ),
+          },
+          {
+            label: "Imagen del modelo",
+            content: (
+              <Box>
+                <Button variant="outlined" component="label">
+                  Seleccionar Imagen
+                  <input type="file" accept="image/*" hidden onChange={handleImageFileChange} />
+                </Button>
+                {formData.previewImage && (
+                  <Box sx={{ mt: 2 }}>
+                    <Typography variant="subtitle2">Preview:</Typography>
+                    <Box
+                      component="img"
+                      src={formData.previewImage}
+                      alt="Preview"
+                      sx={{ width: 200, height: 200, objectFit: "cover", borderRadius: "8px" }}
+                    />
+                  </Box>
+                )}
               </Box>
-            )}
-          </Box>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={handleCloseDialog}>Cancelar</Button>
-          <Button onClick={handleSave} variant="contained" color="primary">
-            Guardar
-          </Button>
-        </DialogActions>
-      </Dialog>
+            ),
+          },
+        ]}
+        onSave={handleSave}
+      />
 
       {/* Snackbar */}
       <Snackbar

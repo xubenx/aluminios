@@ -11,16 +11,13 @@ import {
   TableHead,
   TableRow,
   TextField,
-  Dialog,
-  DialogActions,
-  DialogContent,
-  DialogTitle,
   Snackbar,
   Alert,
   Fab,
   Paper,
   Typography,
 } from "@mui/material";
+import CrudStepperDialog from "../components/CrudStepperDialog";
 import { Add, Edit, Delete } from "@mui/icons-material";
 
 export default function MaterialsPage() {
@@ -290,46 +287,55 @@ export default function MaterialsPage() {
         <Add />
       </Fab>
 
-      {/* Dialog */}
-      <Dialog open={openDialog} onClose={handleCloseDialog}>
-        <DialogTitle>{currentMaterial ? "Editar Material" : "Agregar Material"}</DialogTitle>
-        <DialogContent>
-          <TextField
-            autoFocus
-            margin="dense"
-            name="name"
-            label="Nombre"
-            type="text"
-            fullWidth
-            value={formData.name}
-            onChange={handleInputChange}
-          />
-          <TextField
-            margin="dense"
-            name="price"
-            label="Precio"
-            type="number"
-            fullWidth
-            value={formData.price}
-            onChange={handleInputChange}
-          />
-          <TextField
-            margin="dense"
-            name="stretch"
-            label="Longitud (m)"
-            type="number"
-            fullWidth
-            value={formData.stretch}
-            onChange={handleInputChange}
-          />
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={handleCloseDialog}>Cancelar</Button>
-          <Button onClick={handleSave} color="primary">
-            Guardar
-          </Button>
-        </DialogActions>
-      </Dialog>
+      {/* Dialog con Stepper */}
+      <CrudStepperDialog
+        open={openDialog}
+        onClose={handleCloseDialog}
+        title={currentMaterial ? "Editar Material" : "Agregar Material"}
+        steps={[
+          {
+            label: "Información básica",
+            content: (
+              <TextField
+                autoFocus
+                margin="dense"
+                name="name"
+                label="Nombre"
+                type="text"
+                fullWidth
+                value={formData.name}
+                onChange={handleInputChange}
+              />
+            ),
+          },
+          {
+            label: "Precio y dimensiones",
+            content: (
+              <>
+                <TextField
+                  margin="dense"
+                  name="price"
+                  label="Precio"
+                  type="number"
+                  fullWidth
+                  value={formData.price}
+                  onChange={handleInputChange}
+                />
+                <TextField
+                  margin="dense"
+                  name="stretch"
+                  label="Longitud (m)"
+                  type="number"
+                  fullWidth
+                  value={formData.stretch}
+                  onChange={handleInputChange}
+                />
+              </>
+            ),
+          },
+        ]}
+        onSave={handleSave}
+      />
 
       {/* Snackbar */}
       <Snackbar

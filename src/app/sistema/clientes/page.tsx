@@ -35,6 +35,7 @@ import {
   FormControl,
   InputLabel,
 } from "@mui/material";
+import CrudStepperDialog from "../components/CrudStepperDialog";
 import { Add, Edit, Delete, Restore, Visibility, ExpandMore, ExpandLess, Payment as PaymentIcon, Person } from "@mui/icons-material";
 import { 
   updateProject, 
@@ -998,38 +999,46 @@ export default function ClientesPage() {
         </Fab>
       )}
 
-      {/* Dialog */}
-      <Dialog open={openDialog} onClose={handleCloseDialog} maxWidth="sm" fullWidth>
-        <DialogTitle>{currentCustomer ? "Editar Cliente" : "Agregar Cliente"}</DialogTitle>
-        <DialogContent>
-          <TextField
-            autoFocus
-            margin="dense"
-            name="name"
-            label="Nombre *"
-            type="text"
-            fullWidth
-            value={formData.name}
-            onChange={handleInputChange}
-            required
-          />
-          <TextField
-            margin="dense"
-            name="phone"
-            label="Teléfono (opcional)"
-            type="tel"
-            fullWidth
-            value={formData.phone}
-            onChange={handleInputChange}
-          />
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={handleCloseDialog}>Cancelar</Button>
-          <Button onClick={handleSave} color="primary" variant="contained">
-            Guardar
-          </Button>
-        </DialogActions>
-      </Dialog>
+      {/* Dialog con Stepper */}
+      <CrudStepperDialog
+        open={openDialog}
+        onClose={handleCloseDialog}
+        title={currentCustomer ? "Editar Cliente" : "Agregar Cliente"}
+        steps={[
+          {
+            label: "Información del cliente",
+            content: (
+              <TextField
+                autoFocus
+                margin="dense"
+                name="name"
+                label="Nombre *"
+                type="text"
+                fullWidth
+                value={formData.name}
+                onChange={handleInputChange}
+                required
+              />
+            ),
+          },
+          {
+            label: "Contacto",
+            content: (
+              <TextField
+                margin="dense"
+                name="phone"
+                label="Teléfono (opcional)"
+                type="tel"
+                fullWidth
+                value={formData.phone}
+                onChange={handleInputChange}
+              />
+            ),
+            optional: true,
+          },
+        ]}
+        onSave={handleSave}
+      />
 
       {/* Dialog de Balance del Cliente */}
       <Dialog 

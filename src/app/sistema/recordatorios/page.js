@@ -6,13 +6,10 @@ import {
   Box,
   Button,
   Typography,
-  Card,  CardContent,
+  Card,
+  CardContent,
   Grid,
   TextField,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
   Chip,
   Snackbar,
   Alert,
@@ -20,8 +17,9 @@ import {
   Select,
   MenuItem,
   FormControl,
-  InputLabel
+  InputLabel,
 } from "@mui/material";
+import CrudStepperDialog from "../components/CrudStepperDialog";
 import {
   Add,
   Edit,
@@ -426,68 +424,72 @@ export default function RecordatoriosPage() {
         <Add />
       </Fab>
 
-      {/* Diálogo para CRUD */}
-      <Dialog open={openDialog} onClose={handleCloseDialog} maxWidth="sm" fullWidth>
-        <DialogTitle>
-          {currentReminder ? "Editar Recordatorio" : "Nuevo Recordatorio"}
-        </DialogTitle>
-        <DialogContent>
-          <TextField
-            autoFocus
-            margin="dense"
-            label="Nombre"
-            fullWidth
-            variant="outlined"
-            value={formData.nombre}
-            onChange={(e) => setFormData({...formData, nombre: e.target.value})}
-            sx={{ mb: 2 }}
-          />
-          
-          <TextField
-            margin="dense"
-            label="Descripción"
-            fullWidth
-            variant="outlined"
-            multiline
-            rows={4}
-            value={formData.descripcion}
-            onChange={(e) => setFormData({...formData, descripcion: e.target.value})}
-            sx={{ mb: 2 }}
-          />
-          
-          <TextField
-            margin="dense"
-            label="Fecha"
-            type="date"
-            fullWidth
-            variant="outlined"
-            value={formData.date}
-            onChange={(e) => setFormData({...formData, date: e.target.value})}
-            sx={{ mb: 2 }}
-            InputLabelProps={{
-              shrink: true,
-            }}
-          />
-          
-          <FormControl fullWidth variant="outlined">
-            <InputLabel>Estado</InputLabel>
-            <Select
-              value={formData.status}
-              onChange={(e) => setFormData({...formData, status: e.target.value})}
-              label="Estado"
-            >
-              <MenuItem value="Pendiente">Pendiente</MenuItem>
-              <MenuItem value="Revisado">Revisado</MenuItem>
-            </Select>
-          </FormControl>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={handleCloseDialog}>Cancelar</Button>
-          <Button variant="contained" onClick={handleSave}>
-            {currentReminder ? "Actualizar" : "Crear"}
-          </Button>
-        </DialogActions>
-      </Dialog>
+      {/* Diálogo para CRUD con Stepper */}
+      <CrudStepperDialog
+        open={openDialog}
+        onClose={handleCloseDialog}
+        title={currentReminder ? "Editar Recordatorio" : "Nuevo Recordatorio"}
+        saveLabel={currentReminder ? "Actualizar" : "Crear"}
+        steps={[
+          {
+            label: "Información del recordatorio",
+            content: (
+              <>
+                <TextField
+                  autoFocus
+                  margin="dense"
+                  label="Nombre"
+                  fullWidth
+                  variant="outlined"
+                  value={formData.nombre}
+                  onChange={(e) => setFormData({ ...formData, nombre: e.target.value })}
+                  sx={{ mb: 2 }}
+                />
+                <TextField
+                  margin="dense"
+                  label="Descripción"
+                  fullWidth
+                  variant="outlined"
+                  multiline
+                  rows={4}
+                  value={formData.descripcion}
+                  onChange={(e) => setFormData({ ...formData, descripcion: e.target.value })}
+                />
+              </>
+            ),
+          },
+          {
+            label: "Fecha y estado",
+            content: (
+              <>
+                <TextField
+                  margin="dense"
+                  label="Fecha"
+                  type="date"
+                  fullWidth
+                  variant="outlined"
+                  value={formData.date}
+                  onChange={(e) => setFormData({ ...formData, date: e.target.value })}
+                  sx={{ mb: 2 }}
+                  InputLabelProps={{ shrink: true }}
+                />
+                <FormControl fullWidth variant="outlined">
+                  <InputLabel>Estado</InputLabel>
+                  <Select
+                    value={formData.status}
+                    onChange={(e) => setFormData({ ...formData, status: e.target.value })}
+                    label="Estado"
+                  >
+                    <MenuItem value="Pendiente">Pendiente</MenuItem>
+                    <MenuItem value="Revisado">Revisado</MenuItem>
+                  </Select>
+                </FormControl>
+              </>
+            ),
+          },
+        ]}
+        onSave={handleSave}
+      />
 
       {/* Snackbar para mensajes */}
       <Snackbar

@@ -11,16 +11,13 @@ import {
   TableHead,
   TableRow,
   TextField,
-  Dialog,
-  DialogActions,
-  DialogContent,
-  DialogTitle,
   Snackbar,
   Alert,
   Fab,
   Paper,
   Typography,
 } from "@mui/material";
+import CrudStepperDialog from "../components/CrudStepperDialog";
 import { Add, Edit, Delete } from "@mui/icons-material";
 
 export default function ChapesPage() {
@@ -272,37 +269,44 @@ export default function ChapesPage() {
         <Add />
       </Fab>
 
-      {/* Dialog */}
-      <Dialog open={openDialog} onClose={handleCloseDialog}>
-        <DialogTitle>{currentChape ? "Editar Herraje" : "Agregar Herraje"}</DialogTitle>
-        <DialogContent>
-          <TextField
-            autoFocus
-            margin="dense"
-            name="name"
-            label="Nombre"
-            type="text"
-            fullWidth
-            value={formData.name}
-            onChange={handleInputChange}
-          />
-          <TextField
-            margin="dense"
-            name="price"
-            label="Precio"
-            type="number"
-            fullWidth
-            value={formData.price}
-            onChange={handleInputChange}
-          />
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={handleCloseDialog}>Cancelar</Button>
-          <Button onClick={handleSave} color="primary">
-            Guardar
-          </Button>
-        </DialogActions>
-      </Dialog>
+      {/* Dialog con Stepper */}
+      <CrudStepperDialog
+        open={openDialog}
+        onClose={handleCloseDialog}
+        title={currentChape ? "Editar Herraje" : "Agregar Herraje"}
+        steps={[
+          {
+            label: "Información del herraje",
+            content: (
+              <TextField
+                autoFocus
+                margin="dense"
+                name="name"
+                label="Nombre"
+                type="text"
+                fullWidth
+                value={formData.name}
+                onChange={handleInputChange}
+              />
+            ),
+          },
+          {
+            label: "Precio",
+            content: (
+              <TextField
+                margin="dense"
+                name="price"
+                label="Precio"
+                type="number"
+                fullWidth
+                value={formData.price}
+                onChange={handleInputChange}
+              />
+            ),
+          },
+        ]}
+        onSave={handleSave}
+      />
 
       {/* Snackbar */}
       <Snackbar

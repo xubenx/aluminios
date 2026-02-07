@@ -50,6 +50,7 @@ export default function DiarioContabilidadPage() {  const [entries, setEntries] 
   const [searchQuery, setSearchQuery] = useState("");
   const [filterType, setFilterType] = useState("all"); // all, gasto, pago
   const [filterCategory, setFilterCategory] = useState("all");
+  const [filterSource, setFilterSource] = useState("all"); // all, project, order, diary
   const [showInactive, setShowInactive] = useState(false);
   
   // Estados para CRUD
@@ -111,27 +112,75 @@ export default function DiarioContabilidadPage() {  const [entries, setEntries] 
       // Filtrar por categoría
       const matchesCategory = filterCategory === "all" || entry.categoria === filterCategory;
       
+      // Filtrar por origen (Proyecto, Órdenes, Manual)
+      const src = entry.source || "diary";
+      const matchesSource = filterSource === "all" || 
+        (filterSource === "project" && (src === "project" || entry.isLegacy)) ||
+        (filterSource === "order" && src === "order") ||
+        (filterSource === "diary" && (src === "diary" || (!entry.source && !entry.isLegacy)));
+      
       // Filtrar por estado activo/inactivo
       const matchesStatus = showInactive ? entry.activo === false : entry.activo !== false;
       
-      return matchesSearch && matchesType && matchesCategory && matchesStatus;
+      return matchesSearch && matchesType && matchesCategory && matchesSource && matchesStatus;
     });
 
     // Ordenar por fecha (más recientes primero)
     const sortedEntries = filtered.sort((a, b) => new Date(b.fecha) - new Date(a.fecha));
     setFilteredEntries(sortedEntries);
-  }, [searchQuery, filterType, filterCategory, entries, showInactive]);
+  }, [searchQuery, filterType, filterCategory, filterSource, entries, showInactive]);
 
   const fetchEntries = async () => {
     try {
-      const entriesSnapshot = await getDocs(collection(db, "journal"));
-      const entriesData = entriesSnapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data()
-      }));
-      setEntries(entriesData);
+      // 1. Entradas del journal (manuales + pagos a colaboradores)
+      const journalSnap = await getDocs(collection(db, "journal"));
+      const journalEntries = journalSnap.docs.map(d => {
+        const data = d.data();
+        return {
+          id: d.id,
+          ...data,
+          monto: data.monto ?? data.amount ?? 0,
+          source: data.source || "diary"
+        };
+      });
+      // 2. Pagos de proyectos (ingresos) - solo los históricos que NO están ya en journal
+      const projectPaymentKeys = new Set(
+        journalEntries
+          .filter(e => e.source === "project" && e.projectId)
+          .map(e => `${e.projectId}|${e.fecha || ""}|${e.monto ?? 0}`)
+      );
+      const projectsSnap = await getDocs(collection(db, "projects"));
+      const projectEntries = [];
+      projectsSnap.docs.forEach(projDoc => {
+        const p = projDoc.data();
+        if (p.status === "inactive" || !p.payments?.length) return;
+        (p.payments || []).forEach((pay) => {
+          const fecha = (pay.date || "").split("T")[0];
+          const monto = pay.amount ?? 0;
+          if (projectPaymentKeys.has(`${projDoc.id}|${fecha}|${monto}`)) return; // Ya en journal
+          projectEntries.push({
+            id: `project_${projDoc.id}_${fecha}_${monto}`,
+            fecha,
+            tipo: "pago",
+            categoria: "Ingresos de Proyectos",
+            descripcion: `Pago proyecto: ${p.name || p.projectName || "Proyecto"} - Cliente: ${p.customerName || p.client || ""}`,
+            monto: pay.amount ?? 0,
+            observaciones: pay.description || pay.method || "",
+            activo: true,
+            source: "project",
+            projectId: projDoc.id,
+            projectName: p.name || p.projectName,
+            customerName: p.customerName || p.client,
+            metodo: pay.method || "efectivo",
+            source: "project",
+            isLegacy: true
+          });
+        });
+      });
+      const combined = [...journalEntries, ...projectEntries];
+      setEntries(combined);
     } catch (error) {
-      console.error("Error fetching journal entries: ", error);
+      console.error("Error fetching entries: ", error);
       setSnackbar({
         open: true,
         message: "Error al cargar las entradas del diario.",
@@ -277,11 +326,18 @@ export default function DiarioContabilidadPage() {  const [entries, setEntries] 
     }
   };
   const getTotalGastos = () => {
-    return entries.filter(entry => entry.tipo === "gasto" && entry.activo !== false).reduce((total, entry) => total + entry.monto, 0);
+    return entries.filter(entry => entry.tipo === "gasto" && entry.activo !== false).reduce((total, entry) => total + (entry.monto ?? 0), 0);
   };
 
   const getTotalPagos = () => {
-    return entries.filter(entry => entry.tipo === "pago" && entry.activo !== false).reduce((total, entry) => total + entry.monto, 0);
+    return entries.filter(entry => entry.tipo === "pago" && entry.activo !== false).reduce((total, entry) => total + (entry.monto ?? 0), 0);
+  };
+
+  const getIngresosProyectos = () => {
+    return entries.filter(e => e.tipo === "pago" && (e.source === "project" || e.isLegacy) && e.activo !== false).reduce((s, e) => s + (e.monto ?? 0), 0);
+  };
+  const getPagosColaboradores = () => {
+    return entries.filter(e => e.tipo === "gasto" && e.source === "order" && e.activo !== false).reduce((s, e) => s + (e.monto ?? 0), 0);
   };
 
   const getBalance = () => {
@@ -352,13 +408,36 @@ export default function DiarioContabilidadPage() {  const [entries, setEntries] 
             <Typography variant="h4">{formatCurrency(getBalance())}</Typography>
           </Paper>
         </Grid>
-        <Grid item xs={12} sm={6} md={3}>          <Paper sx={{ p: 2, textAlign: 'center', bgcolor: 'info.main', color: 'white' }}>
+        <Grid item xs={12} sm={6} md={3}>
+          <Paper sx={{ p: 2, textAlign: 'center', bgcolor: 'info.main', color: 'white' }}>
             <Receipt sx={{ fontSize: 40, mb: 1 }} />
             <Typography variant="h6">Entradas Activas</Typography>
             <Typography variant="h4">{entries.filter(e => e.activo !== false).length}</Typography>
           </Paper>
         </Grid>
       </Grid>
+
+      {/* Desglose por origen */}
+      <Paper sx={{ p: 2, mb: 3, bgcolor: 'grey.50' }}>
+        <Typography variant="subtitle1" fontWeight="bold" sx={{ mb: 1 }}>Desglose</Typography>
+        <Grid container spacing={2}>
+          <Grid item xs={12} sm={4}>
+            <Typography variant="body2" color="textSecondary">Ingresos de proyectos (clientes)</Typography>
+            <Typography variant="h6" color="success.main">{formatCurrency(getIngresosProyectos())}</Typography>
+          </Grid>
+          <Grid item xs={12} sm={4}>
+            <Typography variant="body2" color="textSecondary">Pagos a colaboradores</Typography>
+            <Typography variant="h6" color="error.main">{formatCurrency(getPagosColaboradores())}</Typography>
+          </Grid>
+          <Grid item xs={12} sm={4}>
+            <Typography variant="body2" color="textSecondary">Otros (manual)</Typography>
+            <Typography variant="body2">
+              Pagos: {formatCurrency(entries.filter(e => e.tipo === "pago" && (!e.source || e.source === "diary") && !e.isLegacy && e.activo !== false).reduce((s, e) => s + (e.monto ?? 0), 0))} |
+              Gastos: {formatCurrency(entries.filter(e => e.tipo === "gasto" && (!e.source || e.source === "diary") && e.activo !== false).reduce((s, e) => s + (e.monto ?? 0), 0))}
+            </Typography>
+          </Grid>
+        </Grid>
+      </Paper>
 
       {/* Filtros y búsqueda */}
       <Paper sx={{ p: 2, mb: 3 }}>
@@ -399,6 +478,20 @@ export default function DiarioContabilidadPage() {  const [entries, setEntries] 
                   {category}
                 </MenuItem>
               ))}
+            </Select>
+          </FormControl>
+
+          <FormControl sx={{ minWidth: 180 }}>
+            <InputLabel>Origen</InputLabel>
+            <Select
+              value={filterSource}
+              label="Origen"
+              onChange={(e) => setFilterSource(e.target.value)}
+            >
+              <MenuItem value="all">Todos</MenuItem>
+              <MenuItem value="project">Ingresos Proyectos</MenuItem>
+              <MenuItem value="order">Pagos Colaboradores</MenuItem>
+              <MenuItem value="diary">Manual / Otros</MenuItem>
             </Select>
           </FormControl>
 
@@ -458,11 +551,22 @@ export default function DiarioContabilidadPage() {  const [entries, setEntries] 
                 </TableCell>
                 <TableCell>{entry.categoria}</TableCell>
                 <TableCell>
-                  <Typography variant="body2" sx={{ fontWeight: 'bold' }}>
+                  <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 1, flexWrap: 'wrap' }}>
+                    {entry.source === "project" && (
+                      <Chip label="Proyecto" size="small" color="info" variant="outlined" sx={{ height: 20 }} />
+                    )}
+                    {entry.source === "order" && (
+                      <Chip label="Colaborador" size="small" color="warning" variant="outlined" sx={{ height: 20 }} />
+                    )}
+                    {(!entry.source || entry.source === "diary") && !entry.isLegacy && (
+                      <Chip label="Manual" size="small" color="default" variant="outlined" sx={{ height: 20 }} />
+                    )}
+                  </Box>
+                  <Typography variant="body2" sx={{ fontWeight: 'bold', mt: 0.5 }}>
                     {entry.descripcion}
                   </Typography>
                   {entry.observaciones && (
-                    <Typography variant="caption" color="textSecondary">
+                    <Typography variant="caption" color="textSecondary" display="block">
                       {entry.observaciones}
                     </Typography>
                   )}
@@ -488,7 +592,7 @@ export default function DiarioContabilidadPage() {  const [entries, setEntries] 
                 </TableCell>
                 <TableCell>
                   <Box sx={{ display: 'flex', gap: 1 }}>
-                    {entry.activo !== false && (
+                    {entry.activo !== false && !entry.isLegacy && (
                       <IconButton
                         size="small"
                         color="primary"
@@ -528,7 +632,7 @@ export default function DiarioContabilidadPage() {  const [entries, setEntries] 
       {filteredEntries.length === 0 && (
         <Box sx={{ textAlign: 'center', mt: 4 }}>
           <Typography variant="h6" color="textSecondary">
-            {searchQuery || filterType !== "all" || filterCategory !== "all" 
+            {searchQuery || filterType !== "all" || filterCategory !== "all" || filterSource !== "all"
               ? 'No se encontraron entradas con ese criterio' 
               : 'No hay entradas en el diario'}
           </Typography>

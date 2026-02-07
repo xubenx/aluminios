@@ -1,4 +1,4 @@
-import { collection, getDocs, getDoc, doc, updateDoc, serverTimestamp, query, orderBy } from "firebase/firestore";
+import { collection, getDocs, getDoc, doc, updateDoc, addDoc, serverTimestamp, query, orderBy } from "firebase/firestore";
 import { db } from "../../../../firebase";
 
 export interface Payment {
@@ -247,6 +247,24 @@ export const addPaymentToProject = async (
       debt: newDebt,
       payments: updatedPayments,
       date: serverTimestamp()
+    });
+
+    // Registrar ingreso en el Diario (journal)
+    const fecha = (payment.date || new Date().toISOString()).split("T")[0];
+    await addDoc(collection(db, "journal"), {
+      fecha,
+      tipo: "pago",
+      categoria: "Ingresos de Proyectos",
+      descripcion: `Pago proyecto: ${project.name || project.projectName || "Proyecto"} - Cliente: ${project.customerName || project.client || "Sin cliente"}`,
+      monto: payment.amount,
+      observaciones: payment.description || payment.method || "",
+      activo: true,
+      source: "project",
+      projectId,
+      projectName: project.name || project.projectName,
+      customerName: project.customerName || project.client,
+      metodo: payment.method || "efectivo",
+      createdAt: new Date().toISOString()
     });
   } catch (error) {
     console.error("Error adding payment:", error);
