@@ -805,7 +805,7 @@ export function useOrdenesController() {
       for (const projectId of Object.keys(projectUpdates)) {
         const { project, updates } = projectUpdates[projectId];
         const updatedItems = [...project.items];
-        for (const { itemIndex, item } of updates) {
+        for (const { itemIndex } of updates) {
           const current = updatedItems[itemIndex];
           updatedItems[itemIndex] = {
             ...current,
@@ -930,15 +930,6 @@ export function useOrdenesController() {
   // Handler para seleccionar empleado
   const handleSelectEmployee = (employeeId) => {
     setSelectedEmployee(employeeId);
-  };
-
-  // Handlers para gestión de órdenes
-  const handleShowOrdersManagement = () => {
-    setShowOrdersManagement(true);
-  };
-
-  const handleHideOrdersManagement = () => {
-    setShowOrdersManagement(false);
   };
 
   const handleSelectOrder = (order) => {

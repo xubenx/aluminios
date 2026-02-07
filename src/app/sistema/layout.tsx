@@ -20,6 +20,7 @@ import AccountBalanceWalletIcon from "@mui/icons-material/AccountBalanceWallet";
 import WorkIcon from "@mui/icons-material/Work";
 import PersonIcon from "@mui/icons-material/Person";
 import NotificationsIcon from "@mui/icons-material/Notifications";
+import AddCircleOutlineIcon from "@mui/icons-material/AddCircleOutline";
 import { useAuth } from "../../contexts/AuthContext";
 import Image from "next/image";
 
@@ -27,7 +28,11 @@ export default function RootLayout({ children }: { children: ReactNode }) {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const pathname = usePathname();
   const router = useRouter();
-  const { user, loading, logout } = useAuth();
+  const { user, loading, logout } = useAuth() as {
+    user: { name?: string; usuario?: string } | null;
+    loading: boolean;
+    logout: () => void;
+  };
   const isLoginPage = pathname === "/sistema/login";
 
   useEffect(() => {
@@ -60,6 +65,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
     { text: "Colores", href: "/sistema/colores", icon: <PaletteIcon /> },
     { text: "Herrajes", href: "/sistema/herrajes", icon: <BuildIcon /> },
     { text: "Vidrios", href: "/sistema/vidrios", icon: <GlassIcon /> },
+    { text: "Servicios / Extras", href: "/sistema/extras", icon: <AddCircleOutlineIcon /> },
     { text: "Colaboradores", href: "/sistema/colaboradores", icon: <PeopleIcon /> },
     //{ text: "Ordenes", href: "/sistema/ordenes", icon: <ArchiveIcon /> },
   ];

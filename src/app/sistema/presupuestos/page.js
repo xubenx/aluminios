@@ -59,7 +59,9 @@ export default function CotizadorApp() {
 
   // Estados para las opciones (de colecciones) y dimensiones para el cotizador
   const [materialsOptions, setMaterialsOptions] = useState([]);
-  const [chapesOptions, setChapesOptions] = useState([]);  const [glassesOptions, setGlassesOptions] = useState([]);
+  const [chapesOptions, setChapesOptions] = useState([]);
+  const [glassesOptions, setGlassesOptions] = useState([]);
+  const [extrasOptions, setExtrasOptions] = useState([]);
   const [colorsOptions, setColorsOptions] = useState([]);
   const [dimensions, setDimensions] = useState({ height: "100", width: "100" }); // Ahora en centímetros para la UI
   const [selectedGlass, setSelectedGlass] = useState(null);
@@ -81,10 +83,11 @@ export default function CotizadorApp() {
 
   // Estados para agregar elementos individuales
   const [showAddItemDialog, setShowAddItemDialog] = useState(false);
-  const [addItemType, setAddItemType] = useState("material"); // material, herraje, vidrio
+  const [addItemType, setAddItemType] = useState("material"); // material, herraje, vidrio, extra
   const [selectedMaterial, setSelectedMaterial] = useState(null);
   const [selectedHerraje, setSelectedHerraje] = useState(null);
   const [selectedVidrio, setSelectedVidrio] = useState(null);
+  const [selectedExtra, setSelectedExtra] = useState(null);
   const [itemQuantity, setItemQuantity] = useState(1);
   const [itemQuantityType, setItemQuantityType] = useState("metros"); // metros, tramos, piezas, m2
   const [itemDimensions, setItemDimensions] = useState({ height: "", width: "" });
@@ -133,7 +136,7 @@ export default function CotizadorApp() {
         };
 
         loadImage();
-      }, [modelId, cachedUrl]);
+      }, [modelId, cachedUrl, cacheRef]);
 
       if (imageError) {
         return (
@@ -270,6 +273,9 @@ export default function CotizadorApp() {
 
       const colorsSnap = await getDocs(collection(db, "colors"));
       setColorsOptions(colorsSnap.docs.map((doc) => ({ id: doc.id, ...doc.data() })));
+
+      const extrasSnap = await getDocs(collection(db, "extras"));
+      setExtrasOptions(extrasSnap.docs.map((doc) => ({ id: doc.id, ...doc.data() })));
     } catch (error) {
       console.error("Error fetching options: ", error);
     }
@@ -401,6 +407,7 @@ export default function CotizadorApp() {
     setSelectedMaterial(null);
     setSelectedHerraje(null);
     setSelectedVidrio(null);
+    setSelectedExtra(null);
     setItemQuantity(1);
     setItemDimensions({ height: "", width: "" });
     
@@ -521,6 +528,27 @@ export default function CotizadorApp() {
         };
         break;
 
+      case "extra":
+        if (!selectedExtra) {
+          setSnackbar({
+            open: true,
+            message: "Debe seleccionar un servicio o extra.",
+            severity: "error"
+          });
+          return;
+        }
+        selectedItem = selectedExtra;
+        const extraPrice = parseFloat(selectedExtra.price || 0);
+        const extraQty = Math.max(1, parseFloat(itemQuantity) || 1);
+        itemData = {
+          name: selectedExtra.name,
+          quantity: extraQty,
+          quantityType: "unidad",
+          unitPrice: extraPrice,
+          total: extraPrice * extraQty
+        };
+        break;
+
       default:
         return;
     }
@@ -565,6 +593,7 @@ export default function CotizadorApp() {
     const materialsSummary = {};
     const chapesSummary = {};
     const glassesSummary = {};
+    const extrasSummary = {};
     const TRAMO_DEFAULT = 6.1;
 
     const getMaterialStretch = (materialName, materialId) => {
@@ -616,6 +645,19 @@ export default function CotizadorApp() {
               glassesSummary[item.itemData.name] = {
                 name: item.itemData.name,
                 meterage: item.itemData.area,
+                price: item.itemData.total,
+                isIndividual: true
+              };
+            }
+            break;
+          case "extra":
+            if (extrasSummary[item.itemData.name]) {
+              extrasSummary[item.itemData.name].quantity += item.itemData.quantity;
+              extrasSummary[item.itemData.name].price += item.itemData.total;
+            } else {
+              extrasSummary[item.itemData.name] = {
+                name: item.itemData.name,
+                quantity: item.itemData.quantity,
                 price: item.itemData.total,
                 isIndividual: true
               };
@@ -683,7 +725,8 @@ export default function CotizadorApp() {
     return {
       materials: materialsWithTramos,
       chapes: Object.values(chapesSummary),
-      glasses: Object.values(glassesSummary)
+      glasses: Object.values(glassesSummary),
+      extras: Object.values(extrasSummary)
     };
   };
 
@@ -1044,21 +1087,27 @@ export default function CotizadorApp() {
         customerName: createNewCustomer ? newCustomerName.trim() : selectedCustomer.name,
         items: cart.map(item => {
           if (item.type === "individual") {
-            return {
+            const base = {
               type: "individual",
               itemType: item.itemType,
               itemId: item.itemId,
               itemName: item.itemData.name,
               quantity: item.itemData.quantity,
-              quantityType: item.itemData.quantityType,
+              quantityType: item.itemData.quantityType || (item.itemType === "extra" ? "unidad" : undefined),
               unitPrice: round2(item.itemData.unitPrice),
               total: round2(item.itemData.total),
+              status: "cotizacion",
+              assignedEmployeeId: ""
+            };
+            if (item.itemType === "extra") {
+              return { ...base, dimensions: null, area: null, meters: null, tramo: null };
+            }
+            return {
+              ...base,
               dimensions: item.itemData.dimensions || null,
               area: item.itemData.area != null ? round2(item.itemData.area) : null,
               meters: item.itemData.meters != null ? round2(item.itemData.meters) : null,
-              tramo: item.itemData.tramo != null ? round2(item.itemData.tramo) : null,
-              status: "cotizacion",
-              assignedEmployeeId: ""
+              tramo: item.itemData.tramo != null ? round2(item.itemData.tramo) : null
             };
           } else {
             const c = item.calculations;
@@ -1387,6 +1436,19 @@ export default function CotizadorApp() {
           </Fab>
           <Typography variant="caption" sx={{ textAlign: "center", color: "text.secondary" }}>
             Vidrio
+          </Typography>
+
+          <Fab
+            color="secondary"
+            size="medium"
+            aria-label="add servicio o extra"
+            onClick={() => handleOpenAddItemDialog("extra")}
+            sx={{ backgroundColor: "#9c27b0", "&:hover": { backgroundColor: "#7b1fa2" } }}
+          >
+            <Add />
+          </Fab>
+          <Typography variant="caption" sx={{ textAlign: "center", color: "text.secondary" }}>
+            Servicio/Extra
           </Typography>
         </Box>
         
@@ -1915,7 +1977,7 @@ export default function CotizadorApp() {
                         <TableRow key={item.id}>
                           <TableCell>
                             <Chip 
-                              label={item.type === "individual" ? item.itemType : "modelo"} 
+                              label={item.type === "individual" ? (item.itemType === "extra" ? "Servicio" : item.itemType) : "modelo"} 
                               color={item.type === "individual" ? "secondary" : "primary"}
                               size="small"
                             />
@@ -2156,6 +2218,44 @@ export default function CotizadorApp() {
                           </TableContainer>
                         </Box>
                       )}
+
+                      {/* Servicios / Extras */}
+                      {summaries.extras && summaries.extras.length > 0 && (
+                        <Box sx={{ mb: 3 }}>
+                          <Typography variant="subtitle1" sx={{ mb: 1, fontWeight: 'bold' }}>
+                            Servicios / Extras:
+                          </Typography>
+                          <TableContainer>
+                            <Table size="small">
+                              <TableHead>
+                                <TableRow>
+                                  <TableCell>Concepto</TableCell>
+                                  <TableCell align="right">Cantidad</TableCell>
+                                  <TableCell align="right">Precio Total</TableCell>
+                                </TableRow>
+                              </TableHead>
+                              <TableBody>
+                                {summaries.extras.map((extra, index) => (
+                                  <TableRow key={index}>
+                                    <TableCell>{extra.name}</TableCell>
+                                    <TableCell align="right">{extra.quantity}</TableCell>
+                                    <TableCell align="right">${extra.price.toFixed(2)}</TableCell>
+                                  </TableRow>
+                                ))}
+                                <TableRow>
+                                  <TableCell sx={{ fontWeight: 'bold' }}>Total Servicios/Extras:</TableCell>
+                                  <TableCell align="right" sx={{ fontWeight: 'bold' }}>
+                                    {summaries.extras.reduce((sum, e) => sum + (e.quantity || 0), 0)}
+                                  </TableCell>
+                                  <TableCell align="right" sx={{ fontWeight: 'bold' }}>
+                                    ${summaries.extras.reduce((sum, e) => sum + e.price, 0).toFixed(2)}
+                                  </TableCell>
+                                </TableRow>
+                              </TableBody>
+                            </Table>
+                          </TableContainer>
+                        </Box>
+                      )}
                     </Box>
                   );
                 })()}
@@ -2273,7 +2373,7 @@ export default function CotizadorApp() {
         {/* Diálogo para Agregar Elementos Individuales */}
         <Dialog open={showAddItemDialog} onClose={() => setShowAddItemDialog(false)} maxWidth="md" fullWidth>
           <DialogTitle>
-            Agregar {addItemType === "material" ? "Material" : addItemType === "herraje" ? "Herraje" : "Vidrio"}
+            Agregar {addItemType === "material" ? "Material" : addItemType === "herraje" ? "Herraje" : addItemType === "vidrio" ? "Vidrio" : "Servicio / Extra"}
           </DialogTitle>
           <DialogContent>
             <Box sx={{ mt: 2 }}>
@@ -2500,6 +2600,46 @@ export default function CotizadorApp() {
                   )}
                 </>
               )}
+
+              {addItemType === "extra" && (
+                <>
+                  <Autocomplete
+                    options={extrasOptions}
+                    getOptionLabel={(option) => `${option.name} - $${option.price}`}
+                    isOptionEqualToValue={(option, value) => option.id === value?.id}
+                    value={selectedExtra}
+                    onChange={(event, newValue) => setSelectedExtra(newValue)}
+                    renderOption={(props, option) => (
+                      <li {...props} key={option.id}>
+                        {option.name} - ${option.price}
+                      </li>
+                    )}
+                    renderInput={(params) => (
+                      <TextField {...params} label="Seleccionar Servicio o Extra" variant="outlined" sx={{ mb: 2 }} />
+                    )}
+                  />
+                  <TextField
+                    fullWidth
+                    label="Cantidad"
+                    type="number"
+                    value={itemQuantity}
+                    onChange={(e) => setItemQuantity(parseFloat(e.target.value) || 1)}
+                    inputProps={{ min: 1, step: 1 }}
+                    sx={{ mb: 2 }}
+                  />
+                  {selectedExtra && (
+                    <Box sx={{ p: 2, bgcolor: "grey.100", borderRadius: 1 }}>
+                      <Typography variant="subtitle2">Resumen:</Typography>
+                      <Typography variant="body2">Concepto: {selectedExtra.name}</Typography>
+                      <Typography variant="body2">Precio unitario: ${parseFloat(selectedExtra.price || 0).toFixed(2)}</Typography>
+                      <Typography variant="body2">Cantidad: {itemQuantity}</Typography>
+                      <Typography variant="body2" sx={{ fontWeight: "bold" }}>
+                        Total: ${(itemQuantity * parseFloat(selectedExtra.price || 0)).toFixed(2)}
+                      </Typography>
+                    </Box>
+                  )}
+                </>
+              )}
             </Box>
           </DialogContent>
           <DialogActions>
@@ -2510,7 +2650,8 @@ export default function CotizadorApp() {
               disabled={
                 (addItemType === "material" && !selectedMaterial) ||
                 (addItemType === "herraje" && !selectedHerraje) ||
-                (addItemType === "vidrio" && !selectedVidrio)
+                (addItemType === "vidrio" && !selectedVidrio) ||
+                (addItemType === "extra" && !selectedExtra)
               }
             >
               Agregar al Carrito

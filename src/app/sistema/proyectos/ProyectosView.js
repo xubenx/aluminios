@@ -187,6 +187,7 @@ const ProyectosView = ({
   materialsOptions,
   chapesOptions,
   glassesOptions,
+  extrasOptions,
   colorsOptions,
   dimensions,
   setDimensions,
@@ -224,6 +225,8 @@ const ProyectosView = ({
   setSelectedIndividualHerraje,
   selectedIndividualVidrio,
   setSelectedIndividualVidrio,
+  selectedIndividualExtra,
+  setSelectedIndividualExtra,
   individualItemQuantity,
   setIndividualItemQuantity,
   individualItemQuantityType,
@@ -600,6 +603,14 @@ const ProyectosView = ({
                           ${totals.laborCost.toFixed(2)}
                         </Typography>
                       </Grid>
+                      {totals.extras != null && totals.extras > 0 && (
+                        <Grid item xs={12} sm={6} md={3}>
+                          <Typography variant="subtitle2" color="textSecondary">Servicios/Extras:</Typography>
+                          <Typography variant="h6" sx={{ color: 'purple', fontWeight: 'bold' }}>
+                            ${totals.extras.toFixed(2)}
+                          </Typography>
+                        </Grid>
+                      )}
                       <Grid item xs={12}>
                         <Divider sx={{ my: 1 }} />
                         <Typography variant="subtitle2" color="textSecondary">Total Calculado:</Typography>
@@ -842,7 +853,7 @@ const ProyectosView = ({
                       <Grid container spacing={2} sx={{ mb: 2 }}>
                         <Grid item xs={6} sm={3}>
                           <Typography variant="subtitle2" color="textSecondary">Tipo:</Typography>
-                          <Typography>{item.itemType?.charAt(0).toUpperCase() + item.itemType?.slice(1)}</Typography>
+                          <Typography>{item.itemType === 'extra' ? 'Servicio' : (item.itemType?.charAt(0).toUpperCase() + item.itemType?.slice(1))}</Typography>
                         </Grid>
                         <Grid item xs={6} sm={3}>
                           <Typography variant="subtitle2" color="textSecondary">Cantidad:</Typography>
@@ -1302,14 +1313,14 @@ const ProyectosView = ({
                             '&:hover .delete-btn': { opacity: 1 }
                           }}
                         >
-                          <img
+                          <Image
                             src={img.url}
                             alt=""
+                            fill
+                            unoptimized
+                            sizes="(max-width: 600px) 50vw, 25vw"
                             style={{
-                              width: '100%',
-                              height: '100%',
-                              objectFit: 'cover',
-                              display: 'block'
+                              objectFit: 'cover'
                             }}
                           />
                           <IconButton
@@ -2290,13 +2301,14 @@ const ProyectosView = ({
                     label="Tipo de Elemento"
                     fullWidth
                     variant="outlined"
-                    value={individualItemType}
+                      value={individualItemType}
                     onChange={(e) => {
                       setIndividualItemType(e.target.value);
                       // Reset selections when changing type
                       setSelectedIndividualMaterial(null);
                       setSelectedIndividualHerraje(null);
                       setSelectedIndividualVidrio(null);
+                      setSelectedIndividualExtra(null);
                     }}
                     SelectProps={{
                       native: true,
@@ -2306,6 +2318,7 @@ const ProyectosView = ({
                     <option value="material">Material</option>
                     <option value="herraje">Herraje</option>
                     <option value="vidrio">Vidrio</option>
+                    <option value="extra">Servicio / Extra</option>
                   </TextField>
                 </Grid>
 
@@ -2491,6 +2504,44 @@ const ProyectosView = ({
                   </>
                 )}
 
+                {/* Selector de Servicio/Extra */}
+                {individualItemType === 'extra' && (
+                  <>
+                    <Grid item xs={12}>
+                      <Autocomplete
+                        options={extrasOptions}
+                        getOptionLabel={(option) => `${option.name || ''} - $${option.price || 0}`}
+                        value={selectedIndividualExtra}
+                        onChange={(event, newValue) => setSelectedIndividualExtra(newValue)}
+                        renderInput={(params) => (
+                          <TextField
+                            {...params}
+                            label="Seleccionar Servicio o Extra"
+                            variant="outlined"
+                            fullWidth
+                            helperText={selectedIndividualExtra ?
+                              `Precio: $${formatCurrency(parseFloat(selectedIndividualExtra.price || 0))}` :
+                              'Seleccione un servicio o extra (ej: Gasolina, Pintura)'
+                            }
+                          />
+                        )}
+                      />
+                    </Grid>
+                    <Grid item xs={12}>
+                      <TextField
+                        label="Cantidad"
+                        type="number"
+                        fullWidth
+                        variant="outlined"
+                        value={individualItemQuantity}
+                        onChange={(e) => setIndividualItemQuantity(parseFloat(e.target.value) || 1)}
+                        inputProps={{ min: "1", step: "1" }}
+                        helperText="Cantidad de veces que aplica este cargo"
+                      />
+                    </Grid>
+                  </>
+                )}
+
                 {/* Resumen del cálculo */}
                 <Grid item xs={12}>
                   <Paper sx={{ p: 2, backgroundColor: 'grey.50' }}>
@@ -2517,7 +2568,8 @@ const ProyectosView = ({
             disabled={individualItemTotal <= 0 || (
               (individualItemType === 'material' && !selectedIndividualMaterial) ||
               (individualItemType === 'herraje' && !selectedIndividualHerraje) ||
-              (individualItemType === 'vidrio' && !selectedIndividualVidrio)
+              (individualItemType === 'vidrio' && !selectedIndividualVidrio) ||
+              (individualItemType === 'extra' && !selectedIndividualExtra)
             )}
           >
             Agregar Elemento

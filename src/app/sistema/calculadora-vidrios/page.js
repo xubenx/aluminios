@@ -32,8 +32,7 @@ import {
   Step,
   StepLabel,
   Card,
-  CardContent,
-  Divider
+  CardContent
 } from "@mui/material";
 import {
   Add,

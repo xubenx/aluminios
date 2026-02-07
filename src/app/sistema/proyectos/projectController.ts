@@ -13,7 +13,7 @@ export interface ProjectItem {
   type: 'model' | 'individual';
   modelId?: string;
   modelName?: string;
-  itemType?: 'material' | 'herraje' | 'vidrio';
+  itemType?: 'material' | 'herraje' | 'vidrio' | 'extra';
   itemId?: string;
   itemName?: string;
   area?: string;
@@ -52,7 +52,9 @@ export interface ItemDetails {
 export interface Project {
   id: string;
   name: string;
+  projectName?: string;
   customerName: string;
+  client?: string;
   status: 'quotation' | 'active' | 'completed' | 'cancelled' | 'inactive';
   createdAt: FirebaseTimestamp;
   date: FirebaseTimestamp;
@@ -512,7 +514,7 @@ export const addModelToProject = async (
 export const addIndividualItemToProject = async (
   projectId: string,
   itemData: {
-    itemType: 'material' | 'herraje' | 'vidrio';
+    itemType: 'material' | 'herraje' | 'vidrio' | 'extra';
     itemId: string;
     itemName: string;
     quantity: number;

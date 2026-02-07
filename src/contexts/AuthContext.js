@@ -19,7 +19,7 @@ export function AuthProvider({ children }) {
       try {
         const parsed = JSON.parse(stored);
         if (parsed?.userId) setUser(parsed);
-      } catch (e) {
+      } catch {
         localStorage.removeItem(SESSION_KEY);
       }
     }

@@ -105,6 +105,19 @@ const loadChapes = async () => {
   }
 };
 
+const loadExtras = async () => {
+  try {
+    const querySnapshot = await getDocs(collection(db, "extras"));
+    return querySnapshot.docs.map(doc => ({
+      id: doc.id,
+      ...doc.data()
+    }));
+  } catch (error) {
+    console.error("Error loading extras:", error);
+    return [];
+  }
+};
+
 const loadColors = async () => {
   try {
     const querySnapshot = await getDocs(collection(db, "colors"));
@@ -474,6 +487,7 @@ export const useProyectosController = () => {
   const [materialsOptions, setMaterialsOptions] = useState([]);
   const [chapesOptions, setChapesOptions] = useState([]);
   const [glassesOptions, setGlassesOptions] = useState([]);
+  const [extrasOptions, setExtrasOptions] = useState([]);
   const [colorsOptions, setColorsOptions] = useState([]);
   const [dimensions, setDimensions] = useState({ height: "1", width: "1" });
   const [selectedGlass, setSelectedGlass] = useState(null);
@@ -504,6 +518,7 @@ export const useProyectosController = () => {
   const [selectedIndividualMaterial, setSelectedIndividualMaterial] = useState(null);
   const [selectedIndividualHerraje, setSelectedIndividualHerraje] = useState(null);
   const [selectedIndividualVidrio, setSelectedIndividualVidrio] = useState(null);
+  const [selectedIndividualExtra, setSelectedIndividualExtra] = useState(null);
   const [individualItemQuantity, setIndividualItemQuantity] = useState(1);
   const [individualItemQuantityType, setIndividualItemQuantityType] = useState("metros");
   const [individualItemDimensions, setIndividualItemDimensions] = useState({ height: "", width: "" });
@@ -712,7 +727,7 @@ export const useProyectosController = () => {
 
   // Función para calcular totales por categorías
   const getProjectCategoricalTotals = (project) => {
-    if (!project || !project.items) return { materials: 0, herrajes: 0, vidrios: 0, laborCost: 0, total: 0 };
+    if (!project || !project.items) return { materials: 0, herrajes: 0, vidrios: 0, extras: 0, laborCost: 0, total: 0 };
     
     return project.items.reduce((acc, item) => {
       if (item.type === 'individual') {
@@ -726,6 +741,9 @@ export const useProyectosController = () => {
             break;
           case 'vidrio':
             acc.vidrios += item.total || 0;
+            break;
+          case 'extra':
+            acc.extras += item.total || 0;
             break;
         }
         // Para elementos individuales, sumar solo el total del item
@@ -748,7 +766,7 @@ export const useProyectosController = () => {
         }
       }
       return acc;
-    }, { materials: 0, herrajes: 0, vidrios: 0, laborCost: 0, total: 0 });
+    }, { materials: 0, herrajes: 0, vidrios: 0, extras: 0, laborCost: 0, total: 0 });
   };
 
   // Funciones de carga de datos
@@ -830,6 +848,9 @@ export const useProyectosController = () => {
       
       setGlassesOptions(glassesList);
 
+      const extrasData = await loadExtras();
+      setExtrasOptions(extrasData);
+
       // Cargar colores usando la función dedicada
       const colorsData = await loadColors();
       setColorsOptions(colorsData);
@@ -838,6 +859,7 @@ export const useProyectosController = () => {
         materials: materialsData?.length || 0,
         chapes: chapesData?.length || 0,
         glasses: glassesList?.length || 0,
+        extras: extrasData?.length || 0,
         colors: colorsData?.length || 0
       });
     } catch (error) {
@@ -2082,6 +2104,12 @@ export const useProyectosController = () => {
           }
           total = area * unitPrice;
           break;
+        case 'extra':
+          selectedItem = selectedIndividualExtra;
+          unitPrice = parseFloat(selectedItem?.price || "0");
+          total = individualItemQuantity * unitPrice;
+          calculationDetails = `${individualItemQuantity} × $${unitPrice} = $${total.toFixed(2)}`;
+          break;
       }
 
       if (!selectedItem) {
@@ -2118,6 +2146,8 @@ export const useProyectosController = () => {
           : individualItemQuantity;
         itemPayload.quantityType = individualItemQuantityType;
         itemPayload.area = areaVid;
+      } else if (individualItemType === "extra") {
+        itemPayload.quantityType = "unidad";
       }
       await addIndividualItemToProject(addingToProject.id, itemPayload, addingToProject.status);
 
@@ -2208,6 +2238,13 @@ export const useProyectosController = () => {
           } else {
             console.error(`Glass not found for itemId: ${recalcIndividualItem.itemId}`); // Debug log
             console.log("Available glasses:", glassesOptions.map(g => ({ id: g.id, originalId: g.originalId, name: g.name }))); // Debug log
+          }
+          break;
+        case 'extra':
+          const extraItem = extrasOptions.find(e => e.id === recalcIndividualItem.itemId);
+          if (extraItem) {
+            unitPrice = parseFloat(extraItem.price || "0");
+            total = recalcIndividualQuantity * unitPrice;
           }
           break;
       }
@@ -2398,6 +2435,14 @@ export const useProyectosController = () => {
             total = area * unitPrice;
           }
           break;
+        case 'extra':
+          selectedItem = selectedIndividualExtra;
+          if (selectedItem) {
+            unitPrice = parseFloat(selectedItem.price || "0");
+            total = individualItemQuantity * unitPrice;
+            calculation = `${individualItemQuantity} × ${formatCurrency(unitPrice)} = ${formatCurrency(total)}`;
+          }
+          break;
       }
 
       setIndividualItemCalculation(calculation);
@@ -2410,6 +2455,7 @@ export const useProyectosController = () => {
     selectedIndividualMaterial,
     selectedIndividualHerraje,
     selectedIndividualVidrio,
+    selectedIndividualExtra,
     individualItemQuantity,
     individualItemQuantityType,
     individualItemDimensions,
@@ -2476,6 +2522,14 @@ export const useProyectosController = () => {
             calculation = "Vidrio no encontrado";
           }
           break;
+        case 'extra':
+          const extraRecalc = extrasOptions.find(e => e.id === recalcIndividualItem.itemId);
+          if (extraRecalc) {
+            unitPrice = parseFloat(extraRecalc.price || "0");
+            total = recalcIndividualQuantity * unitPrice;
+            calculation = `${recalcIndividualQuantity} × ${formatCurrency(unitPrice)} = ${formatCurrency(total)}`;
+          }
+          break;
       }
     } catch (error) {
       console.error("Error calculating recalc preview:", error);
@@ -2490,7 +2544,8 @@ export const useProyectosController = () => {
     recalcIndividualPriceType,
     materialsOptions,
     chapesOptions,
-    glassesOptions
+    glassesOptions,
+    extrasOptions
   ]);
 
   // Retornar todos los estados y funciones necesarias
@@ -2549,6 +2604,7 @@ export const useProyectosController = () => {
     materialsOptions,
     chapesOptions,
     glassesOptions,
+    extrasOptions,
     colorsOptions,
     dimensions,
     setDimensions,
@@ -2595,6 +2651,8 @@ export const useProyectosController = () => {
     setSelectedIndividualHerraje,
     selectedIndividualVidrio,
     setSelectedIndividualVidrio,
+    selectedIndividualExtra,
+    setSelectedIndividualExtra,
     individualItemQuantity,
     setIndividualItemQuantity,
     individualItemQuantityType,

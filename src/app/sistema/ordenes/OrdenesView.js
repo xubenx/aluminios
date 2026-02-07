@@ -40,8 +40,7 @@ import {
   Payment as PaymentIcon,
   CheckCircle as CheckCircleIcon,
   Cancel as CancelIcon,
-  DoneAll as DoneAllIcon,
-  Done as DoneIcon
+  DoneAll as DoneAllIcon
 } from "@mui/icons-material";
 
 export default function OrdenesView({

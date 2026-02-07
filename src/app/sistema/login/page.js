@@ -54,7 +54,7 @@ export default function LoginPage() {
       const res = await login(firstUserUsuario, password);
       if (res.ok) router.replace("/sistema");
       else setError(res.error);
-    } catch (err) {
+    } catch {
       setError("Error al crear usuario.");
     } finally {
       setSubmitting(false);
@@ -72,7 +72,7 @@ export default function LoginPage() {
       } else {
         setError(res.error || "Error al iniciar sesión");
       }
-    } catch (err) {
+    } catch {
       setError("Error de conexión. Intenta de nuevo.");
     } finally {
       setSubmitting(false);
