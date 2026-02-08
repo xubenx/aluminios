@@ -1008,21 +1008,39 @@ export default function CotizadorApp() {
     }
   };
 
+  // Quitar undefined del objeto (Firestore no acepta undefined)
+  const stripUndefined = (obj) => {
+    if (obj === null || obj === undefined) return obj;
+    if (Array.isArray(obj)) return obj.map(stripUndefined);
+    if (typeof obj === "object" && obj.toDate) return obj; // Firestore Timestamp
+    if (typeof obj === "object") {
+      const out = {};
+      for (const [k, v] of Object.entries(obj)) {
+        if (v !== undefined) {
+          const cleaned = stripUndefined(v);
+          if (cleaned !== undefined) out[k] = cleaned;
+        }
+      }
+      return out;
+    }
+    return obj;
+  };
+
   const handleSaveProject = async () => {
     if (!projectName.trim()) {
-      setSnackbar({ 
-        open: true, 
-        message: "El nombre del proyecto es obligatorio.", 
-        severity: "error" 
+      setSnackbar({
+        open: true,
+        message: "El nombre del proyecto es obligatorio.",
+        severity: "error"
       });
       return;
     }
 
     if (cart.length === 0) {
-      setSnackbar({ 
-        open: true, 
-        message: "El carrito está vacío. Agregue al menos un modelo.", 
-        severity: "error" 
+      setSnackbar({
+        open: true,
+        message: "El carrito está vacío. Agregue al menos un elemento (modelo, material, herraje, vidrio o servicio).",
+        severity: "error"
       });
       return;
     }
@@ -1030,114 +1048,126 @@ export default function CotizadorApp() {
     let finalCustomerId = null;
 
     try {
-      // Si se va a crear un nuevo cliente
       if (createNewCustomer) {
         if (!newCustomerName.trim()) {
-          setSnackbar({ 
-            open: true, 
-            message: "El nombre del cliente es obligatorio.", 
-            severity: "error" 
+          setSnackbar({
+            open: true,
+            message: "El nombre del cliente es obligatorio.",
+            severity: "error"
           });
           return;
         }
-
         const customerData = {
           name: newCustomerName.trim(),
           phone: newCustomerPhone.trim() || "",
           status: "available"
         };
-
         const customerDoc = await addDoc(collection(db, "customers"), customerData);
         finalCustomerId = customerDoc.id;
       } else if (selectedCustomer) {
         finalCustomerId = selectedCustomer.id;
       } else {
-        setSnackbar({ 
-          open: true, 
-          message: "Debe seleccionar un cliente o crear uno nuevo.", 
-          severity: "error" 
+        setSnackbar({
+          open: true,
+          message: "Debe seleccionar un cliente o crear uno nuevo.",
+          severity: "error"
         });
         return;
       }
 
-      // Crear el proyecto (precios limitados a 2 decimales)
+      const customerName = createNewCustomer ? newCustomerName.trim() : (selectedCustomer?.name ?? "").trim();
+      if (!customerName) {
+        setSnackbar({
+          open: true,
+          message: "El nombre del cliente no está disponible. Seleccione otro o cree uno nuevo.",
+          severity: "error"
+        });
+        return;
+      }
+
       const roundDetails = (calc) => {
         if (!calc) return calc;
         const r = (n) => round2(n);
         const roundItems = (items) =>
-          (items || []).map((i) => ({
-            ...i,
-            price: r(i.price),
-            ...(i.basePrice !== undefined && { basePrice: r(i.basePrice) }),
-            ...(i.meterage !== undefined && { meterage: r(i.meterage) }),
-            ...(i.pieces !== undefined && { pieces: r(i.pieces) })
-          }));
-        return {
+          (items || []).map((i) => {
+            const row = {
+              ...i,
+              price: r(i.price),
+              ...(i.basePrice !== undefined && { basePrice: r(i.basePrice) }),
+              ...(i.meterage !== undefined && { meterage: r(i.meterage) }),
+              ...(i.pieces !== undefined && { pieces: r(i.pieces) })
+            };
+            return stripUndefined(row);
+          });
+        return stripUndefined({
           ...calc,
           price: r(calc.price),
-          basePrice: calc.basePrice !== undefined ? r(calc.basePrice) : undefined,
-          meterage: calc.meterage !== undefined ? r(calc.meterage) : undefined,
-          pieces: calc.pieces !== undefined ? r(calc.pieces) : undefined,
+          ...(calc.basePrice !== undefined && { basePrice: r(calc.basePrice) }),
+          ...(calc.meterage !== undefined && { meterage: r(calc.meterage) }),
+          ...(calc.pieces !== undefined && { pieces: r(calc.pieces) }),
           items: calc.items ? roundItems(calc.items) : calc.items
-        };
+        });
       };
+
       const projectData = {
         name: projectName.trim(),
         customerId: finalCustomerId,
-        customerName: createNewCustomer ? newCustomerName.trim() : selectedCustomer.name,
-        items: cart.map(item => {
+        customerName,
+        items: cart.map((item) => {
           if (item.type === "individual") {
+            const itemData = item.itemData || {};
             const base = {
               type: "individual",
               itemType: item.itemType,
-              itemId: item.itemId,
-              itemName: item.itemData.name,
-              quantity: item.itemData.quantity,
-              quantityType: item.itemData.quantityType || (item.itemType === "extra" ? "unidad" : undefined),
-              unitPrice: round2(item.itemData.unitPrice),
-              total: round2(item.itemData.total),
+              itemId: item.itemId || "",
+              itemName: itemData.name ?? "",
+              quantity: itemData.quantity ?? 0,
+              unitPrice: round2(itemData.unitPrice),
+              total: round2(itemData.total),
               status: "cotizacion",
               assignedEmployeeId: ""
             };
             if (item.itemType === "extra") {
+              base.quantityType = "unidad";
               return { ...base, dimensions: null, area: null, meters: null, tramo: null };
             }
+            if (item.itemData?.quantityType) base.quantityType = item.itemData.quantityType;
             return {
               ...base,
-              dimensions: item.itemData.dimensions || null,
-              area: item.itemData.area != null ? round2(item.itemData.area) : null,
-              meters: item.itemData.meters != null ? round2(item.itemData.meters) : null,
-              tramo: item.itemData.tramo != null ? round2(item.itemData.tramo) : null
-            };
-          } else {
-            const c = item.calculations;
-            return {
-              type: "model",
-              modelId: item.modelId,
-              modelName: item.modelName,
-              dimensions: item.dimensions,
-              selectedGlass: item.selectedGlass,
-              selectedColor: item.selectedColor || null,
-              total: round2(c.totalGeneral),
-              m2: round2(item.m2 || 100),
-              details: {
-                materials: roundDetails(c.materialsCalc),
-                chapes: roundDetails(c.chapesCalc),
-                glasses: roundDetails(c.glassesCalc),
-                laborCost: round2(c.laborCost),
-                laborCostActual: round2(c.laborCostActual),
-                glassLaborCost: round2(c.glassLaborCost),
-                totalLaborActual: round2(c.totalLaborActual)
-              },
-              laborCostSelected: round2(c.laborCost),
-              laborCostActual: round2(c.laborCostActual),
-              glassLaborCost: round2(c.glassLaborCost),
-              totalLaborActual: round2(c.totalLaborActual),
-              status: "cotizacion",
-              area: "",
-              assignedEmployeeId: ""
+              dimensions: itemData.dimensions || null,
+              area: itemData.area != null ? round2(itemData.area) : null,
+              meters: itemData.meters != null ? round2(itemData.meters) : null,
+              tramo: itemData.tramo != null ? round2(itemData.tramo) : null
             };
           }
+          const c = item.calculations || {};
+          const safeRound = (v) => round2(v ?? 0);
+          return {
+            type: "model",
+            modelId: item.modelId,
+            modelName: item.modelName,
+            dimensions: item.dimensions || null,
+            selectedGlass: item.selectedGlass || null,
+            selectedColor: item.selectedColor || null,
+            total: safeRound(c.totalGeneral),
+            m2: round2(item.m2 ?? 100),
+            details: {
+              materials: roundDetails(c.materialsCalc || {}),
+              chapes: roundDetails(c.chapesCalc || {}),
+              glasses: roundDetails(c.glassesCalc || {}),
+              laborCost: safeRound(c.laborCost),
+              laborCostActual: safeRound(c.laborCostActual),
+              glassLaborCost: safeRound(c.glassLaborCost),
+              totalLaborActual: safeRound(c.totalLaborActual)
+            },
+            laborCostSelected: safeRound(c.laborCost),
+            laborCostActual: safeRound(c.laborCostActual),
+            glassLaborCost: safeRound(c.glassLaborCost),
+            totalLaborActual: safeRound(c.totalLaborActual),
+            status: "cotizacion",
+            area: "",
+            assignedEmployeeId: ""
+          };
         }),
         total: round2(getCartTotal()),
         createdAt: new Date().toISOString(),
@@ -1145,7 +1175,8 @@ export default function CotizadorApp() {
         status: "quotation"
       };
 
-      await addDoc(collection(db, "projects"), projectData);
+      const cleanedProjectData = stripUndefined(projectData);
+      await addDoc(collection(db, "projects"), cleanedProjectData);
 
       setSnackbar({ 
         open: true, 
@@ -1169,10 +1200,11 @@ export default function CotizadorApp() {
 
     } catch (error) {
       console.error("Error saving project:", error);
-      setSnackbar({ 
-        open: true, 
-        message: "Error al guardar el proyecto.", 
-        severity: "error" 
+      const message = error?.message || error?.code || "Error al guardar el proyecto.";
+      setSnackbar({
+        open: true,
+        message: `Error al guardar el proyecto. ${typeof message === "string" ? message : ""}`.trim(),
+        severity: "error"
       });
     }
   };
