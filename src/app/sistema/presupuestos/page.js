@@ -39,13 +39,19 @@ import {
   Chip,
   Paper,
   CircularProgress,
-  Pagination
+  Pagination,
+  useTheme,
+  useMediaQuery
 } from "@mui/material";
 import Image from "next/image";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import { ShoppingCart, Delete, Add, Save } from "@mui/icons-material";
 
 export default function CotizadorApp() {
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
+  const isSmall = useMediaQuery(theme.breakpoints.down("md"));
+
   // Estados para la búsqueda de modelos
   const [models, setModels] = useState([]);
   const [filteredModels, setFilteredModels] = useState([]);
@@ -61,11 +67,17 @@ export default function CotizadorApp() {
   const [materialsOptions, setMaterialsOptions] = useState([]);
   const [chapesOptions, setChapesOptions] = useState([]);
   const [glassesOptions, setGlassesOptions] = useState([]);
+  const [glassesByProduct, setGlassesByProduct] = useState([]); // Lista por nombre + opciones (como /vidrios)
   const [extrasOptions, setExtrasOptions] = useState([]);
   const [colorsOptions, setColorsOptions] = useState([]);
   const [dimensions, setDimensions] = useState({ height: "100", width: "100" }); // Ahora en centímetros para la UI
   const [selectedGlass, setSelectedGlass] = useState(null);
+  const [selectedGlassProduct, setSelectedGlassProduct] = useState(null); // Vidrio elegido por nombre (para variantes)
   const [selectedColor, setSelectedColor] = useState(null);
+  // Valores por defecto para los próximos modelos que se agreguen al carrito
+  const [defaultColorForNewItems, setDefaultColorForNewItems] = useState(null);
+  const [defaultGlassProductForNewItems, setDefaultGlassProductForNewItems] = useState(null);
+  const [defaultGlassForNewItems, setDefaultGlassForNewItems] = useState(null);
 
   // Caché de URLs de imágenes (ref para evitar re-renders que causan parpadeo)
   const imageUrlCacheRef = useRef(new Map());
@@ -258,16 +270,29 @@ export default function CotizadorApp() {
       setChapesOptions(chapesSnap.docs.map((doc) => ({ id: doc.id, ...doc.data() })));
 
       const glassesSnap = await getDocs(collection(db, "glasses"));
-      // Para vidrio: se recorren las "options" internas de cada documento
-      const glassesList = glassesSnap.docs.flatMap((doc) => {
-        const data = doc.data();
-        return data.options.map((option) => ({
-          id: `${doc.id}_${option.tickness}`, // Clave única combinando ID del documento y espesor
-          originalId: doc.id, // ID original del documento para referencia
-          name: `${data.name} ${option.tickness}mm`,
-          tickness: option.tickness,
-          priceInstalled: option.priceInstalled,
-        }));
+      const glassesDocs = glassesSnap.docs
+        .map((d) => ({ id: d.id, ...d.data() }))
+        .filter((g) => g.status !== "inactive");
+      // Lista por producto (nombre + opciones), como en /sistema/vidrios
+      setGlassesByProduct(glassesDocs);
+      // Lista plana para cálculo y dropdown del carrito: cada opción con precio numérico
+      const glassesList = glassesDocs.flatMap((glassDoc) => {
+        const options = glassDoc.options || [];
+        const name = glassDoc.name || "";
+        return options.map((opt) => {
+          const tickness = opt.tickness ?? opt.thickness ?? "";
+          const priceInstalled = parseFloat(opt.priceInstalled ?? opt.price ?? 0) || 0;
+          const priceCut = parseFloat(opt.priceCut ?? 0) || 0;
+          return {
+            id: `${glassDoc.id}_${tickness}`,
+            originalId: glassDoc.id,
+            name: `${name} ${tickness}mm`,
+            tickness,
+            priceInstalled,
+            price: priceInstalled,
+            priceCut,
+          };
+        });
       });
       setGlassesOptions(glassesList);
 
@@ -320,6 +345,9 @@ export default function CotizadorApp() {
 
   const handleSelectModel = async (model) => {
     setSelectedModel(model);
+    setSelectedGlass(null);
+    setSelectedGlassProduct(null);
+    setSelectedColor(null);
     try {
       const modelDoc = await getDoc(doc(db, "models", model.id));
       if (modelDoc.exists()) {
@@ -334,6 +362,13 @@ export default function CotizadorApp() {
           chapes,
           glasses,
         });
+        // Aplicar valores por defecto para nuevos ítems (predefinidos)
+        if (defaultColorForNewItems) setSelectedColor(defaultColorForNewItems);
+        if (defaultGlassForNewItems) {
+          setSelectedGlass(defaultGlassForNewItems);
+          const product = glassesByProduct.find((p) => p.id === defaultGlassForNewItems.originalId);
+          if (product) setSelectedGlassProduct(product);
+        }
       } else {
         setModelData(null);
       }
@@ -347,6 +382,26 @@ export default function CotizadorApp() {
   // ––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––
   const handleSelectGlass = (newValue) => {
     setSelectedGlass(newValue);
+  };
+
+  const handleSelectGlassProduct = (newProduct) => {
+    setSelectedGlassProduct(newProduct);
+    setSelectedGlass(null);
+  };
+
+  const handleSelectGlassVariant = (option) => {
+    if (!selectedGlassProduct || !option) return;
+    const tickness = option.tickness ?? option.thickness ?? "";
+    const priceInstalled = parseFloat(option.priceInstalled ?? option.price ?? 0) || 0;
+    setSelectedGlass({
+      id: `${selectedGlassProduct.id}_${tickness}`,
+      originalId: selectedGlassProduct.id,
+      name: `${selectedGlassProduct.name || ""} ${tickness}mm`,
+      tickness,
+      priceInstalled,
+      price: priceInstalled,
+      priceCut: parseFloat(option.priceCut ?? 0) || 0,
+    });
   };
 
   // ––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––
@@ -833,7 +888,9 @@ export default function CotizadorApp() {
         PRECIO: 1, ALTO: heightInMeters, ANCHO: widthInMeters
       });
 
-      const glassPrice = effectiveGlass ? parseFloat(effectiveGlass.priceInstalled || effectiveGlass.price || "0") : 0;
+      const glassPrice = effectiveGlass
+        ? (parseFloat(effectiveGlass.priceInstalled ?? effectiveGlass.price ?? 0) || 0)
+        : 0;
       const price = meterage * glassPrice;
 
       return {
@@ -1316,7 +1373,9 @@ export default function CotizadorApp() {
           ANCHO: widthInMeters,
         });
   
-        const glassPrice = selectedGlass ? parseFloat(selectedGlass.priceInstalled || selectedGlass.price || "0") : 0;
+        const glassPrice = selectedGlass
+          ? (parseFloat(selectedGlass.priceInstalled ?? selectedGlass.price ?? 0) || 0)
+          : 0;
         const price = meterage * glassPrice;
   
         return {
@@ -1361,8 +1420,8 @@ export default function CotizadorApp() {
   // Vista de búsqueda y selección de modelos
   if (!selectedModel) {
     return (
-      <Box sx={{ padding: 2 }}>
-        <Typography variant="h4" align="center" sx={{ mb: 2, color: "black" }}>
+      <Box sx={{ px: { xs: 1, sm: 2 }, py: 2, pb: 10 }}>
+        <Typography variant="h4" align="center" sx={{ mb: 2, color: "black", fontSize: { xs: "1.35rem", sm: "1.5rem", md: "2.125rem" } }}>
           Selecciona modelo a cotizar
         </Typography>
         <TextField
@@ -1372,32 +1431,78 @@ export default function CotizadorApp() {
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
           sx={{ mb: 2 }}
+          size={isMobile ? "small" : "medium"}
         />
-        <Grid container spacing={3}>
+        {/* Predefinir color y vidrio (vista inicial) */}
+        <Paper sx={{ p: 2, mb: 3, bgcolor: "grey.50", border: "1px dashed", borderColor: "divider" }}>
+          <Typography variant="subtitle2" sx={{ mb: 1.5, color: "text.secondary", fontWeight: 600, fontSize: { xs: "0.8rem", sm: "0.875rem" } }}>
+            Predefinir para los próximos modelos
+          </Typography>
+          <Box sx={{ display: "flex", flexWrap: "wrap", gap: 2, alignItems: "flex-start" }}>
+            <Box sx={{ minWidth: { xs: "100%", sm: 180 }, flex: "1 1 180px" }}>
+              <Autocomplete
+                size="small"
+                options={colorsOptions}
+                getOptionLabel={(option) => `${option.name} ${option.percentage > 0 ? `(+${option.percentage}%)` : option.percentage < 0 ? `(${option.percentage}%)` : "(Base)"}`}
+                isOptionEqualToValue={(option, value) => option.id === value?.id}
+                value={defaultColorForNewItems}
+                onChange={(_, newValue) => setDefaultColorForNewItems(newValue)}
+                renderInput={(params) => <TextField {...params} label="Color por defecto" variant="outlined" placeholder="Ninguno" />}
+              />
+            </Box>
+            <Box sx={{ minWidth: { xs: "100%", sm: 180 }, flex: "1 1 180px" }}>
+              <Autocomplete
+                size="small"
+                options={glassesByProduct}
+                getOptionLabel={(option) => option.name || ""}
+                isOptionEqualToValue={(option, value) => option.id === value?.id}
+                value={defaultGlassProductForNewItems}
+                onChange={(_, newValue) => { setDefaultGlassProductForNewItems(newValue); if (!newValue) setDefaultGlassForNewItems(null); }}
+                renderInput={(params) => <TextField {...params} label="Vidrio por defecto" variant="outlined" placeholder="Ninguno" />}
+              />
+            </Box>
+            {defaultGlassProductForNewItems && (
+              <Box sx={{ minWidth: { xs: "100%", sm: 180 }, flex: "1 1 180px" }}>
+                <Autocomplete
+                  size="small"
+                  options={defaultGlassProductForNewItems.options || []}
+                  getOptionLabel={(opt) => `${opt.tickness ?? opt.thickness} mm — $${(parseFloat(opt.priceInstalled ?? opt.price ?? 0) || 0).toFixed(2)}/m²`}
+                  isOptionEqualToValue={(opt, val) => (opt.tickness ?? opt.thickness) === (val?.tickness ?? val?.thickness)}
+                  value={defaultGlassForNewItems?.originalId === defaultGlassProductForNewItems.id ? defaultGlassProductForNewItems.options?.find((o) => String(o.tickness ?? o.thickness) === String(defaultGlassForNewItems.tickness)) ?? null : null}
+                  onChange={(_, newValue) => {
+                    if (!defaultGlassProductForNewItems || !newValue) { setDefaultGlassForNewItems(null); return; }
+                    const t = newValue.tickness ?? newValue.thickness ?? "";
+                    setDefaultGlassForNewItems({
+                      id: `${defaultGlassProductForNewItems.id}_${t}`,
+                      originalId: defaultGlassProductForNewItems.id,
+                      name: `${defaultGlassProductForNewItems.name || ""} ${t}mm`,
+                      tickness: t,
+                      priceInstalled: parseFloat(newValue.priceInstalled ?? newValue.price ?? 0) || 0,
+                      price: parseFloat(newValue.priceInstalled ?? newValue.price ?? 0) || 0,
+                      priceCut: parseFloat(newValue.priceCut ?? 0) || 0,
+                    });
+                  }}
+                  renderInput={(params) => <TextField {...params} label="Grosor por defecto" variant="outlined" />}
+                />
+              </Box>
+            )}
+          </Box>
+        </Paper>
+        <Grid container spacing={{ xs: 2, sm: 3 }}>
           {paginatedModels.map((model) => (
             <Grid item xs={12} sm={6} md={4} lg={3} key={model.id}>
-              <Card sx={{ maxWidth: 345, boxShadow: 3, height: '100%', display: 'flex', flexDirection: 'column' }}>
-<CachedImage
+              <Card sx={{ maxWidth: 345, boxShadow: 3, height: '100%', display: 'flex', flexDirection: 'column', mx: { xs: 'auto', sm: 0 }, width: { xs: '100%', sm: 'auto' } }}>
+                <CachedImage
                   modelId={model.id}
                   modelName={model.name}
-                  height={200}
+                  height={isMobile ? 160 : 200}
                   cacheRef={imageUrlCacheRef}
                 />
-                <CardContent sx={{ flexGrow: 1, display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
-                  <Typography
-                    gutterBottom
-                    variant="h6"
-                    component="div"
-                    sx={{ color: "black" }}
-                  >
+                <CardContent sx={{ flexGrow: 1, display: 'flex', flexDirection: 'column', justifyContent: 'space-between', py: { xs: 1.5, sm: 2 } }}>
+                  <Typography gutterBottom variant="h6" component="div" sx={{ color: "black", fontSize: { xs: "0.95rem", sm: "1rem" }, wordBreak: "break-word" }}>
                     {model.name}
                   </Typography>
-                  <Button
-                    color="info"
-                    variant="outlined"
-                    onClick={() => handleSelectModel(model)}
-                    sx={{ color: "black", borderColor: "black" }}
-                  >
+                  <Button color="info" variant="outlined" onClick={() => handleSelectModel(model)} sx={{ color: "black", borderColor: "black", fontSize: { xs: "0.8rem", sm: "0.875rem" } }}>
                     Seleccionar
                   </Button>
                 </CardContent>
@@ -1407,94 +1512,43 @@ export default function CotizadorApp() {
         </Grid>
 
         {filteredModels.length > MODELS_PER_PAGE && (
-          <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 2, mt: 3, mb: 2 }}>
-            <Typography variant="body2" color="textSecondary">
+          <Box sx={{ display: 'flex', flexDirection: { xs: 'column', sm: 'row' }, justifyContent: 'center', alignItems: 'center', gap: 2, mt: 3, mb: 2 }}>
+            <Typography variant="body2" color="textSecondary" sx={{ fontSize: { xs: "0.75rem", sm: "0.875rem" } }}>
               Mostrando {((modelsPage - 1) * MODELS_PER_PAGE) + 1}-{Math.min(modelsPage * MODELS_PER_PAGE, filteredModels.length)} de {filteredModels.length} modelos
             </Typography>
-            <Pagination
-              count={Math.ceil(filteredModels.length / MODELS_PER_PAGE)}
-              page={modelsPage}
-              onChange={(_, page) => setModelsPage(page)}
-              color="primary"
-              showFirstButton
-              showLastButton
-            />
+            <Pagination count={Math.ceil(filteredModels.length / MODELS_PER_PAGE)} page={modelsPage} onChange={(_, page) => setModelsPage(page)} color="primary" showFirstButton showLastButton size={isMobile ? "small" : "medium"} />
           </Box>
         )}
 
         {/* Botones flotantes para agregar elementos individuales */}
         <Box sx={{
           position: "fixed",
-          bottom: "2rem",
-          left: "2rem",
+          bottom: { xs: "1rem", sm: "2rem" },
+          left: { xs: "0.5rem", sm: "2rem" },
           display: "flex",
           flexDirection: "column",
-          gap: 1
+          gap: 0.5,
+          zIndex: 1200
         }}>
-          <Fab
-            color="secondary"
-            size="medium"
-            aria-label="add material"
-            onClick={() => handleOpenAddItemDialog("material")}
-            sx={{ backgroundColor: "#4caf50", "&:hover": { backgroundColor: "#45a049" } }}
-          >
-            <Add />
+          <Fab color="secondary" size="small" aria-label="add material" onClick={() => handleOpenAddItemDialog("material")} sx={{ backgroundColor: "#4caf50", "&:hover": { backgroundColor: "#45a049" }, width: { xs: 40, sm: 48 }, height: { xs: 40, sm: 48 } }}>
+            <Add fontSize={isMobile ? "small" : "medium"} />
           </Fab>
-          <Typography variant="caption" sx={{ textAlign: "center", color: "text.secondary" }}>
-            Material
-          </Typography>
-          
-          <Fab
-            color="secondary"
-            size="medium"
-            aria-label="add herraje"
-            onClick={() => handleOpenAddItemDialog("herraje")}
-            sx={{ backgroundColor: "#ff9800", "&:hover": { backgroundColor: "#f57c00" } }}
-          >
-            <Add />
+          <Typography variant="caption" sx={{ textAlign: "center", color: "text.secondary", fontSize: { xs: "0.65rem", sm: "0.75rem" }, display: { xs: "none", sm: "block" } }}>Material</Typography>
+          <Fab color="secondary" size="small" aria-label="add herraje" onClick={() => handleOpenAddItemDialog("herraje")} sx={{ backgroundColor: "#ff9800", "&:hover": { backgroundColor: "#f57c00" }, width: { xs: 40, sm: 48 }, height: { xs: 40, sm: 48 } }}>
+            <Add fontSize={isMobile ? "small" : "medium"} />
           </Fab>
-          <Typography variant="caption" sx={{ textAlign: "center", color: "text.secondary" }}>
-            Herraje
-          </Typography>
-          
-          <Fab
-            color="secondary"
-            size="medium"
-            aria-label="add vidrio"
-            onClick={() => handleOpenAddItemDialog("vidrio")}
-            sx={{ backgroundColor: "#2196f3", "&:hover": { backgroundColor: "#1976d2" } }}
-          >
-            <Add />
+          <Typography variant="caption" sx={{ textAlign: "center", color: "text.secondary", fontSize: { xs: "0.65rem", sm: "0.75rem" }, display: { xs: "none", sm: "block" } }}>Herraje</Typography>
+          <Fab color="secondary" size="small" aria-label="add vidrio" onClick={() => handleOpenAddItemDialog("vidrio")} sx={{ backgroundColor: "#2196f3", "&:hover": { backgroundColor: "#1976d2" }, width: { xs: 40, sm: 48 }, height: { xs: 40, sm: 48 } }}>
+            <Add fontSize={isMobile ? "small" : "medium"} />
           </Fab>
-          <Typography variant="caption" sx={{ textAlign: "center", color: "text.secondary" }}>
-            Vidrio
-          </Typography>
-
-          <Fab
-            color="secondary"
-            size="medium"
-            aria-label="add servicio o extra"
-            onClick={() => handleOpenAddItemDialog("extra")}
-            sx={{ backgroundColor: "#9c27b0", "&:hover": { backgroundColor: "#7b1fa2" } }}
-          >
-            <Add />
+          <Typography variant="caption" sx={{ textAlign: "center", color: "text.secondary", fontSize: { xs: "0.65rem", sm: "0.75rem" }, display: { xs: "none", sm: "block" } }}>Vidrio</Typography>
+          <Fab color="secondary" size="small" aria-label="add servicio o extra" onClick={() => handleOpenAddItemDialog("extra")} sx={{ backgroundColor: "#9c27b0", "&:hover": { backgroundColor: "#7b1fa2" }, width: { xs: 40, sm: 48 }, height: { xs: 40, sm: 48 } }}>
+            <Add fontSize={isMobile ? "small" : "medium"} />
           </Fab>
-          <Typography variant="caption" sx={{ textAlign: "center", color: "text.secondary" }}>
-            Servicio/Extra
-          </Typography>
+          <Typography variant="caption" sx={{ textAlign: "center", color: "text.secondary", fontSize: { xs: "0.65rem", sm: "0.75rem" }, display: { xs: "none", sm: "block" } }}>Servicio/Extra</Typography>
         </Box>
-        
         {/* Botón flotante del carrito */}
-        <Fab
-          color="primary"
-          aria-label="cart"
-          onClick={() => setShowCart(true)}
-          sx={{
-            position: "fixed",
-            bottom: "2rem",
-            right: "2rem",
-          }}
-        >
+        <Fab color="primary" aria-label="cart" onClick={() => setShowCart(true)} sx={{ position: "fixed", bottom: { xs: "1rem", sm: "2rem" }, right: { xs: "0.5rem", sm: "2rem" }, zIndex: 1200, width: { xs: 48, sm: 56 }, height: { xs: 48, sm: 56 } }}>
           <Badge badgeContent={cart.length} color="error">
             <ShoppingCart />
           </Badge>
@@ -1559,63 +1613,106 @@ export default function CotizadorApp() {
   if (modelData) {
     const calculations = getCalculations();
     return (
-      <Box sx={{ padding: 2, maxWidth: "1200px", margin: "0 auto" }}>
-        <Button
-          variant="outlined"
-          startIcon={<ArrowBackIcon />}
-          onClick={() => {
-            setSelectedModel(null);
-            setModelData(null);
-          }}
-        >
+      <Box sx={{ px: { xs: 1, sm: 2 }, py: 2, maxWidth: "1200px", margin: "0 auto", pb: 4 }}>
+        <Button variant="outlined" size={isMobile ? "small" : "medium"} startIcon={<ArrowBackIcon />} onClick={() => { setSelectedModel(null); setModelData(null); }}>
           Volver a Buscar
         </Button>
-        <Typography variant="h4" align="center" sx={{ mt: 2, mb: 2, color: "black" }}>
+        <Typography variant="h4" align="center" sx={{ mt: 2, mb: 2, color: "black", fontSize: { xs: "1.35rem", sm: "1.5rem", md: "2.125rem" }, wordBreak: "break-word" }}>
           {modelData.name}
         </Typography>
-        <Box
-          sx={{
-            display: "flex",
-            justifyContent: "center",
-            alignItems: "center",
-            mb: 4,
-          }}
-        >
+        <Box sx={{ display: "flex", justifyContent: "center", alignItems: "center", mb: { xs: 2, sm: 4 } }}>
           <ModelImage modelId={modelData.id} modelName={modelData.name} />
         </Box>
-        
+        {/* Predefinir color y vidrio para los próximos modelos */}
+        <Paper sx={{ p: 2, mb: 3, bgcolor: "grey.50", border: "1px dashed", borderColor: "divider" }}>
+          <Typography variant="subtitle2" sx={{ mb: 1.5, color: "text.secondary", fontWeight: 600 }}>
+            Predefinir para próximos modelos
+          </Typography>
+          <Typography variant="caption" color="textSecondary" sx={{ display: "block", mb: 2 }}>
+            Al elegir otro modelo, color y vidrio se rellenarán con estos valores. Útil para agregar varios modelos iguales al carrito.
+          </Typography>
+          <Box sx={{ display: "flex", flexWrap: "wrap", gap: 2, alignItems: "flex-start" }}>
+            <Box sx={{ minWidth: { xs: "100%", sm: 200 }, flex: "1 1 200px" }}>
+              <Autocomplete
+                size="small"
+                options={colorsOptions}
+                getOptionLabel={(option) => `${option.name} ${option.percentage > 0 ? `(+${option.percentage}%)` : option.percentage < 0 ? `(${option.percentage}%)` : "(Base)"}`}
+                isOptionEqualToValue={(option, value) => option.id === value?.id}
+                value={defaultColorForNewItems}
+                onChange={(_, newValue) => setDefaultColorForNewItems(newValue)}
+                renderInput={(params) => <TextField {...params} label="Color por defecto" variant="outlined" placeholder="Ninguno" />}
+              />
+            </Box>
+            <Box sx={{ minWidth: { xs: "100%", sm: 200 }, flex: "1 1 200px" }}>
+              <Autocomplete
+                size="small"
+                options={glassesByProduct}
+                getOptionLabel={(option) => option.name || ""}
+                isOptionEqualToValue={(option, value) => option.id === value?.id}
+                value={defaultGlassProductForNewItems}
+                onChange={(_, newValue) => {
+                  setDefaultGlassProductForNewItems(newValue);
+                  if (!newValue) setDefaultGlassForNewItems(null);
+                }}
+                renderInput={(params) => <TextField {...params} label="Vidrio por defecto (nombre)" variant="outlined" placeholder="Ninguno" />}
+              />
+            </Box>
+            {defaultGlassProductForNewItems && (
+              <Box sx={{ minWidth: { xs: "100%", sm: 220 }, flex: "1 1 220px" }}>
+                <Autocomplete
+                  size="small"
+                  options={defaultGlassProductForNewItems.options || []}
+                  getOptionLabel={(opt) => `${opt.tickness ?? opt.thickness} mm — $${(parseFloat(opt.priceInstalled ?? opt.price ?? 0) || 0).toFixed(2)}/m²`}
+                  isOptionEqualToValue={(opt, val) => (opt.tickness ?? opt.thickness) === (val?.tickness ?? val?.thickness)}
+                  value={defaultGlassForNewItems && defaultGlassForNewItems.originalId === defaultGlassProductForNewItems.id ? defaultGlassProductForNewItems.options?.find((o) => String(o.tickness ?? o.thickness) === String(defaultGlassForNewItems.tickness)) ?? null : null}
+                  onChange={(_, newValue) => {
+                    if (!defaultGlassProductForNewItems || !newValue) {
+                      setDefaultGlassForNewItems(null);
+                      return;
+                    }
+                    const t = newValue.tickness ?? newValue.thickness ?? "";
+                    const priceInstalled = parseFloat(newValue.priceInstalled ?? newValue.price ?? 0) || 0;
+                    setDefaultGlassForNewItems({
+                      id: `${defaultGlassProductForNewItems.id}_${t}`,
+                      originalId: defaultGlassProductForNewItems.id,
+                      name: `${defaultGlassProductForNewItems.name || ""} ${t}mm`,
+                      tickness: t,
+                      priceInstalled,
+                      price: priceInstalled,
+                      priceCut: parseFloat(newValue.priceCut ?? 0) || 0,
+                    });
+                  }}
+                  renderInput={(params) => <TextField {...params} label="Grosor por defecto" variant="outlined" placeholder="Elige grosor" />}
+                />
+              </Box>
+            )}
+          </Box>
+        </Paper>
+
         {/* Campos para modificar dimensiones */}
-        <Box sx={{ display: "flex", gap: 2, justifyContent: "center", mb: 2 }}>
+        <Box sx={{ display: "flex", flexWrap: "wrap", gap: 2, justifyContent: "center", mb: 2 }}>
           <TextField
             label="Alto (cm)"
             type="text"
             value={dimensions.height}
-            onChange={(e) =>
-              setDimensions({
-                ...dimensions,
-                height: e.target.value.replace(/[^0-9.]/g, "").replace(/(\..*?)\..*/g, "$1"),
-              })
-            }
+            onChange={(e) => setDimensions({ ...dimensions, height: e.target.value.replace(/[^0-9.]/g, "").replace(/(\..*?)\..*/g, "$1") })}
+            size={isMobile ? "small" : "medium"}
+            sx={{ minWidth: { xs: "100%", sm: 120 }, flex: { xs: "1 1 100%", sm: "0 0 auto" } }}
           />
           <TextField
             label="Ancho (cm)"
             type="text"
             value={dimensions.width}
-            onChange={(e) =>
-              setDimensions({
-                ...dimensions,
-                width: e.target.value.replace(/[^0-9.]/g, "").replace(/(\..*?)\..*/g, "$1"),
-              })
-            }
+            onChange={(e) => setDimensions({ ...dimensions, width: e.target.value.replace(/[^0-9.]/g, "").replace(/(\..*?)\..*/g, "$1") })}
+            size={isMobile ? "small" : "medium"}
+            sx={{ minWidth: { xs: "100%", sm: 120 }, flex: { xs: "1 1 100%", sm: "0 0 auto" } }}
           />
         </Box>
-        
-        {/* Selección de vidrio */}
         {/* SELECCIÓN DE COLOR */}
-        <Typography variant="h6" gutterBottom sx={{ textAlign: "center", mt: 4, color: "black" }}>
+        <Typography variant="h6" gutterBottom sx={{ textAlign: "center", mt: 4, color: "black", fontSize: { xs: "0.95rem", sm: "1rem" } }}>
           Seleccionar Color del Material
         </Typography>
-        <Box sx={{ mb: 4, width: "300px", margin: "0 auto" }}>
+        <Box sx={{ mb: 4, width: { xs: "100%", sm: "300px" }, maxWidth: 420, margin: "0 auto" }}>
           <Autocomplete
             options={colorsOptions}
             getOptionLabel={(option) => `${option.name} ${option.percentage > 0 ? `(+${option.percentage}%)` : option.percentage < 0 ? `(${option.percentage}%)` : '(Base)'}`}
@@ -1640,66 +1737,83 @@ export default function CotizadorApp() {
           />
         </Box>
 
-        {/* SELECCIÓN DE VIDRIO */}
-        <Typography variant="h6" gutterBottom sx={{ textAlign: "center", mt: 4, color: "black" }}>
+        {/* SELECCIÓN DE VIDRIO: primero nombre, luego variante (como /sistema/vidrios) */}
+        <Typography variant="h6" gutterBottom sx={{ textAlign: "center", mt: 4, color: "black", fontSize: { xs: "0.95rem", sm: "1rem" } }}>
           Seleccionar Vidrio
         </Typography>
-        <Box sx={{ mb: 4, width: "300px", margin: "0 auto" }}>
+        <Box sx={{ mb: 4, width: { xs: "100%", sm: "auto" }, maxWidth: 420, margin: "0 auto", display: "flex", flexDirection: "column", gap: 2 }}>
           <Autocomplete
-            options={glassesOptions}
-            getOptionLabel={(option) => `${option.name} - $${option.priceInstalled || option.price || 0}/m²`}
-            isOptionEqualToValue={(option, value) => option.id === value.id}
-            value={selectedGlass}
-            onChange={(event, newValue) => handleSelectGlass(newValue)}
+            options={glassesByProduct}
+            getOptionLabel={(option) => option.name || ""}
+            isOptionEqualToValue={(option, value) => option.id === value?.id}
+            value={selectedGlassProduct}
+            onChange={(_, newValue) => handleSelectGlassProduct(newValue)}
             renderOption={(props, option) => (
               <li {...props}>
                 <Box>
-                  <Typography variant="body2">{option.name}</Typography>
+                  <Typography variant="body1" fontWeight="medium">{option.name}</Typography>
                   <Typography variant="caption" color="textSecondary">
-                    ${option.priceInstalled || option.price || 0}/m²
+                    {Array.isArray(option.options) ? option.options.length : 0} variante(s)
                   </Typography>
                 </Box>
               </li>
             )}
             renderInput={(params) => (
-              <TextField {...params} label="Seleccionar Vidrio" variant="outlined" />
+              <TextField {...params} label="1. Nombre del vidrio" variant="outlined" placeholder="Ej. Cristal, Float…" />
             )}
           />
-          {selectedGlass && (selectedGlass.priceInstalled === 0 || selectedGlass.price === 0) && (
-            <Alert severity="warning" sx={{ mt: 1 }}>
-              ⚠️ El vidrio seleccionado tiene precio $0. Esto causará que el total sea incorrecto.
+          {selectedGlassProduct && (
+            <Autocomplete
+              options={selectedGlassProduct.options || []}
+              getOptionLabel={(opt) => {
+                const t = opt.tickness ?? opt.thickness ?? "";
+                const inst = parseFloat(opt.priceInstalled ?? opt.price ?? 0) || 0;
+                return `${t} mm — $${inst.toFixed(2)}/m² instalado`;
+              }}
+              isOptionEqualToValue={(opt, val) => (opt.tickness ?? opt.thickness) === (val?.tickness ?? val?.thickness)}
+              value={
+                selectedGlass && selectedGlass.originalId === selectedGlassProduct.id
+                  ? (selectedGlassProduct.options?.find((o) => String(o.tickness ?? o.thickness) === String(selectedGlass.tickness)) ?? null)
+                  : null
+              }
+              onChange={(_, newValue) => handleSelectGlassVariant(newValue)}
+              renderOption={(props, opt) => (
+                <li {...props}>
+                  <Box sx={{ display: "flex", flexDirection: "column" }}>
+                    <Typography variant="body2" fontWeight="medium">{opt.tickness ?? opt.thickness} mm</Typography>
+                    <Typography variant="caption" color="textSecondary">
+                      Instalado: ${(parseFloat(opt.priceInstalled ?? opt.price ?? 0) || 0).toFixed(2)}/m²
+                      {(parseFloat(opt.priceCut ?? 0) || 0) > 0 && ` · Corte: $${(parseFloat(opt.priceCut) || 0).toFixed(2)}/m²`}
+                    </Typography>
+                  </Box>
+                </li>
+              )}
+              renderInput={(params) => (
+                <TextField {...params} label="2. Grosor / variante" variant="outlined" placeholder="Elige grosor y precio" />
+              )}
+            />
+          )}
+          {selectedGlass && (selectedGlass.priceInstalled === 0) && (
+            <Alert severity="warning" sx={{ mt: 0 }}>
+              Este vidrio tiene precio $0 en instalado. Revisa en Vidrios si el precio está configurado.
             </Alert>
           )}
         </Box>
         
         <Box sx={{ mt: 4, textAlign: "right" }}>
-          <Typography variant="h5" sx={{ color: "black" }}>
-            Total:
-          </Typography>
+          <Typography variant="h5" sx={{ color: "black", fontSize: { xs: "1rem", sm: "1.5rem" } }}>Total:</Typography>
         </Box>
-        <Box sx={{textAlign: "right" }}>
-          <Typography variant="h1" sx={{ color: "black" }}>
+        <Box sx={{ textAlign: "right" }}>
+          <Typography variant="h1" sx={{ color: "black", fontSize: { xs: "1.75rem", sm: "2.5rem", md: "3rem" } }}>
             ${calculations ? calculations.totalGeneral.toFixed(2) : "0.00"}
           </Typography>
         </Box>
-
         {/* Botones de acción */}
-        <Box sx={{ display: "flex", gap: 2, justifyContent: "center", mt: 4, mb: 4 }}>
-          <Button
-            variant="contained"
-            color="success"
-            startIcon={<Add />}
-            onClick={addToCart}
-            size="large"
-          >
+        <Box sx={{ display: "flex", flexDirection: { xs: "column", sm: "row" }, gap: 2, justifyContent: "center", mt: 4, mb: 4 }}>
+          <Button variant="contained" color="success" startIcon={<Add />} onClick={addToCart} size={isMobile ? "medium" : "large"} fullWidth={isMobile}>
             Agregar al Carrito
           </Button>
-          <Button
-            variant="outlined"
-            startIcon={<ShoppingCart />}
-            onClick={() => setShowCart(true)}
-            size="large"
-          >
+          <Button variant="outlined" startIcon={<ShoppingCart />} onClick={() => setShowCart(true)} size={isMobile ? "medium" : "large"} fullWidth={isMobile}>
             Ver Carrito ({cart.length})
           </Button>
         </Box>
@@ -1707,17 +1821,14 @@ export default function CotizadorApp() {
         {/* Desglose de secciones */}
         {calculations && (
           <>
-            {/* Materiales */}
-            <Typography variant="h5" sx={{ mt: 4, color: "black" }}>
-              Materiales
-            </Typography>
-            <TableContainer sx={{ mb: 2 }}>
-              <Table>
+            <Typography variant="h5" sx={{ mt: 4, color: "black", fontSize: { xs: "1rem", sm: "1.25rem" } }}>Materiales</Typography>
+            <TableContainer sx={{ mb: 2, overflowX: "auto" }}>
+              <Table size={isMobile ? "small" : "medium"} sx={{ minWidth: 200, "& .MuiTableCell-root": { fontSize: { xs: "0.75rem", sm: "0.875rem" } } }}>
                 <TableHead>
                   <TableRow>
-                    <TableCell>Nombre</TableCell>
-                    <TableCell>Metraje (m2)</TableCell>
-                    <TableCell>Total ($)</TableCell>
+                    <TableCell sx={{ fontSize: { xs: "0.8rem", sm: "0.875rem" }, fontWeight: 600 }}>Nombre</TableCell>
+                    <TableCell sx={{ fontSize: { xs: "0.8rem", sm: "0.875rem" }, fontWeight: 600 }}>Metraje (m2)</TableCell>
+                    <TableCell sx={{ fontSize: { xs: "0.8rem", sm: "0.875rem" }, fontWeight: 600 }}>Total ($)</TableCell>
                   </TableRow>
                 </TableHead>
                 <TableBody>
@@ -1736,16 +1847,14 @@ export default function CotizadorApp() {
             </Typography>
 
             {/* Herrajes */}
-            <Typography variant="h5" sx={{ mt: 4, color: "black" }}>
-              Herrajes
-            </Typography>
-            <TableContainer sx={{ mb: 2 }}>
-              <Table>
+            <Typography variant="h5" sx={{ mt: 4, color: "black", fontSize: { xs: "1rem", sm: "1.25rem" } }}>Herrajes</Typography>
+            <TableContainer sx={{ mb: 2, overflowX: "auto" }}>
+              <Table size={isMobile ? "small" : "medium"} sx={{ minWidth: 200, "& .MuiTableCell-root": { fontSize: { xs: "0.75rem", sm: "0.875rem" } } }}>
                 <TableHead>
                   <TableRow>
-                    <TableCell>Nombre</TableCell>
-                    <TableCell>Piezas</TableCell>
-                    <TableCell>Total ($)</TableCell>
+                    <TableCell sx={{ fontSize: { xs: "0.8rem", sm: "0.875rem" }, fontWeight: 600 }}>Nombre</TableCell>
+                    <TableCell sx={{ fontSize: { xs: "0.8rem", sm: "0.875rem" }, fontWeight: 600 }}>Piezas</TableCell>
+                    <TableCell sx={{ fontSize: { xs: "0.8rem", sm: "0.875rem" }, fontWeight: 600 }}>Total ($)</TableCell>
                   </TableRow>
                 </TableHead>
                 <TableBody>
@@ -1764,16 +1873,14 @@ export default function CotizadorApp() {
             </Typography>
 
             {/* Vidrios */}
-            <Typography variant="h5" sx={{ mt: 4, color: "black" }}>
-              Vidrios
-            </Typography>
-            <TableContainer sx={{ mb: 2 }}>
-              <Table>
+            <Typography variant="h5" sx={{ mt: 4, color: "black", fontSize: { xs: "1rem", sm: "1.25rem" } }}>Vidrios</Typography>
+            <TableContainer sx={{ mb: 2, overflowX: "auto" }}>
+              <Table size={isMobile ? "small" : "medium"} sx={{ minWidth: 200, "& .MuiTableCell-root": { fontSize: { xs: "0.75rem", sm: "0.875rem" } } }}>
                 <TableHead>
                   <TableRow>
-                    <TableCell>Nombre</TableCell>
-                    <TableCell>Metraje (mts)</TableCell>
-                    <TableCell>Total ($)</TableCell>
+                    <TableCell sx={{ fontSize: { xs: "0.8rem", sm: "0.875rem" }, fontWeight: 600 }}>Nombre</TableCell>
+                    <TableCell sx={{ fontSize: { xs: "0.8rem", sm: "0.875rem" }, fontWeight: 600 }}>Metraje (mts)</TableCell>
+                    <TableCell sx={{ fontSize: { xs: "0.8rem", sm: "0.875rem" }, fontWeight: 600 }}>Total ($)</TableCell>
                   </TableRow>
                 </TableHead>
                 <TableBody>
@@ -1869,36 +1976,36 @@ export default function CotizadorApp() {
   function renderDialogs() {
     return (
       <>        {/* Diálogo del Carrito */}
-        <Dialog open={showCart} onClose={() => setShowCart(false)} maxWidth="xl" fullWidth>
-          <DialogTitle>
+        <Dialog open={showCart} onClose={() => setShowCart(false)} maxWidth="xl" fullWidth fullScreen={isMobile}>
+          <DialogTitle sx={{ fontSize: { xs: "1rem", sm: "1.25rem" }, pr: { xs: 6, sm: 8 } }}>
             Carrito de Cotización
-            <Typography variant="caption" color="textSecondary" sx={{ display: 'block', fontWeight: 'normal' }}>
+            <Typography variant="caption" color="textSecondary" sx={{ display: 'block', fontWeight: 'normal', fontSize: { xs: "0.7rem", sm: "0.75rem" } }}>
               * El carrito se guarda automáticamente y persiste entre sesiones
             </Typography>
           </DialogTitle>
-          <DialogContent>
+          <DialogContent sx={{ px: { xs: 1.5, sm: 3 }, pb: 2 }}>
             {/* Total del Proyecto - Prominente */}
-            <Paper sx={{ p: 3, mb: 3, backgroundColor: '#e8f5e8', border: '2px solid #4caf50' }}>
+            <Paper sx={{ p: { xs: 2, sm: 3 }, mb: 2, backgroundColor: '#e8f5e8', border: '2px solid #4caf50' }}>
               <Box sx={{ textAlign: 'center' }}>
-                <Typography variant="h4" sx={{ color: '#2e7d32', fontWeight: 'bold', mb: 1 }}>
+                <Typography variant="h4" sx={{ color: '#2e7d32', fontWeight: 'bold', mb: 1, fontSize: { xs: "1rem", sm: "1.5rem" } }}>
                   TOTAL DEL PROYECTO
                 </Typography>
-                <Typography variant="h3" sx={{ color: '#1b5e20', fontWeight: 'bold' }}>
+                <Typography variant="h3" sx={{ color: '#1b5e20', fontWeight: 'bold', fontSize: { xs: "1.5rem", sm: "2rem", md: "2.5rem" } }}>
                   ${getCartTotal().toFixed(2)}
                 </Typography>
-                <Typography variant="subtitle1" sx={{ color: '#4caf50', mt: 1 }}>
+                <Typography variant="subtitle1" sx={{ color: '#4caf50', mt: 1, fontSize: { xs: "0.8rem", sm: "1rem" } }}>
                   {cart.length} elemento{cart.length !== 1 ? 's' : ''} en el carrito
                 </Typography>
               </Box>
             </Paper>
 
             {/* Configuración Global del Proyecto */}
-            <Paper sx={{ p: 2, mb: 3, border: '1px solid #1976d2', backgroundColor: '#f5f9ff' }}>
-              <Typography variant="h6" sx={{ mb: 2, color: '#1565c0', fontWeight: 'bold' }}>
+            <Paper sx={{ p: { xs: 1.5, sm: 2 }, mb: 2, border: '1px solid #1976d2', backgroundColor: '#f5f9ff' }}>
+              <Typography variant="h6" sx={{ mb: 1.5, color: '#1565c0', fontWeight: 'bold', fontSize: { xs: "0.9rem", sm: "1rem" } }}>
                 Configuración Global del Proyecto
               </Typography>
-              <Typography variant="caption" color="textSecondary" sx={{ display: 'block', mb: 2 }}>
-                Selecciona un color y/o vidrio para aplicar a todos los elementos del carrito de una sola vez. También puedes cambiar cada elemento individualmente en la tabla.
+              <Typography variant="caption" color="textSecondary" sx={{ display: 'block', mb: 2, fontSize: { xs: "0.7rem", sm: "0.75rem" } }}>
+                Selecciona un color y/o vidrio para aplicar a todos los elementos. También puedes cambiar cada elemento en la tabla.
               </Typography>
               <Grid container spacing={2} alignItems="center">
                 <Grid item xs={12} sm={5}>
@@ -1988,20 +2095,20 @@ export default function CotizadorApp() {
             ) : (
               <>
                 {/* Tabla de elementos del carrito */}
-                <Typography variant="h6" sx={{ mb: 2 }}>
+                <Typography variant="h6" sx={{ mb: 2, fontSize: { xs: "0.95rem", sm: "1rem" } }}>
                   Elementos en el Carrito ({cart.length})
                 </Typography>
-                <TableContainer sx={{ mb: 4 }}>
-                  <Table size="small">
+                <TableContainer sx={{ mb: 4, overflowX: "auto", overflowY: "visible" }}>
+                  <Table size="small" sx={{ minWidth: isMobile ? 580 : 800 }}>
                     <TableHead>
                       <TableRow>
-                        <TableCell>Tipo</TableCell>
-                        <TableCell>Nombre</TableCell>
-                        <TableCell sx={{ minWidth: 160 }}>Color</TableCell>
-                        <TableCell sx={{ minWidth: 180 }}>Vidrio</TableCell>
-                        <TableCell>Detalles</TableCell>
-                        <TableCell align="right">Total</TableCell>
-                        <TableCell>Acciones</TableCell>
+                        <TableCell sx={{ fontSize: { xs: "0.7rem", sm: "0.75rem" }, fontWeight: 600, whiteSpace: "nowrap" }}>Tipo</TableCell>
+                        <TableCell sx={{ fontSize: { xs: "0.7rem", sm: "0.75rem" }, fontWeight: 600, minWidth: { xs: 70, sm: 100 } }}>Nombre</TableCell>
+                        <TableCell sx={{ fontSize: { xs: "0.7rem", sm: "0.75rem" }, fontWeight: 600, minWidth: isMobile ? 100 : 160 }}>Color</TableCell>
+                        <TableCell sx={{ fontSize: { xs: "0.7rem", sm: "0.75rem" }, fontWeight: 600, minWidth: isMobile ? 100 : 180 }}>Vidrio</TableCell>
+                        <TableCell sx={{ fontSize: { xs: "0.7rem", sm: "0.75rem" }, fontWeight: 600, minWidth: { xs: 80, sm: 120 } }}>Detalles</TableCell>
+                        <TableCell align="right" sx={{ fontSize: { xs: "0.7rem", sm: "0.75rem" }, fontWeight: 600 }}>Total</TableCell>
+                        <TableCell padding="none" sx={{ fontSize: { xs: "0.7rem", sm: "0.75rem" }, fontWeight: 600, width: 48 }}>Acciones</TableCell>
                       </TableRow>
                     </TableHead>
                     <TableBody>
@@ -2014,12 +2121,12 @@ export default function CotizadorApp() {
                               size="small"
                             />
                           </TableCell>
-                          <TableCell>
-                            <Typography variant="body2" sx={{ fontWeight: 500 }}>
+                          <TableCell sx={{ fontSize: { xs: "0.75rem", sm: "0.875rem" } }}>
+                            <Typography variant="body2" sx={{ fontWeight: 500, fontSize: "inherit", wordBreak: "break-word" }}>
                               {item.type === "individual" ? item.itemData.name : item.modelName}
                             </Typography>
                             {item.type !== "individual" && (
-                              <Typography variant="caption" color="textSecondary">
+                              <Typography variant="caption" color="textSecondary" sx={{ fontSize: "inherit" }}>
                                 {item.dimensions.height} x {item.dimensions.width} cm
                               </Typography>
                             )}
@@ -2044,7 +2151,7 @@ export default function CotizadorApp() {
                                     sx={{ '& .MuiOutlinedInput-root': { fontSize: '0.8rem' } }}
                                   />
                                 )}
-                                sx={{ minWidth: 140 }}
+                                sx={{ minWidth: isMobile ? 90 : 140, "& .MuiOutlinedInput-root": { fontSize: { xs: "0.75rem", sm: "0.8rem" } } }}
                               />
                             ) : (
                               <Typography variant="caption" color="textSecondary">—</Typography>
@@ -2070,44 +2177,38 @@ export default function CotizadorApp() {
                                     sx={{ '& .MuiOutlinedInput-root': { fontSize: '0.8rem' } }}
                                   />
                                 )}
-                                sx={{ minWidth: 160 }}
+                                sx={{ minWidth: isMobile ? 90 : 160, "& .MuiOutlinedInput-root": { fontSize: { xs: "0.75rem", sm: "0.8rem" } } }}
                               />
                             ) : (
                               <Typography variant="caption" color="textSecondary">—</Typography>
                             )}
                           </TableCell>
                           {/* Columna Detalles */}
-                          <TableCell>
+                          <TableCell sx={{ fontSize: { xs: "0.7rem", sm: "0.75rem" } }}>
                             {item.type === "individual" ? (
                               <Box>
-                                <Typography variant="caption">
-                                  {item.itemType === "vidrio" && item.itemData.area
-                                    ? `${item.itemData.area.toFixed(2)} m²`
-                                    : `${item.itemData.quantity} ${item.itemData.quantityType}`}
+                                <Typography variant="caption" sx={{ fontSize: "inherit" }}>
+                                  {item.itemType === "vidrio" && item.itemData.area ? `${item.itemData.area.toFixed(2)} m²` : `${item.itemData.quantity} ${item.itemData.quantityType}`}
                                 </Typography>
                                 {item.itemData.dimensions && (
-                                  <Typography variant="caption" color="textSecondary" sx={{ display: 'block' }}>
+                                  <Typography variant="caption" color="textSecondary" sx={{ display: 'block', fontSize: "inherit" }}>
                                     {item.itemData.dimensions.height} x {item.itemData.dimensions.width} cm
                                   </Typography>
                                 )}
                               </Box>
                             ) : (
-                              <Box>
-                                <Typography variant="caption" color="textSecondary" sx={{ display: 'block' }}>
-                                  Mat: ${item.calculations.materialsCalc.price.toFixed(2)} | 
-                                  Her: ${item.calculations.chapesCalc.price.toFixed(2)}
+                              <Box sx={{ fontSize: "inherit" }}>
+                                <Typography variant="caption" color="textSecondary" sx={{ display: 'block', fontSize: "inherit" }}>
+                                  Mat: ${item.calculations.materialsCalc.price.toFixed(2)} | Her: ${item.calculations.chapesCalc.price.toFixed(2)}
                                 </Typography>
-                                <Typography variant="caption" color="textSecondary" sx={{ display: 'block' }}>
-                                  Vid: ${item.calculations.glassesCalc.price.toFixed(2)} | 
-                                  M.O.: ${item.calculations.laborCost.toFixed(2)}
+                                <Typography variant="caption" color="textSecondary" sx={{ display: 'block', fontSize: "inherit" }}>
+                                  Vid: ${item.calculations.glassesCalc.price.toFixed(2)} | M.O.: ${item.calculations.laborCost.toFixed(2)}
                                 </Typography>
                               </Box>
                             )}
                           </TableCell>
-                          <TableCell align="right">
-                            <Typography variant="body2" sx={{ fontWeight: 'bold' }}>
-                              ${(item.type === "individual" ? item.itemData.total : item.calculations.totalGeneral).toFixed(2)}
-                            </Typography>
+                          <TableCell align="right" sx={{ fontSize: { xs: "0.8rem", sm: "0.875rem" }, fontWeight: 'bold' }}>
+                            ${(item.type === "individual" ? item.itemData.total : item.calculations.totalGeneral).toFixed(2)}
                           </TableCell>
                           <TableCell>
                             <IconButton 
@@ -2130,16 +2231,12 @@ export default function CotizadorApp() {
                   const summaries = getCartSummaries();
                   return (
                     <Box>
-                      <Typography variant="h6" sx={{ mb: 2 }}>Resumen de Materiales</Typography>
-                      
-                      {/* Materiales */}
+                      <Typography variant="h6" sx={{ mb: 2, fontSize: { xs: "0.95rem", sm: "1rem" } }}>Resumen de Materiales</Typography>
                       {summaries.materials.length > 0 && (
                         <Box sx={{ mb: 3 }}>
-                          <Typography variant="subtitle1" sx={{ mb: 1, fontWeight: 'bold' }}>
-                            Materiales:
-                          </Typography>
-                          <TableContainer>
-                            <Table size="small">
+                          <Typography variant="subtitle1" sx={{ mb: 1, fontWeight: 'bold', fontSize: { xs: "0.85rem", sm: "1rem" } }}>Materiales:</Typography>
+                          <TableContainer sx={{ overflowX: "auto" }}>
+                            <Table size="small" sx={{ "& .MuiTableCell-root": { fontSize: { xs: "0.75rem", sm: "0.875rem" } } }}>
                               <TableHead>
                                 <TableRow>
                                   <TableCell>Material</TableCell>
@@ -2178,11 +2275,9 @@ export default function CotizadorApp() {
                       {/* Herrajes */}
                       {summaries.chapes.length > 0 && (
                         <Box sx={{ mb: 3 }}>
-                          <Typography variant="subtitle1" sx={{ mb: 1, fontWeight: 'bold' }}>
-                            Herrajes:
-                          </Typography>
-                          <TableContainer>
-                            <Table size="small">
+                          <Typography variant="subtitle1" sx={{ mb: 1, fontWeight: 'bold', fontSize: { xs: "0.85rem", sm: "1rem" } }}>Herrajes:</Typography>
+                          <TableContainer sx={{ overflowX: "auto" }}>
+                            <Table size="small" sx={{ "& .MuiTableCell-root": { fontSize: { xs: "0.75rem", sm: "0.875rem" } } }}>
                               <TableHead>
                                 <TableRow>
                                   <TableCell>Herraje</TableCell>
@@ -2216,11 +2311,9 @@ export default function CotizadorApp() {
                       {/* Vidrios */}
                       {summaries.glasses.length > 0 && (
                         <Box sx={{ mb: 3 }}>
-                          <Typography variant="subtitle1" sx={{ mb: 1, fontWeight: 'bold' }}>
-                            Vidrios:
-                          </Typography>
-                          <TableContainer>
-                            <Table size="small">
+                          <Typography variant="subtitle1" sx={{ mb: 1, fontWeight: 'bold', fontSize: { xs: "0.85rem", sm: "1rem" } }}>Vidrios:</Typography>
+                          <TableContainer sx={{ overflowX: "auto" }}>
+                            <Table size="small" sx={{ "& .MuiTableCell-root": { fontSize: { xs: "0.75rem", sm: "0.875rem" } } }}>
                               <TableHead>
                                 <TableRow>
                                   <TableCell>Vidrio</TableCell>
@@ -2254,11 +2347,9 @@ export default function CotizadorApp() {
                       {/* Servicios / Extras */}
                       {summaries.extras && summaries.extras.length > 0 && (
                         <Box sx={{ mb: 3 }}>
-                          <Typography variant="subtitle1" sx={{ mb: 1, fontWeight: 'bold' }}>
-                            Servicios / Extras:
-                          </Typography>
-                          <TableContainer>
-                            <Table size="small">
+                          <Typography variant="subtitle1" sx={{ mb: 1, fontWeight: 'bold', fontSize: { xs: "0.85rem", sm: "1rem" } }}>Servicios / Extras:</Typography>
+                          <TableContainer sx={{ overflowX: "auto" }}>
+                            <Table size="small" sx={{ "& .MuiTableCell-root": { fontSize: { xs: "0.75rem", sm: "0.875rem" } } }}>
                               <TableHead>
                                 <TableRow>
                                   <TableCell>Concepto</TableCell>
@@ -2294,12 +2385,14 @@ export default function CotizadorApp() {
               </>
             )}
           </DialogContent>
-          <DialogActions>
-            <Button onClick={() => setShowCart(false)}>Cerrar</Button>
+          <DialogActions sx={{ flexWrap: "wrap", px: { xs: 2, sm: 3 }, pb: 2 }}>
+            <Button onClick={() => setShowCart(false)} size={isMobile ? "small" : "medium"} fullWidth={isMobile}>Cerrar</Button>
             {cart.length > 0 && (
               <>
-                <Button 
+                <Button
                   color="error"
+                  size={isMobile ? "small" : "medium"}
+                  fullWidth={isMobile}
                   onClick={() => {
                     if (window.confirm('¿Está seguro de que desea limpiar todo el carrito? Esta acción no se puede deshacer.')) {
                       setCart([]);
@@ -2317,11 +2410,7 @@ export default function CotizadorApp() {
                 >
                   Limpiar Carrito
                 </Button>
-                <Button 
-                  variant="contained" 
-                  startIcon={<Save />}
-                  onClick={() => setShowProjectDialog(true)}
-                >
+                <Button variant="contained" startIcon={<Save />} onClick={() => setShowProjectDialog(true)} size={isMobile ? "small" : "medium"} fullWidth={isMobile}>
                   Guardar Proyecto
                 </Button>
               </>
@@ -2330,9 +2419,9 @@ export default function CotizadorApp() {
         </Dialog>
 
         {/* Diálogo para Guardar Proyecto */}
-        <Dialog open={showProjectDialog} onClose={() => setShowProjectDialog(false)} maxWidth="sm" fullWidth>
-          <DialogTitle>Guardar Proyecto</DialogTitle>
-          <DialogContent>
+        <Dialog open={showProjectDialog} onClose={() => setShowProjectDialog(false)} maxWidth="sm" fullWidth fullScreen={isMobile}>
+          <DialogTitle sx={{ fontSize: { xs: "1rem", sm: "1.25rem" } }}>Guardar Proyecto</DialogTitle>
+          <DialogContent sx={{ px: { xs: 2, sm: 3 } }}>
             <TextField
               autoFocus
               margin="dense"
@@ -2403,11 +2492,11 @@ export default function CotizadorApp() {
 
 
         {/* Diálogo para Agregar Elementos Individuales */}
-        <Dialog open={showAddItemDialog} onClose={() => setShowAddItemDialog(false)} maxWidth="md" fullWidth>
-          <DialogTitle>
+        <Dialog open={showAddItemDialog} onClose={() => setShowAddItemDialog(false)} maxWidth="md" fullWidth fullScreen={isMobile}>
+          <DialogTitle sx={{ fontSize: { xs: "1rem", sm: "1.25rem" } }}>
             Agregar {addItemType === "material" ? "Material" : addItemType === "herraje" ? "Herraje" : addItemType === "vidrio" ? "Vidrio" : "Servicio / Extra"}
           </DialogTitle>
-          <DialogContent>
+          <DialogContent sx={{ px: { xs: 2, sm: 3 } }}>
             <Box sx={{ mt: 2 }}>
               {addItemType === "material" && (
                 <>
