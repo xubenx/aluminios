@@ -50,7 +50,6 @@ import { ShoppingCart, Delete, Add, Save } from "@mui/icons-material";
 export default function CotizadorApp() {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
-  const isSmall = useMediaQuery(theme.breakpoints.down("md"));
 
   // Estados para la búsqueda de modelos
   const [models, setModels] = useState([]);
@@ -380,10 +379,6 @@ export default function CotizadorApp() {
   // ––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––
   // ACTUALIZAR EL VIDRIO SELECCIONADO
   // ––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––
-  const handleSelectGlass = (newValue) => {
-    setSelectedGlass(newValue);
-  };
-
   const handleSelectGlassProduct = (newProduct) => {
     setSelectedGlassProduct(newProduct);
     setSelectedGlass(null);
