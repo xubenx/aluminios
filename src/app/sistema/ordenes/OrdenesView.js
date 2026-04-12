@@ -99,7 +99,7 @@ export default function OrdenesView({
   }
 
   return (
-    <Box sx={{ padding: 3, bgcolor: "#f5f5f5", minHeight: "100vh" }}>
+    <Box sx={{ padding: 3, minHeight: "100vh" }}>
       {/* Header */}
       <Paper elevation={3} sx={{ padding: 3, marginBottom: 3 }}>
         <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
@@ -123,7 +123,7 @@ export default function OrdenesView({
         return (
           <Grid container spacing={2} sx={{ mb: 3 }}>
             <Grid item xs={6} sm={4} md={2}>
-              <Card sx={{ bgcolor: "#1976d2", color: "white", height: "100%" }}>
+              <Card sx={{ bgcolor: "rgba(57,88,122,0.9)", color: "#f6f9fd", height: "100%", border: "1px solid rgba(114,132,154,0.25)" }}>
                 <CardContent>
                   <Typography variant="overline">Items Asignados</Typography>
                   <Typography variant="h4">{stats.totalItems}</Typography>
@@ -131,7 +131,7 @@ export default function OrdenesView({
               </Card>
             </Grid>
             <Grid item xs={6} sm={4} md={2}>
-              <Card sx={{ bgcolor: "#0288d1", color: "white", height: "100%" }}>
+              <Card sx={{ bgcolor: "rgba(64,102,140,0.9)", color: "#f6f9fd", height: "100%", border: "1px solid rgba(114,132,154,0.25)" }}>
                 <CardContent>
                   <Typography variant="overline">Con Orden</Typography>
                   <Typography variant="h4">{stats.conOrden}</Typography>
@@ -139,7 +139,7 @@ export default function OrdenesView({
               </Card>
             </Grid>
             <Grid item xs={6} sm={4} md={2}>
-              <Card sx={{ bgcolor: "#2e7d32", color: "white", height: "100%" }}>
+              <Card sx={{ bgcolor: "rgba(62,104,84,0.9)", color: "#f6f9fd", height: "100%", border: "1px solid rgba(114,132,154,0.25)" }}>
                 <CardContent>
                   <Typography variant="overline">Pagados</Typography>
                   <Typography variant="h4">{stats.pagados}</Typography>
@@ -147,7 +147,7 @@ export default function OrdenesView({
               </Card>
             </Grid>
             <Grid item xs={6} sm={4} md={2}>
-              <Card sx={{ bgcolor: "#ed6c02", color: "white", height: "100%" }}>
+              <Card sx={{ bgcolor: "rgba(134,102,67,0.9)", color: "#f6f9fd", height: "100%", border: "1px solid rgba(114,132,154,0.25)" }}>
                 <CardContent>
                   <Typography variant="overline">Pendientes</Typography>
                   <Typography variant="h4">{stats.pendientesPago}</Typography>
@@ -155,7 +155,7 @@ export default function OrdenesView({
               </Card>
             </Grid>
             <Grid item xs={6} sm={4} md={2}>
-              <Card sx={{ bgcolor: "#424242", color: "white", height: "100%" }}>
+              <Card sx={{ bgcolor: "rgba(82,91,104,0.9)", color: "#f6f9fd", height: "100%", border: "1px solid rgba(114,132,154,0.25)" }}>
                 <CardContent>
                   <Typography variant="overline">Monto Pagado</Typography>
                   <Typography variant="h6">${(stats.montoPagado || 0).toLocaleString()}</Typography>
@@ -163,7 +163,7 @@ export default function OrdenesView({
               </Card>
             </Grid>
             <Grid item xs={6} sm={4} md={2}>
-              <Card sx={{ bgcolor: "#c62828", color: "white", height: "100%" }}>
+              <Card sx={{ bgcolor: "rgba(127,67,67,0.9)", color: "#f6f9fd", height: "100%", border: "1px solid rgba(114,132,154,0.25)" }}>
                 <CardContent>
                   <Typography variant="overline">Monto Pendiente</Typography>
                   <Typography variant="h6">${(stats.montoPendiente || 0).toLocaleString()}</Typography>
@@ -285,7 +285,7 @@ export default function OrdenesView({
                             transform: "translateY(-2px)",
                             boxShadow: 4 
                           },
-                          border: order.paymentStatus === "paid" ? "2px solid #4caf50" : "1px solid #e0e0e0"
+                          border: order.paymentStatus === "paid" ? "2px solid rgba(76,138,106,0.75)" : "1px solid rgba(114,132,154,0.22)"
                         }}
                         onClick={() => handleSelectOrder(order)}
                       >

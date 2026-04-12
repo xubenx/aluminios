@@ -4,6 +4,12 @@ import { collection, getDocs, getDoc, doc, addDoc, serverTimestamp } from "fireb
 import { db } from "../../../../firebase";
 import { getModelImageURL } from "../../../utils/imageStorage";
 import { evaluate } from "mathjs";
+import {
+  DEFAULT_DIMENSION_CM,
+  dimensionsCmToMeters,
+  m2FromCmDimensions,
+  normalizeLegacyDimensionsToCm,
+} from "../../../utils/units";
 
 import {
   Box,
@@ -69,7 +75,11 @@ export default function CotizadorApp() {
   const [glassesByProduct, setGlassesByProduct] = useState([]); // Lista por nombre + opciones (como /vidrios)
   const [extrasOptions, setExtrasOptions] = useState([]);
   const [colorsOptions, setColorsOptions] = useState([]);
-  const [dimensions, setDimensions] = useState({ height: "100", width: "100" }); // Ahora en centímetros para la UI
+  const [dimensions, setDimensions] = useState({
+    height: String(DEFAULT_DIMENSION_CM),
+    width: String(DEFAULT_DIMENSION_CM),
+    unit: "cm",
+  });
   const [selectedGlass, setSelectedGlass] = useState(null);
   const [selectedGlassProduct, setSelectedGlassProduct] = useState(null); // Vidrio elegido por nombre (para variantes)
   const [selectedColor, setSelectedColor] = useState(null);
@@ -309,6 +319,42 @@ export default function CotizadorApp() {
     fetchOptions();
   }, []);
 
+  useEffect(() => {
+    if (!modelData || selectedGlass || defaultGlassForNewItems) return;
+    const modelGlasses = modelData.glasses || [];
+    if (modelGlasses.length === 0 || glassesByProduct.length === 0) return;
+
+    const modelGlassIds = new Set(modelGlasses.map((g) => g.id).filter(Boolean));
+    const modelGlassNames = new Set(modelGlasses.map((g) => g.name).filter(Boolean));
+    const matchedProduct = glassesByProduct.find((p) => modelGlassIds.has(p.id) || modelGlassNames.has(p.name));
+    const fallbackProduct = matchedProduct || glassesByProduct[0];
+    const firstOption = fallbackProduct?.options?.[0];
+
+    if (!fallbackProduct || !firstOption) return;
+
+    setSelectedGlassProduct(fallbackProduct);
+    const nextGlass = buildGlassSelection(fallbackProduct, firstOption);
+    if (nextGlass) setSelectedGlass(nextGlass);
+  }, [modelData, selectedGlass, defaultGlassForNewItems, glassesByProduct]);
+
+  useEffect(() => {
+    if (!modelData) return;
+
+    if (defaultColorForNewItems !== undefined) {
+      setSelectedColor(defaultColorForNewItems || null);
+    }
+
+    if (defaultGlassForNewItems) {
+      const product = glassesByProduct.find((p) => p.id === defaultGlassForNewItems.originalId) || null;
+      setSelectedGlassProduct(product);
+      setSelectedGlass(defaultGlassForNewItems);
+      return;
+    }
+
+    setSelectedGlass(null);
+    setSelectedGlassProduct(null);
+  }, [defaultColorForNewItems, defaultGlassForNewItems, modelData, glassesByProduct]);
+
   // ––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––
   // CARGA DE CLIENTES
   // ––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––
@@ -354,19 +400,42 @@ export default function CotizadorApp() {
         const materials = data.materials ? await resolveNames(data.materials, "materials") : [];
         const chapes = data.chapes ? await resolveNames(data.chapes, "chapes") : [];
         const glasses = data.glasses ? await resolveNames(data.glasses, "glasses") : [];
-        setModelData({
+        const nextModelData = {
           id: model.id,
           ...data,
           materials,
           chapes,
           glasses,
-        });
+        };
+        setModelData(nextModelData);
+
+        const getAutoGlassForModel = () => {
+          const modelGlassIds = new Set((nextModelData.glasses || []).map((g) => g.id).filter(Boolean));
+          const modelGlassNames = new Set((nextModelData.glasses || []).map((g) => g.name).filter(Boolean));
+
+          const matchedProduct = glassesByProduct.find((p) => modelGlassIds.has(p.id) || modelGlassNames.has(p.name));
+          const fallbackProduct = matchedProduct || glassesByProduct[0];
+          const firstOption = fallbackProduct?.options?.[0];
+          if (!fallbackProduct || !firstOption) return null;
+
+          return {
+            product: fallbackProduct,
+            glass: buildGlassSelection(fallbackProduct, firstOption),
+          };
+        };
+
         // Aplicar valores por defecto para nuevos ítems (predefinidos)
         if (defaultColorForNewItems) setSelectedColor(defaultColorForNewItems);
         if (defaultGlassForNewItems) {
           setSelectedGlass(defaultGlassForNewItems);
           const product = glassesByProduct.find((p) => p.id === defaultGlassForNewItems.originalId);
           if (product) setSelectedGlassProduct(product);
+        } else if ((nextModelData.glasses || []).length > 0) {
+          const autoSelection = getAutoGlassForModel();
+          if (autoSelection?.glass) {
+            setSelectedGlassProduct(autoSelection.product);
+            setSelectedGlass(autoSelection.glass);
+          }
         }
       } else {
         setModelData(null);
@@ -384,26 +453,84 @@ export default function CotizadorApp() {
     setSelectedGlass(null);
   };
 
-  const handleSelectGlassVariant = (option) => {
-    if (!selectedGlassProduct || !option) return;
+  const buildGlassSelection = (product, option) => {
+    if (!product || !option) return null;
     const tickness = option.tickness ?? option.thickness ?? "";
     const priceInstalled = parseFloat(option.priceInstalled ?? option.price ?? 0) || 0;
-    setSelectedGlass({
-      id: `${selectedGlassProduct.id}_${tickness}`,
-      originalId: selectedGlassProduct.id,
-      name: `${selectedGlassProduct.name || ""} ${tickness}mm`,
+    return {
+      id: `${product.id}_${tickness}`,
+      originalId: product.id,
+      name: `${product.name || ""} ${tickness}mm`,
       tickness,
       priceInstalled,
       price: priceInstalled,
       priceCut: parseFloat(option.priceCut ?? 0) || 0,
-    });
+    };
+  };
+
+  const handleSelectGlassVariant = (option) => {
+    if (!selectedGlassProduct || !option) return;
+    const nextGlass = buildGlassSelection(selectedGlassProduct, option);
+    if (nextGlass) setSelectedGlass(nextGlass);
+  };
+
+  const handleDefaultColorChange = (newValue) => {
+    setDefaultColorForNewItems(newValue);
+    if (modelData) {
+      setSelectedColor(newValue || null);
+    }
+  };
+
+  const handleDefaultGlassProductChange = (newValue) => {
+    setDefaultGlassProductForNewItems(newValue);
+
+    if (!newValue) {
+      setDefaultGlassForNewItems(null);
+      if (modelData) {
+        setSelectedGlassProduct(null);
+        setSelectedGlass(null);
+      }
+      return;
+    }
+
+    const firstOption = newValue.options?.[0] || null;
+    const autoDefault = firstOption ? buildGlassSelection(newValue, firstOption) : null;
+    setDefaultGlassForNewItems(autoDefault);
+
+    if (modelData) {
+      setSelectedGlassProduct(newValue);
+      setSelectedGlass(autoDefault);
+    }
+  };
+
+  const handleDefaultGlassVariantChange = (newValue) => {
+    if (!defaultGlassProductForNewItems || !newValue) {
+      setDefaultGlassForNewItems(null);
+      if (modelData) setSelectedGlass(null);
+      return;
+    }
+
+    const nextGlass = buildGlassSelection(defaultGlassProductForNewItems, newValue);
+    setDefaultGlassForNewItems(nextGlass);
+
+    if (modelData) {
+      setSelectedGlassProduct(defaultGlassProductForNewItems);
+      setSelectedGlass(nextGlass);
+    }
   };
 
   // ––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––
   // FUNCIONES DEL CARRITO Y PROYECTO
   // ––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––
   const addToCart = () => {
-    if (!modelData || !selectedGlass) {
+    if (!modelData) {
+      return;
+    }
+
+    const modelRequiresGlass = (modelData.glasses || []).length > 0;
+    const effectiveGlass = selectedGlass;
+
+    if (modelRequiresGlass && !effectiveGlass) {
       setSnackbar({ 
         open: true, 
         message: "Debe seleccionar un vidrio antes de agregar al carrito.", 
@@ -419,8 +546,8 @@ export default function CotizadorApp() {
       id: Date.now().toString(), // ID único para el item del carrito
       modelId: modelData.id,
       modelName: modelData.name,
-      dimensions: { ...dimensions },
-      selectedGlass: { ...selectedGlass },
+      dimensions: normalizeLegacyDimensionsToCm({ ...dimensions, unit: "cm" }),
+      selectedGlass: effectiveGlass ? { ...effectiveGlass } : null,
       selectedColor: selectedColor ? { ...selectedColor } : null,
       calculations: { ...calculations },
       m2: modelData.m2 || 100, // Costo por m² de vidrio del modelo
@@ -563,7 +690,7 @@ export default function CotizadorApp() {
             });
             return;
           }
-          area = (parseFloat(itemDimensions.height) / 100) * (parseFloat(itemDimensions.width) / 100);
+          area = m2FromCmDimensions(itemDimensions.height, itemDimensions.width);
         }
 
         selectedItem = selectedVidrio;
@@ -573,7 +700,9 @@ export default function CotizadorApp() {
           quantityType: itemQuantityType,
           unitPrice: parseFloat(selectedVidrio.price || 0),
           total: area * parseFloat(selectedVidrio.price || 0),
-          dimensions: itemQuantityType === "dimensiones" ? { ...itemDimensions } : null,
+          dimensions: itemQuantityType === "dimensiones"
+            ? normalizeLegacyDimensionsToCm({ ...itemDimensions, unit: "cm" })
+            : null,
           area: area
         };
         break;
@@ -818,8 +947,8 @@ export default function CotizadorApp() {
     const effectiveColor = newColor !== undefined ? newColor : item.selectedColor;
     const effectiveGlass = newGlass !== undefined ? newGlass : item.selectedGlass;
 
-    const heightInMeters = parseFloat(item.dimensions.height) / 100;
-    const widthInMeters = parseFloat(item.dimensions.width) / 100;
+    const normalizedDims = normalizeLegacyDimensionsToCm(item.dimensions);
+    const { heightInMeters, widthInMeters } = dimensionsCmToMeters(normalizedDims);
 
     // MATERIALES
     const materialsCalc = (formulas.materials || []).reduce((acc, material) => {
@@ -1278,8 +1407,8 @@ export default function CotizadorApp() {
     if (!modelData) return null;
   
     // Convertir dimensiones de cm a metros para los cálculos internos
-    const heightInMeters = parseFloat(dimensions.height) / 100;
-    const widthInMeters = parseFloat(dimensions.width) / 100;
+    const normalizedDims = normalizeLegacyDimensionsToCm(dimensions);
+    const { heightInMeters, widthInMeters } = dimensionsCmToMeters(normalizedDims);
   
     // MATERIALS
     const materialsCalc = modelData.materials?.reduce(
@@ -1416,7 +1545,7 @@ export default function CotizadorApp() {
   if (!selectedModel) {
     return (
       <Box sx={{ px: { xs: 1, sm: 2 }, py: 2, pb: 10 }}>
-        <Typography variant="h4" align="center" sx={{ mb: 2, color: "black", fontSize: { xs: "1.35rem", sm: "1.5rem", md: "2.125rem" } }}>
+        <Typography variant="h4" align="center" sx={{ mb: 2, color: "text.primary", fontSize: { xs: "1.35rem", sm: "1.5rem", md: "2.125rem" }, fontWeight: 700, letterSpacing: 0.2 }}>
           Selecciona modelo a cotizar
         </Typography>
         <TextField
@@ -1429,7 +1558,7 @@ export default function CotizadorApp() {
           size={isMobile ? "small" : "medium"}
         />
         {/* Predefinir color y vidrio (vista inicial) */}
-        <Paper sx={{ p: 2, mb: 3, bgcolor: "grey.50", border: "1px dashed", borderColor: "divider" }}>
+        <Paper sx={{ p: 2, mb: 3, bgcolor: "rgba(255,255,255,0.64)", border: "1px dashed", borderColor: "rgba(96,116,140,0.35)", backdropFilter: "blur(10px)" }}>
           <Typography variant="subtitle2" sx={{ mb: 1.5, color: "text.secondary", fontWeight: 600, fontSize: { xs: "0.8rem", sm: "0.875rem" } }}>
             Predefinir para los próximos modelos
           </Typography>
@@ -1441,7 +1570,7 @@ export default function CotizadorApp() {
                 getOptionLabel={(option) => `${option.name} ${option.percentage > 0 ? `(+${option.percentage}%)` : option.percentage < 0 ? `(${option.percentage}%)` : "(Base)"}`}
                 isOptionEqualToValue={(option, value) => option.id === value?.id}
                 value={defaultColorForNewItems}
-                onChange={(_, newValue) => setDefaultColorForNewItems(newValue)}
+                onChange={(_, newValue) => handleDefaultColorChange(newValue)}
                 renderInput={(params) => <TextField {...params} label="Color por defecto" variant="outlined" placeholder="Ninguno" />}
               />
             </Box>
@@ -1452,7 +1581,7 @@ export default function CotizadorApp() {
                 getOptionLabel={(option) => option.name || ""}
                 isOptionEqualToValue={(option, value) => option.id === value?.id}
                 value={defaultGlassProductForNewItems}
-                onChange={(_, newValue) => { setDefaultGlassProductForNewItems(newValue); if (!newValue) setDefaultGlassForNewItems(null); }}
+                onChange={(_, newValue) => handleDefaultGlassProductChange(newValue)}
                 renderInput={(params) => <TextField {...params} label="Vidrio por defecto" variant="outlined" placeholder="Ninguno" />}
               />
             </Box>
@@ -1464,19 +1593,7 @@ export default function CotizadorApp() {
                   getOptionLabel={(opt) => `${opt.tickness ?? opt.thickness} mm — $${(parseFloat(opt.priceInstalled ?? opt.price ?? 0) || 0).toFixed(2)}/m²`}
                   isOptionEqualToValue={(opt, val) => (opt.tickness ?? opt.thickness) === (val?.tickness ?? val?.thickness)}
                   value={defaultGlassForNewItems?.originalId === defaultGlassProductForNewItems.id ? defaultGlassProductForNewItems.options?.find((o) => String(o.tickness ?? o.thickness) === String(defaultGlassForNewItems.tickness)) ?? null : null}
-                  onChange={(_, newValue) => {
-                    if (!defaultGlassProductForNewItems || !newValue) { setDefaultGlassForNewItems(null); return; }
-                    const t = newValue.tickness ?? newValue.thickness ?? "";
-                    setDefaultGlassForNewItems({
-                      id: `${defaultGlassProductForNewItems.id}_${t}`,
-                      originalId: defaultGlassProductForNewItems.id,
-                      name: `${defaultGlassProductForNewItems.name || ""} ${t}mm`,
-                      tickness: t,
-                      priceInstalled: parseFloat(newValue.priceInstalled ?? newValue.price ?? 0) || 0,
-                      price: parseFloat(newValue.priceInstalled ?? newValue.price ?? 0) || 0,
-                      priceCut: parseFloat(newValue.priceCut ?? 0) || 0,
-                    });
-                  }}
+                  onChange={(_, newValue) => handleDefaultGlassVariantChange(newValue)}
                   renderInput={(params) => <TextField {...params} label="Grosor por defecto" variant="outlined" />}
                 />
               </Box>
@@ -1486,7 +1603,7 @@ export default function CotizadorApp() {
         <Grid container spacing={{ xs: 2, sm: 3 }}>
           {paginatedModels.map((model) => (
             <Grid item xs={12} sm={6} md={4} lg={3} key={model.id}>
-              <Card sx={{ maxWidth: 345, boxShadow: 3, height: '100%', display: 'flex', flexDirection: 'column', mx: { xs: 'auto', sm: 0 }, width: { xs: '100%', sm: 'auto' } }}>
+              <Card sx={{ maxWidth: 345, boxShadow: 0, height: '100%', display: 'flex', flexDirection: 'column', mx: { xs: 'auto', sm: 0 }, width: { xs: '100%', sm: 'auto' }, border: '1px solid rgba(115,135,158,0.22)' }}>
                 <CachedImage
                   modelId={model.id}
                   modelName={model.name}
@@ -1494,10 +1611,10 @@ export default function CotizadorApp() {
                   cacheRef={imageUrlCacheRef}
                 />
                 <CardContent sx={{ flexGrow: 1, display: 'flex', flexDirection: 'column', justifyContent: 'space-between', py: { xs: 1.5, sm: 2 } }}>
-                  <Typography gutterBottom variant="h6" component="div" sx={{ color: "black", fontSize: { xs: "0.95rem", sm: "1rem" }, wordBreak: "break-word" }}>
+                  <Typography gutterBottom variant="h6" component="div" sx={{ color: "text.primary", fontSize: { xs: "0.95rem", sm: "1rem" }, wordBreak: "break-word", fontWeight: 600 }}>
                     {model.name}
                   </Typography>
-                  <Button color="info" variant="outlined" onClick={() => handleSelectModel(model)} sx={{ color: "black", borderColor: "black", fontSize: { xs: "0.8rem", sm: "0.875rem" } }}>
+                  <Button color="info" variant="outlined" onClick={() => handleSelectModel(model)} sx={{ fontSize: { xs: "0.8rem", sm: "0.875rem" }, borderColor: "rgba(89,110,134,0.4)", color: "text.primary" }}>
                     Seleccionar
                   </Button>
                 </CardContent>
@@ -1525,19 +1642,19 @@ export default function CotizadorApp() {
           gap: 0.5,
           zIndex: 1200
         }}>
-          <Fab color="secondary" size="small" aria-label="add material" onClick={() => handleOpenAddItemDialog("material")} sx={{ backgroundColor: "#4caf50", "&:hover": { backgroundColor: "#45a049" }, width: { xs: 40, sm: 48 }, height: { xs: 40, sm: 48 } }}>
+          <Fab color="secondary" size="small" aria-label="add material" onClick={() => handleOpenAddItemDialog("material")} sx={{ backgroundColor: "rgba(72,116,96,0.9)", color: "#fff", "&:hover": { backgroundColor: "rgba(66,103,86,0.95)" }, width: { xs: 40, sm: 48 }, height: { xs: 40, sm: 48 } }}>
             <Add fontSize={isMobile ? "small" : "medium"} />
           </Fab>
           <Typography variant="caption" sx={{ textAlign: "center", color: "text.secondary", fontSize: { xs: "0.65rem", sm: "0.75rem" }, display: { xs: "none", sm: "block" } }}>Material</Typography>
-          <Fab color="secondary" size="small" aria-label="add herraje" onClick={() => handleOpenAddItemDialog("herraje")} sx={{ backgroundColor: "#ff9800", "&:hover": { backgroundColor: "#f57c00" }, width: { xs: 40, sm: 48 }, height: { xs: 40, sm: 48 } }}>
+          <Fab color="secondary" size="small" aria-label="add herraje" onClick={() => handleOpenAddItemDialog("herraje")} sx={{ backgroundColor: "rgba(141,111,63,0.9)", color: "#fff", "&:hover": { backgroundColor: "rgba(120,95,55,0.95)" }, width: { xs: 40, sm: 48 }, height: { xs: 40, sm: 48 } }}>
             <Add fontSize={isMobile ? "small" : "medium"} />
           </Fab>
           <Typography variant="caption" sx={{ textAlign: "center", color: "text.secondary", fontSize: { xs: "0.65rem", sm: "0.75rem" }, display: { xs: "none", sm: "block" } }}>Herraje</Typography>
-          <Fab color="secondary" size="small" aria-label="add vidrio" onClick={() => handleOpenAddItemDialog("vidrio")} sx={{ backgroundColor: "#2196f3", "&:hover": { backgroundColor: "#1976d2" }, width: { xs: 40, sm: 48 }, height: { xs: 40, sm: 48 } }}>
+          <Fab color="secondary" size="small" aria-label="add vidrio" onClick={() => handleOpenAddItemDialog("vidrio")} sx={{ backgroundColor: "rgba(67,105,145,0.9)", color: "#fff", "&:hover": { backgroundColor: "rgba(56,90,125,0.95)" }, width: { xs: 40, sm: 48 }, height: { xs: 40, sm: 48 } }}>
             <Add fontSize={isMobile ? "small" : "medium"} />
           </Fab>
           <Typography variant="caption" sx={{ textAlign: "center", color: "text.secondary", fontSize: { xs: "0.65rem", sm: "0.75rem" }, display: { xs: "none", sm: "block" } }}>Vidrio</Typography>
-          <Fab color="secondary" size="small" aria-label="add servicio o extra" onClick={() => handleOpenAddItemDialog("extra")} sx={{ backgroundColor: "#9c27b0", "&:hover": { backgroundColor: "#7b1fa2" }, width: { xs: 40, sm: 48 }, height: { xs: 40, sm: 48 } }}>
+          <Fab color="secondary" size="small" aria-label="add servicio o extra" onClick={() => handleOpenAddItemDialog("extra")} sx={{ backgroundColor: "rgba(93,84,131,0.9)", color: "#fff", "&:hover": { backgroundColor: "rgba(78,70,112,0.95)" }, width: { xs: 40, sm: 48 }, height: { xs: 40, sm: 48 } }}>
             <Add fontSize={isMobile ? "small" : "medium"} />
           </Fab>
           <Typography variant="caption" sx={{ textAlign: "center", color: "text.secondary", fontSize: { xs: "0.65rem", sm: "0.75rem" }, display: { xs: "none", sm: "block" } }}>Servicio/Extra</Typography>
@@ -1569,14 +1686,14 @@ export default function CotizadorApp() {
 
   // Componente para imagen de modelo principal en cotizador
   const ModelImage = ({ modelId, modelName }) => {
-    const [imageSrc, setImageSrc] = useState('');
+    const [imageSrc, setImageSrc] = useState('/images/placeholder.png');
     const [imageError, setImageError] = useState(false);
 
     useEffect(() => {
       const loadImage = async () => {
         try {
           const imageUrl = await getModelImageURL(modelId);
-          setImageSrc(imageUrl || '/images/placeholder.png');
+          setImageSrc(typeof imageUrl === "string" && imageUrl.length > 0 ? imageUrl : '/images/placeholder.png');
         } catch (error) {
           console.error('Error loading model image:', error);
           setImageSrc('/images/placeholder.png');
@@ -1587,19 +1704,23 @@ export default function CotizadorApp() {
       loadImage();
     }, [modelId]);
 
-    if (imageError && !imageSrc) return null;
+    const safeSrc = typeof imageSrc === "string" && imageSrc.length > 0 ? imageSrc : '/images/placeholder.png';
 
     return (
       <Image
-        src={imageSrc}
+        src={safeSrc}
         alt={`Imagen de ${modelName}`}
         width={500}
         height={500}
         style={{
           objectFit: "cover",
           borderRadius: "16px",
+          opacity: imageError ? 0.92 : 1,
         }}
-        onError={() => setImageError(true)}
+        onError={() => {
+          setImageError(true);
+          setImageSrc('/images/placeholder.png');
+        }}
       />
     );
   };
@@ -1612,14 +1733,14 @@ export default function CotizadorApp() {
         <Button variant="outlined" size={isMobile ? "small" : "medium"} startIcon={<ArrowBackIcon />} onClick={() => { setSelectedModel(null); setModelData(null); }}>
           Volver a Buscar
         </Button>
-        <Typography variant="h4" align="center" sx={{ mt: 2, mb: 2, color: "black", fontSize: { xs: "1.35rem", sm: "1.5rem", md: "2.125rem" }, wordBreak: "break-word" }}>
+        <Typography variant="h4" align="center" sx={{ mt: 2, mb: 2, color: "text.primary", fontSize: { xs: "1.35rem", sm: "1.5rem", md: "2.125rem" }, wordBreak: "break-word", fontWeight: 700 }}>
           {modelData.name}
         </Typography>
         <Box sx={{ display: "flex", justifyContent: "center", alignItems: "center", mb: { xs: 2, sm: 4 } }}>
           <ModelImage modelId={modelData.id} modelName={modelData.name} />
         </Box>
         {/* Predefinir color y vidrio para los próximos modelos */}
-        <Paper sx={{ p: 2, mb: 3, bgcolor: "grey.50", border: "1px dashed", borderColor: "divider" }}>
+        <Paper sx={{ p: 2, mb: 3, bgcolor: "rgba(255,255,255,0.62)", border: "1px dashed", borderColor: "rgba(96,116,140,0.35)", backdropFilter: "blur(10px)" }}>
           <Typography variant="subtitle2" sx={{ mb: 1.5, color: "text.secondary", fontWeight: 600 }}>
             Predefinir para próximos modelos
           </Typography>
@@ -1634,7 +1755,7 @@ export default function CotizadorApp() {
                 getOptionLabel={(option) => `${option.name} ${option.percentage > 0 ? `(+${option.percentage}%)` : option.percentage < 0 ? `(${option.percentage}%)` : "(Base)"}`}
                 isOptionEqualToValue={(option, value) => option.id === value?.id}
                 value={defaultColorForNewItems}
-                onChange={(_, newValue) => setDefaultColorForNewItems(newValue)}
+                onChange={(_, newValue) => handleDefaultColorChange(newValue)}
                 renderInput={(params) => <TextField {...params} label="Color por defecto" variant="outlined" placeholder="Ninguno" />}
               />
             </Box>
@@ -1645,10 +1766,7 @@ export default function CotizadorApp() {
                 getOptionLabel={(option) => option.name || ""}
                 isOptionEqualToValue={(option, value) => option.id === value?.id}
                 value={defaultGlassProductForNewItems}
-                onChange={(_, newValue) => {
-                  setDefaultGlassProductForNewItems(newValue);
-                  if (!newValue) setDefaultGlassForNewItems(null);
-                }}
+                onChange={(_, newValue) => handleDefaultGlassProductChange(newValue)}
                 renderInput={(params) => <TextField {...params} label="Vidrio por defecto (nombre)" variant="outlined" placeholder="Ninguno" />}
               />
             </Box>
@@ -1660,23 +1778,7 @@ export default function CotizadorApp() {
                   getOptionLabel={(opt) => `${opt.tickness ?? opt.thickness} mm — $${(parseFloat(opt.priceInstalled ?? opt.price ?? 0) || 0).toFixed(2)}/m²`}
                   isOptionEqualToValue={(opt, val) => (opt.tickness ?? opt.thickness) === (val?.tickness ?? val?.thickness)}
                   value={defaultGlassForNewItems && defaultGlassForNewItems.originalId === defaultGlassProductForNewItems.id ? defaultGlassProductForNewItems.options?.find((o) => String(o.tickness ?? o.thickness) === String(defaultGlassForNewItems.tickness)) ?? null : null}
-                  onChange={(_, newValue) => {
-                    if (!defaultGlassProductForNewItems || !newValue) {
-                      setDefaultGlassForNewItems(null);
-                      return;
-                    }
-                    const t = newValue.tickness ?? newValue.thickness ?? "";
-                    const priceInstalled = parseFloat(newValue.priceInstalled ?? newValue.price ?? 0) || 0;
-                    setDefaultGlassForNewItems({
-                      id: `${defaultGlassProductForNewItems.id}_${t}`,
-                      originalId: defaultGlassProductForNewItems.id,
-                      name: `${defaultGlassProductForNewItems.name || ""} ${t}mm`,
-                      tickness: t,
-                      priceInstalled,
-                      price: priceInstalled,
-                      priceCut: parseFloat(newValue.priceCut ?? 0) || 0,
-                    });
-                  }}
+                  onChange={(_, newValue) => handleDefaultGlassVariantChange(newValue)}
                   renderInput={(params) => <TextField {...params} label="Grosor por defecto" variant="outlined" placeholder="Elige grosor" />}
                 />
               </Box>
@@ -1704,7 +1806,7 @@ export default function CotizadorApp() {
           />
         </Box>
         {/* SELECCIÓN DE COLOR */}
-        <Typography variant="h6" gutterBottom sx={{ textAlign: "center", mt: 4, color: "black", fontSize: { xs: "0.95rem", sm: "1rem" } }}>
+        <Typography variant="h6" gutterBottom sx={{ textAlign: "center", mt: 4, color: "text.primary", fontSize: { xs: "0.95rem", sm: "1rem" } }}>
           Seleccionar Color del Material
         </Typography>
         <Box sx={{ mb: 4, width: { xs: "100%", sm: "300px" }, maxWidth: 420, margin: "0 auto" }}>
@@ -1733,7 +1835,7 @@ export default function CotizadorApp() {
         </Box>
 
         {/* SELECCIÓN DE VIDRIO: primero nombre, luego variante (como /sistema/vidrios) */}
-        <Typography variant="h6" gutterBottom sx={{ textAlign: "center", mt: 4, color: "black", fontSize: { xs: "0.95rem", sm: "1rem" } }}>
+        <Typography variant="h6" gutterBottom sx={{ textAlign: "center", mt: 4, color: "text.primary", fontSize: { xs: "0.95rem", sm: "1rem" } }}>
           Seleccionar Vidrio
         </Typography>
         <Box sx={{ mb: 4, width: { xs: "100%", sm: "auto" }, maxWidth: 420, margin: "0 auto", display: "flex", flexDirection: "column", gap: 2 }}>
@@ -1796,10 +1898,10 @@ export default function CotizadorApp() {
         </Box>
         
         <Box sx={{ mt: 4, textAlign: "right" }}>
-          <Typography variant="h5" sx={{ color: "black", fontSize: { xs: "1rem", sm: "1.5rem" } }}>Total:</Typography>
+          <Typography variant="h5" sx={{ color: "text.primary", fontSize: { xs: "1rem", sm: "1.5rem" } }}>Total:</Typography>
         </Box>
         <Box sx={{ textAlign: "right" }}>
-          <Typography variant="h1" sx={{ color: "black", fontSize: { xs: "1.75rem", sm: "2.5rem", md: "3rem" } }}>
+          <Typography variant="h1" sx={{ color: "text.primary", fontSize: { xs: "1.75rem", sm: "2.5rem", md: "3rem" } }}>
             ${calculations ? calculations.totalGeneral.toFixed(2) : "0.00"}
           </Typography>
         </Box>
@@ -1874,14 +1976,14 @@ export default function CotizadorApp() {
                 <TableHead>
                   <TableRow>
                     <TableCell sx={{ fontSize: { xs: "0.8rem", sm: "0.875rem" }, fontWeight: 600 }}>Nombre</TableCell>
-                    <TableCell sx={{ fontSize: { xs: "0.8rem", sm: "0.875rem" }, fontWeight: 600 }}>Metraje (mts)</TableCell>
+                    <TableCell sx={{ fontSize: { xs: "0.8rem", sm: "0.875rem" }, fontWeight: 600 }}>Metraje (m)</TableCell>
                     <TableCell sx={{ fontSize: { xs: "0.8rem", sm: "0.875rem" }, fontWeight: 600 }}>Total ($)</TableCell>
                   </TableRow>
                 </TableHead>
                 <TableBody>
                   {modelData.glasses.map((glass, index) => {
-                    const heightInMeters = parseFloat(dimensions.height) / 100;
-                    const widthInMeters = parseFloat(dimensions.width) / 100;
+                    const normalizedDims = normalizeLegacyDimensionsToCm(dimensions);
+                    const { heightInMeters, widthInMeters } = dimensionsCmToMeters(normalizedDims);
                     const meterage = calculatePrice(glass.formula, {
                       PRECIO: 1,
                       ALTO: heightInMeters,
@@ -1892,7 +1994,7 @@ export default function CotizadorApp() {
                     return (
                       <TableRow key={index}>
                         <TableCell>{selectedGlass ? selectedGlass.name : glass.name}</TableCell>
-                        <TableCell>{meterage.toFixed(2)} mts</TableCell>
+                        <TableCell>{meterage.toFixed(2)} m</TableCell>
                         <TableCell>${price.toFixed(2)}</TableCell>
                       </TableRow>
                     );
@@ -2696,10 +2798,10 @@ export default function CotizadorApp() {
                             Dimensiones: {itemDimensions.height} x {itemDimensions.width} cm
                           </Typography>
                           <Typography variant="body2">
-                            Área: {((parseFloat(itemDimensions.height) / 100) * (parseFloat(itemDimensions.width) / 100)).toFixed(2)} m²
+                            Área: {m2FromCmDimensions(itemDimensions.height, itemDimensions.width).toFixed(2)} m²
                           </Typography>
                           <Typography variant="body2" sx={{ fontWeight: "bold" }}>
-                            Precio total: ${(((parseFloat(itemDimensions.height) / 100) * (parseFloat(itemDimensions.width) / 100)) * parseFloat(selectedVidrio.price || selectedVidrio.priceInstalled || 0)).toFixed(2)}
+                            Precio total: ${(m2FromCmDimensions(itemDimensions.height, itemDimensions.width) * parseFloat(selectedVidrio.price || selectedVidrio.priceInstalled || 0)).toFixed(2)}
                           </Typography>
                         </>
                       ) : itemQuantityType === "m2" ? (

@@ -35,6 +35,10 @@ import {
   CardContent
 } from "@mui/material";
 import {
+  m2FromCmDimensions,
+  normalizeLegacyDimensionsToCm,
+} from "../../../utils/units";
+import {
   Add,
   Delete,
   Save,
@@ -116,12 +120,7 @@ export default function GlassCalculatorPage() {
       console.error("Error fetching history: ", error);
     }
   };
-  const calculateGlassArea = () => {
-    const height = parseFloat(dimensions.height) || 0;
-    const width = parseFloat(dimensions.width) || 0;
-    // Convertir de cm a m² (dividir por 100 para cada dimensión)
-    return (height / 100) * (width / 100);
-  };
+  const calculateGlassArea = () => m2FromCmDimensions(dimensions.height, dimensions.width);
 
   const addToCalculator = (glass = selectedGlass, option = selectedGlassOption) => {
     if (!glass || !option) {
@@ -150,7 +149,7 @@ export default function GlassCalculatorPage() {
       id: Date.now().toString(),
       glassName: glass.name,
       thickness: option.tickness,
-      dimensions: { ...dimensions },
+      dimensions: normalizeLegacyDimensionsToCm({ ...dimensions, unit: "cm" }),
       area: area,
       priceType: priceTypeText,
       pricePerUnit: parseFloat(option[priceType]) || 0,
@@ -182,7 +181,8 @@ export default function GlassCalculatorPage() {
   const updateCalculatorItem = (newGlass, newOption) => {
     if (!itemToEdit || !newGlass || !newOption) return;
 
-    const area = (parseFloat(itemToEdit.dimensions.height) / 100) * (parseFloat(itemToEdit.dimensions.width) / 100);
+    const normalizedDims = normalizeLegacyDimensionsToCm(itemToEdit.dimensions);
+    const area = m2FromCmDimensions(normalizedDims?.height, normalizedDims?.width);
     const price = area * (parseFloat(newOption[priceType]) || 0);
     const priceTypeText = priceType === "priceInstalled" ? "Instalado" : "Corte";
 
@@ -899,7 +899,8 @@ export default function GlassCalculatorPage() {
                   {glass.options.map((option, index) => {
                     if (!itemToEdit) return null;
                     
-                    const area = (parseFloat(itemToEdit.dimensions.height) / 100) * (parseFloat(itemToEdit.dimensions.width) / 100);
+                    const normalizedDims = normalizeLegacyDimensionsToCm(itemToEdit.dimensions);
+                    const area = m2FromCmDimensions(normalizedDims?.height, normalizedDims?.width);
                     const price = parseFloat(option[priceType]) || 0;
                     const total = area * price;
                     const currentSelection = itemToEdit.glassName === glass.name && itemToEdit.thickness === option.tickness;

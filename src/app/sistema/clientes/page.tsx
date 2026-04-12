@@ -6,6 +6,11 @@ import { collection, getDocs, addDoc, updateDoc, doc } from "firebase/firestore"
 import { db } from "../../../../firebase";
 import { getModelImageURL } from "../../../utils/imageStorage";
 import {
+  DEFAULT_DIMENSION_CM,
+  normalizeLegacyDimensionsToCm,
+  m2FromCmDimensions,
+} from "../../../utils/units";
+import {
   Button,
   Table,
   TableBody,
@@ -158,7 +163,11 @@ export default function ClientesPage() {
     glasses?: Glass[];
   } | null>(null);
   const [glassesOptions, setGlassesOptions] = useState<Glass[]>([]);
-  const [dimensions, setDimensions] = useState({ height: "1", width: "1" });
+  const [dimensions, setDimensions] = useState({
+    height: String(DEFAULT_DIMENSION_CM),
+    width: String(DEFAULT_DIMENSION_CM),
+    unit: "cm",
+  });
   const [selectedGlass, setSelectedGlass] = useState<Glass | null>(null);
   
   // Estado para caché de imágenes
@@ -551,7 +560,11 @@ export default function ClientesPage() {
     setModelSearchQuery("");
     setSelectedModelToAdd(null);
     setModelData(null);
-    setDimensions({ height: "1", width: "1" });
+    setDimensions({
+      height: String(DEFAULT_DIMENSION_CM),
+      width: String(DEFAULT_DIMENSION_CM),
+      unit: "cm",
+    });
     setSelectedGlass(null);
   };
 
@@ -616,9 +629,10 @@ export default function ClientesPage() {
   const getCalculations = () => {
     if (!selectedModelToAdd || !selectedGlass) return { area: 0, total: 0 };
     
-    const height = parseFloat(dimensions.height) || 0;
-    const width = parseFloat(dimensions.width) || 0;
-    const area = height * width;
+    const normalizedDims = normalizeLegacyDimensionsToCm(dimensions);
+    const height = parseFloat(String(normalizedDims?.height || 0)) || 0;
+    const width = parseFloat(String(normalizedDims?.width || 0)) || 0;
+    const area = m2FromCmDimensions(height, width);
     
     const variables = {
       area: area,
@@ -644,7 +658,7 @@ export default function ClientesPage() {
       const newItem = {
         modelId: selectedModelToAdd.id,
         modelName: selectedModelToAdd.name,
-        dimensions: dimensions,
+        dimensions: normalizeLegacyDimensionsToCm({ ...dimensions, unit: "cm" }),
         area: area,
         price: total,
         selectedGlass: selectedGlass,

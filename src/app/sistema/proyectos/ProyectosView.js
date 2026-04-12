@@ -319,7 +319,8 @@ const ProyectosView = ({
     }}>
       <Typography variant="h4" align="center" sx={{ 
         mb: 3, 
-        color: "black",
+        color: "text.primary",
+        fontWeight: 700,
         fontSize: { xs: '1.5rem', sm: '2rem', md: '2.5rem' }
       }}>
         Gestión de Proyectos
@@ -363,10 +364,10 @@ const ProyectosView = ({
       <Grid container spacing={3}>
         {filteredProjects.map((project) => (
           <Grid item xs={12} sm={6} md={4} lg={4} key={project.id}>
-            <Card sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
+            <Card sx={{ height: '100%', display: 'flex', flexDirection: 'column', border: '1px solid rgba(114,132,154,0.22)' }}>
               <CardContent sx={{ flexGrow: 1 }}>
                 <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 2, flexWrap: 'wrap', gap: 1 }}>
-                  <Typography variant="h6" sx={{ color: "black", fontWeight: 'bold', flex: 1, minWidth: 0 }}>
+                  <Typography variant="h6" sx={{ color: "text.primary", fontWeight: 'bold', flex: 1, minWidth: 0 }}>
                     {project.name}
                   </Typography>
                   <Chip 
@@ -634,17 +635,17 @@ const ProyectosView = ({
               {detailsStep === 1 && (
                 <Box>
               {selectedProject.status === 'active' && (
-                <Paper sx={{ p: 2, mb: 2, backgroundColor: '#e3f2fd', border: '1px solid #2196f3' }}>
+                <Paper sx={{ p: 2, mb: 2, backgroundColor: 'rgba(225,235,247,0.72)', border: '1px solid rgba(83,113,147,0.34)' }}>
                   <Typography variant="body2" sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                    <Assignment sx={{ color: '#1976d2' }} />
+                    <Assignment sx={{ color: '#355274' }} />
                     <strong>Asignar trabajos:</strong> Selecciona un colaborador en el campo correspondiente de cada item, o usa &quot;Configurar&quot; para más opciones (ubicación, estado).
                   </Typography>
                 </Paper>
               )}
               {/* Configuración Global - Solo para proyectos en cotización (igual que carrito) */}
               {selectedProject.status === 'quotation' && (
-                <Paper sx={{ p: 2, mb: 3, border: '1px solid #1976d2', backgroundColor: '#f5f9ff' }}>
-                  <Typography variant="h6" sx={{ mb: 2, color: '#1565c0', fontWeight: 'bold' }}>
+                <Paper sx={{ p: 2, mb: 3, border: '1px solid rgba(83,113,147,0.34)', backgroundColor: 'rgba(240,246,253,0.72)' }}>
+                  <Typography variant="h6" sx={{ mb: 2, color: '#2f4a69', fontWeight: 'bold' }}>
                     Configuración Global del Proyecto
                   </Typography>
                   <Typography variant="caption" color="textSecondary" sx={{ display: 'block', mb: 2 }}>

@@ -48,20 +48,20 @@ export default function ExecutiveDashboard() {
   // Pantalla de carga
   if (loading) {
     return (
-      <div style={{ padding: '20px', maxWidth: '1200px', margin: '0 auto' }}>
+      <div style={{ padding: '20px', maxWidth: '1200px', margin: '0 auto', color: '#0f1724' }}>
         <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '60vh' }}>
           <div style={{ textAlign: 'center' }}>
             <div style={{ 
               width: '50px', 
               height: '50px', 
               margin: '0 auto 20px', 
-              border: '5px solid #f3f3f3', 
-              borderTop: '5px solid #3498db', 
+                border: '5px solid rgba(128, 146, 168, 0.3)', 
+                borderTop: '5px solid #33445b', 
               borderRadius: '50%', 
               animation: 'spin 2s linear infinite' 
             }}></div>
-            <h2 style={{ color: '#666' }}>Analizando sistema...</h2>
-            <p style={{ color: '#888' }}>Cargando métricas, duplicados y predicciones</p>
+            <h2 style={{ color: '#213044' }}>Analizando sistema...</h2>
+            <p style={{ color: '#4f6278' }}>Cargando métricas, duplicados y predicciones</p>
           </div>
         </div>
         <style jsx>{`
@@ -80,10 +80,10 @@ export default function ExecutiveDashboard() {
       <div style={{ padding: '20px', maxWidth: '1200px', margin: '0 auto' }}>
         <div style={{ 
           padding: '15px', 
-          backgroundColor: '#ffebee', 
-          border: '1px solid #ef5350', 
+          backgroundColor: 'rgba(247, 228, 228, 0.9)', 
+          border: '1px solid rgba(186, 104, 104, 0.45)', 
           borderRadius: '4px', 
-          color: '#c62828', 
+          color: '#7d2525', 
           display: 'flex', 
           justifyContent: 'space-between', 
           alignItems: 'center' 
@@ -94,7 +94,7 @@ export default function ExecutiveDashboard() {
             style={{ 
               background: 'none', 
               border: 'none', 
-              color: '#c62828', 
+               color: '#7d2525', 
               cursor: 'pointer', 
               fontSize: '14px', 
               fontWeight: 'bold' 
@@ -116,14 +116,14 @@ export default function ExecutiveDashboard() {
           <h1 style={{ 
             fontSize: '2.2rem', 
             fontWeight: 'bold',
-            background: 'linear-gradient(45deg, #1976d2, #42a5f5)',
+            background: 'linear-gradient(45deg, #24364d, #4c647e)',
             WebkitBackgroundClip: 'text',
             WebkitTextFillColor: 'transparent',
             margin: 0
           }}>
             📊 Dashboard Ejecutivo
           </h1>
-          <p style={{ color: '#666', margin: '5px 0 0' }}>
+          <p style={{ color: '#526379', margin: '5px 0 0' }}>
             Análisis completo del sistema Aluminios San Francisco
           </p>
         </div>
@@ -133,9 +133,9 @@ export default function ExecutiveDashboard() {
           style={{ 
             padding: '8px 15px', 
             backgroundColor: 'transparent',
-            border: '1px solid #1976d2',
+            border: '1px solid #3f5672',
             borderRadius: '4px',
-            color: '#1976d2',
+            color: '#2c3e56',
             fontWeight: 'bold',
             cursor: loading ? 'not-allowed' : 'pointer',
             opacity: loading ? 0.6 : 1
@@ -147,7 +147,7 @@ export default function ExecutiveDashboard() {
 
       {/* Métricas principales */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(250px, 1fr))', gap: '20px', marginBottom: '20px' }}>
-        <div style={{ background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)', color: 'white', borderRadius: '8px', padding: '20px' }}>
+        <div style={{ background: 'linear-gradient(135deg, #29394f 0%, #3f5876 100%)', color: 'white', borderRadius: '8px', padding: '20px' }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
             <div>
               <h2 style={{ fontSize: '2rem', margin: '0' }}>{stats.totalProjects}</h2>
@@ -157,7 +157,7 @@ export default function ExecutiveDashboard() {
           </div>
         </div>
 
-        <div style={{ background: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)', color: 'white', borderRadius: '8px', padding: '20px' }}>
+        <div style={{ background: 'linear-gradient(135deg, #37485f 0%, #566f8d 100%)', color: 'white', borderRadius: '8px', padding: '20px' }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
             <div>
               <h2 style={{ fontSize: '2rem', margin: '0' }}>{formatCurrency(stats.projectsValue.total)}</h2>
@@ -167,7 +167,7 @@ export default function ExecutiveDashboard() {
           </div>
         </div>
 
-        <div style={{ background: 'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)', color: 'white', borderRadius: '8px', padding: '20px' }}>
+        <div style={{ background: 'linear-gradient(135deg, #2a425f 0%, #4c6f93 100%)', color: 'white', borderRadius: '8px', padding: '20px' }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
             <div>
               <h2 style={{ fontSize: '2rem', margin: '0' }}>{formatCurrency(stats.financialSummary.balance)}</h2>
@@ -177,7 +177,7 @@ export default function ExecutiveDashboard() {
           </div>
         </div>
 
-        <div style={{ background: 'linear-gradient(135deg, #43e97b 0%, #38f9d7 100%)', color: 'white', borderRadius: '8px', padding: '20px' }}>
+        <div style={{ background: 'linear-gradient(135deg, #2f4f47 0%, #4c746d 100%)', color: 'white', borderRadius: '8px', padding: '20px' }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
             <div>
               <h2 style={{ fontSize: '2rem', margin: '0' }}>{stats.dataQuality.completenessScore}%</h2>
@@ -189,23 +189,23 @@ export default function ExecutiveDashboard() {
       </div>
 
       {/* Resumen Financiero Detallado */}
-      <div style={{ border: '1px solid #e0e0e0', borderRadius: '8px', backgroundColor: '#fff', padding: '20px', marginBottom: '20px' }}>
+      <div style={{ border: '1px solid rgba(120, 140, 164, 0.24)', borderRadius: '8px', backgroundColor: 'rgba(255,255,255,0.66)', backdropFilter: 'blur(14px)', padding: '20px', marginBottom: '20px' }}>
         <h2 style={{ fontSize: '1.2rem', marginTop: 0, display: 'flex', alignItems: 'center' }}>
           💰 Resumen Financiero Detallado
         </h2>
         
         {/* Métricas principales de ingresos */}
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '15px', marginBottom: '20px' }}>
-          <div style={{ textAlign: 'center', padding: '15px', backgroundColor: '#e8f5e8', borderRadius: '8px' }}>
-            <div style={{ fontSize: '0.9rem', color: '#2e7d32', marginBottom: '5px' }}>💵 Total Ingresos</div>
-            <div style={{ fontSize: '1.4rem', fontWeight: 'bold', color: '#1b5e20' }}>
+          <div style={{ textAlign: 'center', padding: '15px', backgroundColor: 'rgba(228, 242, 235, 0.9)', borderRadius: '8px' }}>
+            <div style={{ fontSize: '0.9rem', color: '#2f5d45', marginBottom: '5px' }}>💵 Total Ingresos</div>
+            <div style={{ fontSize: '1.4rem', fontWeight: 'bold', color: '#224a36' }}>
               {formatCurrency(stats.financialSummary.totalIncome)}
             </div>
           </div>
           
-          <div style={{ textAlign: 'center', padding: '15px', backgroundColor: '#ffebee', borderRadius: '8px' }}>
-            <div style={{ fontSize: '0.9rem', color: '#c62828', marginBottom: '5px' }}>💸 Total Gastos</div>
-            <div style={{ fontSize: '1.4rem', fontWeight: 'bold', color: '#b71c1c' }}>
+          <div style={{ textAlign: 'center', padding: '15px', backgroundColor: 'rgba(247, 232, 232, 0.9)', borderRadius: '8px' }}>
+            <div style={{ fontSize: '0.9rem', color: '#7d3030', marginBottom: '5px' }}>💸 Total Gastos</div>
+            <div style={{ fontSize: '1.4rem', fontWeight: 'bold', color: '#682727' }}>
               {formatCurrency(stats.financialSummary.totalExpenses)}
             </div>
           </div>
@@ -213,12 +213,12 @@ export default function ExecutiveDashboard() {
           <div style={{ 
             textAlign: 'center', 
             padding: '15px', 
-            backgroundColor: stats.financialSummary.balance >= 0 ? '#e3f2fd' : '#fff3e0', 
+            backgroundColor: stats.financialSummary.balance >= 0 ? 'rgba(224, 234, 246, 0.9)' : 'rgba(249, 238, 223, 0.9)', 
             borderRadius: '8px' 
           }}>
             <div style={{ 
               fontSize: '0.9rem', 
-              color: stats.financialSummary.balance >= 0 ? '#1565c0' : '#ef6c00', 
+              color: stats.financialSummary.balance >= 0 ? '#29496d' : '#8a4f1f', 
               marginBottom: '5px' 
             }}>
               🏦 Balance Neto
@@ -226,7 +226,7 @@ export default function ExecutiveDashboard() {
             <div style={{ 
               fontSize: '1.4rem', 
               fontWeight: 'bold', 
-              color: stats.financialSummary.balance >= 0 ? '#0d47a1' : '#e65100' 
+              color: stats.financialSummary.balance >= 0 ? '#1f3d5f' : '#78441e' 
             }}>
               {formatCurrency(stats.financialSummary.balance)}
             </div>
@@ -234,8 +234,8 @@ export default function ExecutiveDashboard() {
         </div>
 
         {/* Desglose de ingresos */}
-        <div style={{ backgroundColor: '#f8f9fa', padding: '15px', borderRadius: '8px', border: '1px solid #dee2e6' }}>
-          <h3 style={{ fontSize: '1rem', marginTop: 0, marginBottom: '15px', color: '#495057' }}>
+        <div style={{ backgroundColor: 'rgba(246, 249, 253, 0.8)', padding: '15px', borderRadius: '8px', border: '1px solid rgba(120, 140, 164, 0.22)' }}>
+          <h3 style={{ fontSize: '1rem', marginTop: 0, marginBottom: '15px', color: '#32455c' }}>
             📋 Desglose de Ingresos
           </h3>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '10px' }}>

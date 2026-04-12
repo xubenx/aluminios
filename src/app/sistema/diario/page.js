@@ -375,7 +375,7 @@ export default function DiarioContabilidadPage() {  const [entries, setEntries] 
 
   return (
     <Box sx={{ padding: 3, maxWidth: "1400px", margin: "0 auto" }}>
-      <Typography variant="h4" align="center" sx={{ mb: 3, color: "black" }}>
+      <Typography variant="h4" align="center" sx={{ mb: 3, color: "text.primary", fontWeight: 700 }}>
         <AccountBalanceWallet sx={{ mr: 1, verticalAlign: "middle" }} />
         Diario de Contabilidad
       </Typography>
@@ -383,14 +383,14 @@ export default function DiarioContabilidadPage() {  const [entries, setEntries] 
       {/* Resumen financiero */}
       <Grid container spacing={3} sx={{ mb: 3 }}>
         <Grid item xs={12} sm={6} md={3}>
-          <Paper sx={{ p: 2, textAlign: 'center', bgcolor: 'error.light', color: 'white' }}>
+          <Paper sx={{ p: 2, textAlign: 'center', bgcolor: 'rgba(144,75,75,0.9)', color: '#f7f9fc', border: '1px solid rgba(114,132,154,0.24)' }}>
             <TrendingDown sx={{ fontSize: 40, mb: 1 }} />
             <Typography variant="h6">Total Gastos</Typography>
             <Typography variant="h4">{formatCurrency(getTotalGastos())}</Typography>
           </Paper>
         </Grid>
         <Grid item xs={12} sm={6} md={3}>
-          <Paper sx={{ p: 2, textAlign: 'center', bgcolor: 'success.light', color: 'white' }}>
+          <Paper sx={{ p: 2, textAlign: 'center', bgcolor: 'rgba(65,109,88,0.9)', color: '#f7f9fc', border: '1px solid rgba(114,132,154,0.24)' }}>
             <TrendingUp sx={{ fontSize: 40, mb: 1 }} />
             <Typography variant="h6">Total Pagos</Typography>
             <Typography variant="h4">{formatCurrency(getTotalPagos())}</Typography>
@@ -400,8 +400,9 @@ export default function DiarioContabilidadPage() {  const [entries, setEntries] 
           <Paper sx={{ 
             p: 2, 
             textAlign: 'center', 
-            bgcolor: getBalance() >= 0 ? 'primary.main' : 'warning.main', 
-            color: 'white' 
+            bgcolor: getBalance() >= 0 ? 'rgba(57,88,122,0.92)' : 'rgba(134,102,67,0.92)', 
+            color: '#f7f9fc',
+            border: '1px solid rgba(114,132,154,0.24)'
           }}>
             <MonetizationOn sx={{ fontSize: 40, mb: 1 }} />
             <Typography variant="h6">Balance</Typography>
@@ -409,7 +410,7 @@ export default function DiarioContabilidadPage() {  const [entries, setEntries] 
           </Paper>
         </Grid>
         <Grid item xs={12} sm={6} md={3}>
-          <Paper sx={{ p: 2, textAlign: 'center', bgcolor: 'info.main', color: 'white' }}>
+          <Paper sx={{ p: 2, textAlign: 'center', bgcolor: 'rgba(74,104,138,0.9)', color: '#f7f9fc', border: '1px solid rgba(114,132,154,0.24)' }}>
             <Receipt sx={{ fontSize: 40, mb: 1 }} />
             <Typography variant="h6">Entradas Activas</Typography>
             <Typography variant="h4">{entries.filter(e => e.activo !== false).length}</Typography>
@@ -418,7 +419,7 @@ export default function DiarioContabilidadPage() {  const [entries, setEntries] 
       </Grid>
 
       {/* Desglose por origen */}
-      <Paper sx={{ p: 2, mb: 3, bgcolor: 'grey.50' }}>
+      <Paper sx={{ p: 2, mb: 3, bgcolor: 'rgba(255,255,255,0.62)', border: '1px solid rgba(114,132,154,0.2)' }}>
         <Typography variant="subtitle1" fontWeight="bold" sx={{ mb: 1 }}>Desglose</Typography>
         <Grid container spacing={2}>
           <Grid item xs={12} sm={4}>
@@ -530,9 +531,9 @@ export default function DiarioContabilidadPage() {  const [entries, setEntries] 
               <TableRow 
                 key={entry.id} 
                 sx={{ 
-                  '&:hover': { bgcolor: 'grey.50' },
+                  '&:hover': { bgcolor: 'rgba(119,137,160,0.08)' },
                   opacity: entry.activo === false ? 0.6 : 1,
-                  backgroundColor: entry.activo === false ? 'grey.50' : 'inherit'
+                  backgroundColor: entry.activo === false ? 'rgba(119,137,160,0.08)' : 'inherit'
                 }}
               >
                 <TableCell>

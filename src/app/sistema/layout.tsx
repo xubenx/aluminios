@@ -4,7 +4,23 @@ import Head from "next/head";
 import type { ReactNode } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { useState, useEffect } from "react";
-import { AppBar, Toolbar, Typography, Container, Box, IconButton, Drawer, List, ListItem, ListItemIcon, ListItemText, CircularProgress, Button } from "@mui/material";
+import {
+  AppBar,
+  Toolbar,
+  Typography,
+  Container,
+  Box,
+  IconButton,
+  Drawer,
+  List,
+  ListItem,
+  ListItemIcon,
+  ListItemText,
+  CircularProgress,
+  Button,
+  Divider,
+  Chip,
+} from "@mui/material";
 import MenuIcon from "@mui/icons-material/Menu";
 import LogoutIcon from "@mui/icons-material/Logout";
 import Link from "next/link";
@@ -53,8 +69,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
     setDrawerOpen(open);
   };
   const menuItems = [
-        { text: "Recordatorios", href: "/sistema/recordatorios", icon: <NotificationsIcon /> },
-
+    { text: "Recordatorios", href: "/sistema/recordatorios", icon: <NotificationsIcon /> },
     { text: "Presupuestos", href: "/sistema/presupuestos", icon: <RequestQuote /> },
     { text: "Proyectos", href: "/sistema/proyectos", icon: <AssignmentIcon /> },
     { text: "Órdenes", href: "/sistema/ordenes", icon: <WorkIcon /> },
@@ -67,49 +82,107 @@ export default function RootLayout({ children }: { children: ReactNode }) {
     { text: "Vidrios", href: "/sistema/vidrios", icon: <GlassIcon /> },
     { text: "Servicios / Extras", href: "/sistema/extras", icon: <AddCircleOutlineIcon /> },
     { text: "Colaboradores", href: "/sistema/colaboradores", icon: <PeopleIcon /> },
-    //{ text: "Ordenes", href: "/sistema/ordenes", icon: <ArchiveIcon /> },
   ];
+
+  const renderMenuSection = (title: string, items: typeof menuItems) => (
+    <Box sx={{ px: 1.2, py: 1 }}>
+      <Typography
+        variant="overline"
+        sx={{ px: 1.4, color: "text.secondary", letterSpacing: 1.1, fontWeight: 700 }}
+      >
+        {title}
+      </Typography>
+      <List sx={{ py: 0.5 }}>
+        {items.map((item) => {
+          const isActive = pathname === item.href;
+          return (
+            <ListItem
+              key={item.text}
+              component={Link}
+              href={item.href}
+              onClick={toggleDrawer(false)}
+              sx={{
+                textDecoration: "none",
+                color: "inherit",
+                borderRadius: 2,
+                mb: 0.4,
+                border: "1px solid",
+                borderColor: isActive ? "rgba(67, 88, 112, 0.28)" : "transparent",
+                bgcolor: isActive ? "rgba(121, 145, 172, 0.12)" : "transparent",
+                transition: "all .2s ease",
+                "&:hover": {
+                  borderColor: "rgba(67, 88, 112, 0.2)",
+                  bgcolor: "rgba(121, 145, 172, 0.08)",
+                  transform: "translateX(2px)",
+                },
+              }}
+            >
+              <ListItemIcon sx={{ minWidth: 38, color: isActive ? "primary.main" : "text.secondary" }}>
+                {item.icon}
+              </ListItemIcon>
+              <ListItemText
+                primary={item.text}
+                primaryTypographyProps={{
+                  fontSize: "0.92rem",
+                  fontWeight: isActive ? 700 : 500,
+                }}
+              />
+            </ListItem>
+          );
+        })}
+      </List>
+    </Box>
+  );
 
   return (
     <>
-      {/* Metaetiquetas para evitar indexación */}
       <Head>
         <meta name="robots" content="noindex, nofollow" />
       </Head>
 
-      {/* Imagen superior antes del AppBar */}
-      <AppBar
-        position="static"
-        sx={{
-          background: " #000000", // Degradado de blanco a azul limitado al ancho de la imagen
-        }}
-      >        <Toolbar>          {/* Imagen y texto visibles en todas las pantallas */}
-          <Box sx={{ flexGrow: 1, display: "flex", alignItems: "center", gap: 2 }}>
+      <AppBar position="sticky" sx={{ px: { xs: 1, md: 2 } }}>
+        <Toolbar sx={{ minHeight: { xs: 68, md: 78 }, gap: 1 }}>
+          <Box sx={{ flexGrow: 1, display: "flex", alignItems: "center", gap: 1.6 }}>
             <Link href="/sistema" style={{ display: "flex", alignItems: "center", textDecoration: "none", color: "inherit" }}>
               <Image
-                src="/aluminios.svg" // Cambia esto por la ruta de tu imagen
+                src="/aluminios.svg"
                 alt="Aluminios San Francisco"
-                width={90}
-                height={90}
-                style={{ maxWidth: "100%", height: "auto", marginBottom: 15, marginTop: 15 }} // Ajusta el tamaño de la imagen
+                width={78}
+                height={78}
+                style={{ maxWidth: "100%", height: "auto" }}
               />
             </Link>
-            {/* Texto descriptivo */}
-            <Box sx={{ display: { xs: "none", sm: "block" } }}>
-              <Typography variant="h6" sx={{ fontWeight: 'bold', color: 'white' }}>
+            <Box>
+              <Typography variant="h6" sx={{ fontWeight: 700, letterSpacing: 0.2, fontSize: { xs: "1.05rem", md: "1.25rem" } }}>
                 Sistema de Gestión
               </Typography>
-              <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.8)' }}>
+              <Typography variant="caption" sx={{ color: "text.secondary", letterSpacing: 0.5 }}>
                 Aluminios San Francisco
               </Typography>
             </Box>
           </Box>
 
-          <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-            <Typography variant="body2" sx={{ color: "rgba(255,255,255,0.9)", display: { xs: "none", sm: "block" } }}>
+          <Box sx={{ display: "flex", alignItems: "center", gap: { xs: 0.7, md: 1 } }}>
+            <Chip
+              label={user?.name || user?.usuario || "Usuario"}
+              size="small"
+              variant="outlined"
+              sx={{ display: { xs: "none", sm: "inline-flex" }, borderColor: "rgba(67,88,112,.3)", color: "text.primary" }}
+            />
+            <Typography variant="body2" sx={{ display: { xs: "none", md: "block" }, color: "text.secondary" }}>
               {user?.name || user?.usuario}
             </Typography>
-            <Button color="inherit" size="small" startIcon={<LogoutIcon />} onClick={() => { logout(); router.replace("/sistema/login"); }}>
+            <Button
+              color="inherit"
+              size="small"
+              variant="outlined"
+              startIcon={<LogoutIcon />}
+              onClick={() => {
+                logout();
+                router.replace("/sistema/login");
+              }}
+              sx={{ borderColor: "rgba(87,106,128,0.28)", minWidth: { xs: 36, md: "auto" }, px: { xs: 1, md: 1.5 } }}
+            >
               Salir
             </Button>
           </Box>
@@ -117,146 +190,71 @@ export default function RootLayout({ children }: { children: ReactNode }) {
             color="inherit"
             edge="start"
             onClick={toggleDrawer(true)}
-            sx={{ 
+            sx={{
               display: "flex",
-              '&:hover': {
-                backgroundColor: 'rgba(255, 255, 255, 0.1)'
-              }
+              border: "1px solid rgba(87,106,128,.24)",
+              "&:hover": {
+                backgroundColor: "rgba(121, 145, 172, 0.12)",
+              },
             }}
           >
             <MenuIcon />
           </IconButton>
         </Toolbar>
-      </AppBar>      {/* Drawer mejorado para todas las pantallas */}
-      <Drawer 
-        anchor="left" 
-        open={drawerOpen} 
+      </AppBar>
+
+      <Drawer
+        anchor="left"
+        open={drawerOpen}
         onClose={toggleDrawer(false)}
         sx={{
-          '& .MuiDrawer-paper': {
+          "& .MuiDrawer-paper": {
             width: 280,
-            boxSizing: 'border-box',
+            boxSizing: "border-box",
           },
         }}
       >
         <Box sx={{ width: 280 }} role="presentation">
-          {/* Imagen encima del menú */}
-          <Box sx={{ 
-            textAlign: "center", 
-            padding: 2, 
-            borderBottom: '1px solid #e0e0e0',
-            backgroundColor: '#f5f5f5'
-          }}>
+          <Box sx={{ p: 2, textAlign: "center" }}>
             <Image
               src="/logo_aluminos.png"
               alt="Aluminios San Francisco"
-              width={240}
-              height={160}
+              width={210}
+              height={120}
               style={{ maxWidth: "100%", height: "auto" }}
             />
-          </Box>
-          
-          {/* Sección principal */}
-          <Box sx={{ padding: 1 }}>
-            <Typography variant="overline" sx={{ 
-              px: 2, 
-              py: 1, 
-              color: 'text.secondary',
-              fontWeight: 'bold',
-              fontSize: '0.75rem'
-            }}>
-              GESTIÓN PRINCIPAL
+            <Typography variant="caption" sx={{ color: "text.secondary", display: "block", mt: 1 }}>
+              Navegacion del sistema
             </Typography>
-            <List sx={{ py: 0 }}>
-              {menuItems.slice(0, 5).map((item) => (
-                <ListItem 
-                  key={item.text} 
-                  component={Link}
-                  href={item.href}
-                  onClick={toggleDrawer(false)}
-                  sx={{
-                    textDecoration: "none", 
-                    color: "inherit",
-                    borderRadius: 1,
-                    margin: '2px 8px',
-                    '&:hover': {
-                      backgroundColor: 'primary.light',
-                      color: 'primary.contrastText',
-                    }
-                  }}
-                >
-                  <ListItemIcon sx={{ color: 'inherit', minWidth: 40 }}>
-                    {item.icon}
-                  </ListItemIcon>
-                  <ListItemText 
-                    primary={item.text} 
-                    primaryTypographyProps={{ 
-                      fontSize: '0.95rem',
-                      fontWeight: 500
-                    }}
-                  />
-                </ListItem>
-              ))}
-            </List>
           </Box>
-
-          {/* Sección de inventario */}
-          <Box sx={{ padding: 1 }}>
-            <Typography variant="overline" sx={{ 
-              px: 2, 
-              py: 1, 
-              color: 'text.secondary',
-              fontWeight: 'bold',
-              fontSize: '0.75rem'
-            }}>
-              INVENTARIO
-            </Typography>
-            <List sx={{ py: 0 }}>
-              {menuItems.slice(5).map((item) => (
-                <ListItem 
-                  key={item.text} 
-                  component={Link}
-                  href={item.href}
-                  onClick={toggleDrawer(false)}
-                  sx={{
-                    textDecoration: "none", 
-                    color: "inherit",
-                    borderRadius: 1,
-                    margin: '2px 8px',
-                    '&:hover': {
-                      backgroundColor: 'secondary.light',
-                      color: 'secondary.contrastText',
-                    }
-                  }}
-                >
-                  <ListItemIcon sx={{ color: 'inherit', minWidth: 40 }}>
-                    {item.icon}
-                  </ListItemIcon>
-                  <ListItemText 
-                    primary={item.text}
-                    primaryTypographyProps={{ 
-                      fontSize: '0.95rem',
-                      fontWeight: 500
-                    }}
-                  />
-                </ListItem>
-              ))}
-            </List>
-          </Box>
+          <Divider sx={{ borderColor: "rgba(122,138,158,0.2)" }} />
+          {renderMenuSection("Gestion principal", menuItems.slice(0, 5))}
+          <Divider sx={{ borderColor: "rgba(122,138,158,0.2)" }} />
+          {renderMenuSection("Inventario y equipo", menuItems.slice(5))}
         </Box>
       </Drawer>
 
-      {/* Main Content */}
       <Container
         maxWidth={false}
         sx={{
-          minHeight: "100vh",
-          bgcolor: "white",
-          borderRadius: 0,
-          padding: 3,
+          minHeight: "calc(100vh - 78px)",
+          px: { xs: 1.2, md: 2.5 },
+          py: { xs: 1.4, md: 2.4 },
         }}
       >
-        {children}
+        <Box
+          sx={{
+            minHeight: "100%",
+            borderRadius: 3,
+            p: { xs: 1.3, md: 2.2 },
+            bgcolor: "rgba(255, 255, 255, 0.62)",
+            border: "1px solid rgba(122, 138, 158, 0.2)",
+            boxShadow: "0 16px 28px rgba(12, 20, 34, 0.12)",
+            backdropFilter: "blur(18px)",
+          }}
+        >
+          {children}
+        </Box>
       </Container>
     </>
   );

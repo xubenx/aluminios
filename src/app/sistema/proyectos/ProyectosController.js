@@ -4,6 +4,12 @@ import { db } from "../../../../firebase";
 import { evaluate } from "mathjs";
 import { collection, getDocs, doc, updateDoc, getDoc, addDoc, query, orderBy } from "firebase/firestore";
 import { uploadProjectImage, deleteProjectImage } from "../../../utils/imageStorage";
+import {
+  DEFAULT_DIMENSION_CM,
+  dimensionsCmToMeters,
+  m2FromCmDimensions,
+  normalizeLegacyDimensionsToCm,
+} from "../../../utils/units";
 
 // Redondear montos a 2 decimales
 const round2 = (n) => (typeof n === "number" && !Number.isNaN(n)) ? Math.round(n * 100) / 100 : 0;
@@ -489,13 +495,21 @@ export const useProyectosController = () => {
   const [glassesOptions, setGlassesOptions] = useState([]);
   const [extrasOptions, setExtrasOptions] = useState([]);
   const [colorsOptions, setColorsOptions] = useState([]);
-  const [dimensions, setDimensions] = useState({ height: "1", width: "1" });
+  const [dimensions, setDimensions] = useState({
+    height: String(DEFAULT_DIMENSION_CM),
+    width: String(DEFAULT_DIMENSION_CM),
+    unit: "cm",
+  });
   const [selectedGlass, setSelectedGlass] = useState(null);
 
   // Estados para re-cotizar modelo en proyectos de cotización
   const [showRecalcDialog, setShowRecalcDialog] = useState(false);
   const [recalcModel, setRecalcModel] = useState(null);
-  const [recalcDimensions, setRecalcDimensions] = useState({ height: "1", width: "1" });
+  const [recalcDimensions, setRecalcDimensions] = useState({
+    height: String(DEFAULT_DIMENSION_CM),
+    width: String(DEFAULT_DIMENSION_CM),
+    unit: "cm",
+  });
   const [recalcSelectedGlass, setRecalcSelectedGlass] = useState(null);
   const [recalcSelectedColor, setRecalcSelectedColor] = useState(null);
 
@@ -654,7 +668,8 @@ export const useProyectosController = () => {
             }
             break;
           case "vidrio":
-            const area = item.area ?? (item.dimensions ? (item.dimensions.height / 100) * (item.dimensions.width / 100) : item.quantity);
+            const normalizedDims = normalizeLegacyDimensionsToCm(item.dimensions);
+            const area = item.area ?? (normalizedDims ? m2FromCmDimensions(normalizedDims.height, normalizedDims.width) : item.quantity);
             if (glassesSummary[item.itemName]) {
               glassesSummary[item.itemName].meterage += area;
               glassesSummary[item.itemName].price += item.total || 0;
@@ -1373,7 +1388,11 @@ export const useProyectosController = () => {
     setModelSearchQuery("");
     setSelectedModelToAdd(null);
     setModelData(null);
-    setDimensions({ height: "1", width: "1" });
+    setDimensions({
+      height: String(DEFAULT_DIMENSION_CM),
+      width: String(DEFAULT_DIMENSION_CM),
+      unit: "cm",
+    });
     setSelectedGlass(null);
   };
 
@@ -1438,8 +1457,8 @@ export const useProyectosController = () => {
   const getCalculations = () => {
     if (!modelData) return null;
 
-    const heightInMeters = parseFloat(dimensions.height) / 100;
-    const widthInMeters = parseFloat(dimensions.width) / 100;
+    const normalizedDims = normalizeLegacyDimensionsToCm(dimensions);
+    const { heightInMeters, widthInMeters } = dimensionsCmToMeters(normalizedDims);
 
     // Get selected color from the selected glass if available
     const selectedColor = selectedGlass ? colorsOptions.find(c => c.id === selectedGlass.colorId) : null;
@@ -1579,10 +1598,11 @@ export const useProyectosController = () => {
       await addModelToProjectService(addingToProject.id, {
         modelId: selectedModelToAdd.id,
         modelName: selectedModelToAdd.name,
-        dimensions: {
+        dimensions: normalizeLegacyDimensionsToCm({
           height: parseFloat(dimensions.height),
-          width: parseFloat(dimensions.width)
-        },
+          width: parseFloat(dimensions.width),
+          unit: "cm",
+        }),
         selectedGlass,
         selectedColor: calculations?.selectedColor || null,
         calculations
@@ -1633,9 +1653,14 @@ export const useProyectosController = () => {
     }
 
     setRecalcModel({ ...model, projectId: project.id, modelIndex });
-    setRecalcDimensions({ 
-      height: model.dimensions?.height?.toString() || "100", 
-      width: model.dimensions?.width?.toString() || "100" 
+    const normalizedDims = normalizeLegacyDimensionsToCm(model.dimensions || {
+      height: DEFAULT_DIMENSION_CM,
+      width: DEFAULT_DIMENSION_CM,
+    });
+    setRecalcDimensions({
+      height: normalizedDims.height?.toString() || String(DEFAULT_DIMENSION_CM),
+      width: normalizedDims.width?.toString() || String(DEFAULT_DIMENSION_CM),
+      unit: "cm",
     });
     setRecalcSelectedGlass(model.selectedGlass || null);
     setRecalcSelectedColor(model.selectedColor || null);
@@ -1645,8 +1670,8 @@ export const useProyectosController = () => {
   const getRecalcCalculations = () => {
     if (!recalcModel) return null;
 
-    const heightInMeters = parseFloat(recalcDimensions.height) / 100;
-    const widthInMeters = parseFloat(recalcDimensions.width) / 100;
+    const normalizedDims = normalizeLegacyDimensionsToCm(recalcDimensions);
+    const { heightInMeters, widthInMeters } = dimensionsCmToMeters(normalizedDims);
     
     // Get model data from database to recalculate with current prices
     const modelFromDB = models.find(m => m.id === recalcModel.modelId);
@@ -1788,8 +1813,8 @@ export const useProyectosController = () => {
 
       const effectiveColor = newColor !== undefined ? newColor : item.selectedColor;
       const effectiveGlass = newGlass !== undefined ? newGlass : item.selectedGlass;
-      const heightInMeters = parseFloat(item.dimensions?.height || 0) / 100;
-      const widthInMeters = parseFloat(item.dimensions?.width || 0) / 100;
+      const normalizedDims = normalizeLegacyDimensionsToCm(item.dimensions);
+      const { heightInMeters, widthInMeters } = dimensionsCmToMeters(normalizedDims);
 
       const materialsCalc = (formulas.materials || []).reduce((acc, material) => {
         const matOption = materialsOptions.find(m => m.id === material.id);
@@ -1878,7 +1903,8 @@ export const useProyectosController = () => {
       };
     }
     if (item.itemType === "vidrio" && newGlass !== undefined && newGlass) {
-      const area = item.area ?? (item.dimensions ? (item.dimensions.height / 100) * (item.dimensions.width / 100) : item.quantity);
+      const normalizedDims = normalizeLegacyDimensionsToCm(item.dimensions);
+      const area = item.area ?? (normalizedDims ? m2FromCmDimensions(normalizedDims.height, normalizedDims.width) : item.quantity);
       const newPrice = parseFloat(newGlass.priceInstalled || newGlass.price || 0);
       return {
         ...item,
@@ -2097,7 +2123,7 @@ export const useProyectosController = () => {
           unitPrice = parseFloat(selectedItem?.[individualItemPriceType === "installed" ? "priceInstalled" : "price"] || "0");
           let area = individualItemQuantity;
           if (individualItemDimensions.height && individualItemDimensions.width) {
-            area = (parseFloat(individualItemDimensions.height) / 100) * (parseFloat(individualItemDimensions.width) / 100);
+            area = m2FromCmDimensions(individualItemDimensions.height, individualItemDimensions.width);
             calculationDetails = `${individualItemDimensions.height}cm × ${individualItemDimensions.width}cm = ${area.toFixed(2)}m² × $${unitPrice} = $${(area * unitPrice).toFixed(2)}`;
           } else {
             calculationDetails = `${area}m² × $${unitPrice} = $${(area * unitPrice).toFixed(2)}`;
@@ -2128,10 +2154,13 @@ export const useProyectosController = () => {
         quantity: individualItemQuantity || 0,
         unitPrice: round2(unitPrice || 0),
         total: round2(total || 0),
-        dimensions: (individualItemDimensions.height && individualItemDimensions.width) ? {
-          height: parseFloat(individualItemDimensions.height),
-          width: parseFloat(individualItemDimensions.width)
-        } : null
+        dimensions: (individualItemDimensions.height && individualItemDimensions.width)
+          ? normalizeLegacyDimensionsToCm({
+              height: parseFloat(individualItemDimensions.height),
+              width: parseFloat(individualItemDimensions.width),
+              unit: "cm",
+            })
+          : null
       };
       if (individualItemType === "material") {
         const tramoMat = parseFloat(selectedItem?.stretch || "6.1");
@@ -2142,7 +2171,7 @@ export const useProyectosController = () => {
         itemPayload.quantityType = "piezas";
       } else if (individualItemType === "vidrio") {
         const areaVid = individualItemDimensions.height && individualItemDimensions.width
-          ? (parseFloat(individualItemDimensions.height) / 100) * (parseFloat(individualItemDimensions.width) / 100)
+          ? m2FromCmDimensions(individualItemDimensions.height, individualItemDimensions.width)
           : individualItemQuantity;
         itemPayload.quantityType = individualItemQuantityType;
         itemPayload.area = areaVid;
@@ -2187,7 +2216,8 @@ export const useProyectosController = () => {
     setRecalcIndividualItem({ ...item, projectId: project.id, itemIndex });
     setRecalcIndividualQuantity(item.quantity || 1);
     setRecalcIndividualQuantityType("metros");
-    setRecalcIndividualDimensions(item.dimensions || { height: "", width: "" });
+    const normalizedDims = normalizeLegacyDimensionsToCm(item.dimensions || { height: "", width: "" });
+    setRecalcIndividualDimensions(normalizedDims || { height: "", width: "" });
     setRecalcIndividualPriceType("installed");
     // Reset preview
     setRecalcIndividualPreview({ unitPrice: 0, total: 0, calculation: "" });
@@ -2230,7 +2260,7 @@ export const useProyectosController = () => {
             
             // If dimensions are provided, calculate area from dimensions
             if (recalcIndividualDimensions.height && recalcIndividualDimensions.width) {
-              area = (parseFloat(recalcIndividualDimensions.height) / 100) * (parseFloat(recalcIndividualDimensions.width) / 100);
+              area = m2FromCmDimensions(recalcIndividualDimensions.height, recalcIndividualDimensions.width);
             }
             
             total = area * unitPrice;
@@ -2253,10 +2283,13 @@ export const useProyectosController = () => {
         quantity: recalcIndividualQuantity,
         unitPrice: round2(unitPrice),
         total: round2(total),
-        dimensions: recalcIndividualDimensions.height && recalcIndividualDimensions.width ? {
-          height: parseFloat(recalcIndividualDimensions.height),
-          width: parseFloat(recalcIndividualDimensions.width)
-        } : undefined
+        dimensions: recalcIndividualDimensions.height && recalcIndividualDimensions.width
+          ? normalizeLegacyDimensionsToCm({
+              height: parseFloat(recalcIndividualDimensions.height),
+              width: parseFloat(recalcIndividualDimensions.width),
+              unit: "cm",
+            })
+          : undefined
       };
 
       console.log("Updating item with:", updatedItem); // Debug log
@@ -2427,7 +2460,7 @@ export const useProyectosController = () => {
             unitPrice = parseFloat(selectedItem?.[individualItemPriceType === "installed" ? "priceInstalled" : "price"] || "0");
             let area = individualItemQuantity;
             if (individualItemDimensions.height && individualItemDimensions.width) {
-              area = (parseFloat(individualItemDimensions.height) / 100) * (parseFloat(individualItemDimensions.width) / 100);
+              area = m2FromCmDimensions(individualItemDimensions.height, individualItemDimensions.width);
               calculation = `${individualItemDimensions.height}cm × ${individualItemDimensions.width}cm = ${area.toFixed(2)}m² × ${formatCurrency(unitPrice)} = ${formatCurrency(area * unitPrice)}`;
             } else {
               calculation = `${area}m² × ${formatCurrency(unitPrice)} = ${formatCurrency(area * unitPrice)}`;
@@ -2510,7 +2543,7 @@ export const useProyectosController = () => {
             let area = recalcIndividualQuantity;
             
             if (recalcIndividualDimensions.height && recalcIndividualDimensions.width) {
-              area = (parseFloat(recalcIndividualDimensions.height) / 100) * (parseFloat(recalcIndividualDimensions.width) / 100);
+              area = m2FromCmDimensions(recalcIndividualDimensions.height, recalcIndividualDimensions.width);
               calculation = `${recalcIndividualDimensions.height}cm × ${recalcIndividualDimensions.width}cm = ${area.toFixed(2)}m² × ${formatCurrency(unitPrice)} = ${formatCurrency(area * unitPrice)}`;
             } else {
               calculation = `${recalcIndividualQuantity}m² × ${formatCurrency(unitPrice)} = ${formatCurrency(area * unitPrice)}`;

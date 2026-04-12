@@ -11,6 +11,7 @@
     "postbuild": "next-sitemap",
     "migrate-images": "node migrate-images.js",
     "migrate-all": "node migrate-all-images.js",
+    "migrate-dimensions-cm": "node migrate-dimensions-to-cm.js",
     "test-storage": "node test-firebase-storage.js",
     "check-migration": "node migrate-images.js --check",
     "test-env": "node -e \"import dotenv from 'dotenv'; dotenv.config({ path: '.env.local' }); console.log('🔑 Variables de entorno cargadas:'); console.log('- Firebase API Key:', process.env.NEXT_PUBLIC_FIREBASE_API_KEY ? '✅ Configurada' : '❌ No configurada'); console.log('- Telegram Bot Token:', process.env.TELEGRAM_BOT_TOKEN ? '✅ Configurada' : '❌ No configurada'); console.log('- Site URL:', process.env.NEXT_PUBLIC_SITE_URL ? '✅ Configurada' : '❌ No configurada');\""
