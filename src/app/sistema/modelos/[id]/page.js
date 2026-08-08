@@ -29,7 +29,7 @@ import Image from "next/image";
 import { Delete, Edit, AddPhotoAlternate } from "@mui/icons-material";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import { useRouter } from "next/navigation";
-import { evaluate } from "mathjs";
+import { evaluateFormula } from "../../../../utils/formulaEvaluate";
 // Importamos los diálogos desde ModelDialogs.js
 import {
   ConfirmDeleteDialog,
@@ -135,18 +135,8 @@ export default function ModelDetailsPage({ params }) {
 
 
 
-  // Evalúa la fórmula con mathjs, usando las variables que se le pasen
-  const calculatePrice = (formula, variables) => {
-    try {
-      const result = evaluate(formula, variables);
-      // Asegurar que el resultado sea un número válido
-      const numericResult = parseFloat(result);
-      return isNaN(numericResult) ? 0 : numericResult;
-    } catch (error) {
-      console.error("Error al calcular la fórmula:", error);
-      return 0;
-    }
-  };
+  // Evalúa la fórmula (ALTO, ANCHO, PRECIO, TRAMO + UP/DOWN)
+  const calculatePrice = (formula, variables) => evaluateFormula(formula, variables);
 
   // Obtiene los datos del modelo; en el objeto model se esperan arrays con objetos que tienen al menos id y formula
   

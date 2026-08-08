@@ -21,6 +21,10 @@ import {
   Box,
   Typography,
   Fab,
+  FormControl,
+  InputLabel,
+  Select,
+  MenuItem,
 } from "@mui/material";
 import CrudStepperDialog from "../components/CrudStepperDialog";
 import { useRouter } from "next/navigation";
@@ -30,6 +34,8 @@ export default function ModelsPage() {
   const [models, setModels] = useState([]);
   const [filteredModels, setFilteredModels] = useState([]);
   const [searchQuery, setSearchQuery] = useState("");
+  const [colecciones, setColecciones] = useState([]);
+  const [selectedColeccionId, setSelectedColeccionId] = useState("");
   const [openDialog, setOpenDialog] = useState(false);
   const [currentModel, setCurrentModel] = useState(null);
   const [modelImageURLs, setModelImageURLs] = useState({}); // URLs de imágenes desde Firebase Storage
@@ -51,15 +57,41 @@ export default function ModelsPage() {
 
   useEffect(() => {
     fetchModels();
+    fetchColecciones();
   }, []);
 
   useEffect(() => {
+    const selectedColeccion = colecciones.find((c) => c.id === selectedColeccionId);
+    const modelIdsInColeccion = selectedColeccion
+      ? new Set(selectedColeccion.modelIds || [])
+      : null;
+
     setFilteredModels(
-      models.filter((model) =>
-        model.name.toLowerCase().includes(searchQuery.toLowerCase())
-      )
+      models.filter((model) => {
+        const matchesSearch = model.name
+          .toLowerCase()
+          .includes(searchQuery.toLowerCase());
+        const matchesColeccion =
+          !modelIdsInColeccion || modelIdsInColeccion.has(model.id);
+        return matchesSearch && matchesColeccion;
+      })
     );
-  }, [searchQuery, models]);
+  }, [searchQuery, models, selectedColeccionId, colecciones]);
+
+  const fetchColecciones = async () => {
+    try {
+      const snapshot = await getDocs(collection(db, "modelCollections"));
+      const data = snapshot.docs.map((d) => ({
+        id: d.id,
+        name: d.data().name || "",
+        modelIds: Array.isArray(d.data().modelIds) ? d.data().modelIds : [],
+      }));
+      data.sort((a, b) => a.name.localeCompare(b.name, "es"));
+      setColecciones(data);
+    } catch (error) {
+      console.error("Error fetching colecciones:", error);
+    }
+  };
 
   const fetchModels = async () => {
     try {
@@ -328,31 +360,31 @@ export default function ModelsPage() {
                   <Typography variant="h4" align="center" gutterBottom sx={{ color: "black" }}>
                     Modelos
                   </Typography>
-      {/* Searchbox */}
-      <Box sx={{ marginBottom: 2, display: "flex", gap: 2, alignItems: "center" }}>
+      {/* Searchbox + filtro por colección */}
+      <Box sx={{ marginBottom: 2, display: "flex", gap: 2, alignItems: "center", flexWrap: "wrap" }}>
         <TextField
-          fullWidth
+          sx={{ flex: "1 1 220px" }}
           label="Buscar modelos"
           variant="outlined"
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
         />
-        <Button
-          variant="outlined"
-          color="warning"
-          onClick={updateModelsWithoutManpowerActual}
-          sx={{ minWidth: "200px" }}
-        >
-          Actualizar Modelos Sin M.O. Real
-        </Button>
-        <Button
-          variant="outlined"
-          color="info"
-          onClick={updateModelsWithoutM2}
-          sx={{ minWidth: "200px" }}
-        >
-          Actualizar Modelos Sin Costo m² Vidrio
-        </Button>
+        <FormControl sx={{ flex: "0 1 220px", minWidth: 180 }}>
+          <InputLabel id="coleccion-filter-label">Colección</InputLabel>
+          <Select
+            labelId="coleccion-filter-label"
+            label="Colección"
+            value={selectedColeccionId}
+            onChange={(e) => setSelectedColeccionId(e.target.value)}
+          >
+            <MenuItem value="">Todas</MenuItem>
+            {colecciones.map((c) => (
+              <MenuItem key={c.id} value={c.id}>
+                {c.name} ({(c.modelIds || []).length})
+              </MenuItem>
+            ))}
+          </Select>
+        </FormControl>
       </Box>
 
       {/* Grid de Modelos */}

@@ -3,7 +3,7 @@ import React, { useState, useEffect, useRef, useMemo } from "react";
 import { collection, getDocs, getDoc, doc, addDoc, serverTimestamp } from "firebase/firestore";
 import { db } from "../../../../firebase";
 import { getModelImageURL } from "../../../utils/imageStorage";
-import { evaluate } from "mathjs";
+import { evaluateFormula } from "../../../utils/formulaEvaluate";
 import {
   DEFAULT_DIMENSION_CM,
   dimensionsCmToMeters,
@@ -61,6 +61,8 @@ export default function CotizadorApp() {
   const [models, setModels] = useState([]);
   const [filteredModels, setFilteredModels] = useState([]);
   const [searchQuery, setSearchQuery] = useState("");
+  const [colecciones, setColecciones] = useState([]);
+  const [selectedColeccionId, setSelectedColeccionId] = useState("");
   const [modelsPage, setModelsPage] = useState(1);
   const MODELS_PER_PAGE = 12;
 
@@ -206,20 +208,46 @@ export default function CotizadorApp() {
     }
   };
 
+  const fetchColecciones = async () => {
+    try {
+      const snapshot = await getDocs(collection(db, "modelCollections"));
+      const data = snapshot.docs.map((d) => ({
+        id: d.id,
+        name: d.data().name || "",
+        modelIds: Array.isArray(d.data().modelIds) ? d.data().modelIds : [],
+      }));
+      data.sort((a, b) => a.name.localeCompare(b.name, "es"));
+      setColecciones(data);
+    } catch (error) {
+      console.error("Error fetching colecciones: ", error);
+    }
+  };
+
   useEffect(() => {
     fetchModels();
+    fetchColecciones();
     fetchCustomers();
     loadCartFromStorage();
   }, []);
 
   useEffect(() => {
+    const selectedColeccion = colecciones.find((c) => c.id === selectedColeccionId);
+    const modelIdsInColeccion = selectedColeccion
+      ? new Set(selectedColeccion.modelIds || [])
+      : null;
+
     setFilteredModels(
-      models.filter((model) =>
-        model.name.toLowerCase().includes(searchQuery.toLowerCase())
-      )
+      models.filter((model) => {
+        const matchesSearch = model.name
+          .toLowerCase()
+          .includes(searchQuery.toLowerCase());
+        const matchesColeccion =
+          !modelIdsInColeccion || modelIdsInColeccion.has(model.id);
+        return matchesSearch && matchesColeccion;
+      })
     );
-    setModelsPage(1); // Resetear página al cambiar búsqueda
-  }, [searchQuery, models]);
+    setModelsPage(1); // Resetear página al cambiar búsqueda/filtro
+  }, [searchQuery, models, selectedColeccionId, colecciones]);
 
   const paginatedModels = useMemo(() => {
     const start = (modelsPage - 1) * MODELS_PER_PAGE;
@@ -1391,16 +1419,9 @@ export default function CotizadorApp() {
   };
 
   // ––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––
-  // FUNCIÓN PARA CALCULAR LOS VALORES (utilizando mathjs)
+  // FUNCIÓN PARA CALCULAR LOS VALORES (fórmulas + UP/DOWN)
   // ––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––
-  const calculatePrice = (formula, variables) => {
-    try {
-      return evaluate(formula, variables);
-    } catch (error) {
-      console.error("Error evaluating formula:", error);
-      return 0;
-    }
-  };
+  const calculatePrice = (formula, variables) => evaluateFormula(formula, variables);
 
   // Calcula para cada sección (materials, chapes y vidrios) y la mano de obra
   const getCalculations = () => {
@@ -1548,15 +1569,32 @@ export default function CotizadorApp() {
         <Typography variant="h4" align="center" sx={{ mb: 2, color: "text.primary", fontSize: { xs: "1.35rem", sm: "1.5rem", md: "2.125rem" }, fontWeight: 700, letterSpacing: 0.2 }}>
           Selecciona modelo a cotizar
         </Typography>
-        <TextField
-          fullWidth
-          label="Buscar modelos"
-          variant="outlined"
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-          sx={{ mb: 2 }}
-          size={isMobile ? "small" : "medium"}
-        />
+        <Box sx={{ mb: 2, display: "flex", gap: 2, alignItems: "center", flexWrap: "wrap" }}>
+          <TextField
+            sx={{ flex: "1 1 220px" }}
+            label="Buscar modelos"
+            variant="outlined"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            size={isMobile ? "small" : "medium"}
+          />
+          <FormControl sx={{ flex: "0 1 220px", minWidth: 160 }} size={isMobile ? "small" : "medium"}>
+            <InputLabel id="presupuestos-coleccion-filter-label">Colección</InputLabel>
+            <Select
+              labelId="presupuestos-coleccion-filter-label"
+              label="Colección"
+              value={selectedColeccionId}
+              onChange={(e) => setSelectedColeccionId(e.target.value)}
+            >
+              <MenuItem value="">Todas</MenuItem>
+              {colecciones.map((c) => (
+                <MenuItem key={c.id} value={c.id}>
+                  {c.name} ({(c.modelIds || []).length})
+                </MenuItem>
+              ))}
+            </Select>
+          </FormControl>
+        </Box>
         {/* Predefinir color y vidrio (vista inicial) */}
         <Paper sx={{ p: 2, mb: 3, bgcolor: "rgba(255,255,255,0.64)", border: "1px dashed", borderColor: "rgba(96,116,140,0.35)", backdropFilter: "blur(10px)" }}>
           <Typography variant="subtitle2" sx={{ mb: 1.5, color: "text.secondary", fontWeight: 600, fontSize: { xs: "0.8rem", sm: "0.875rem" } }}>
@@ -1739,52 +1777,6 @@ export default function CotizadorApp() {
         <Box sx={{ display: "flex", justifyContent: "center", alignItems: "center", mb: { xs: 2, sm: 4 } }}>
           <ModelImage modelId={modelData.id} modelName={modelData.name} />
         </Box>
-        {/* Predefinir color y vidrio para los próximos modelos */}
-        <Paper sx={{ p: 2, mb: 3, bgcolor: "rgba(255,255,255,0.62)", border: "1px dashed", borderColor: "rgba(96,116,140,0.35)", backdropFilter: "blur(10px)" }}>
-          <Typography variant="subtitle2" sx={{ mb: 1.5, color: "text.secondary", fontWeight: 600 }}>
-            Predefinir para próximos modelos
-          </Typography>
-          <Typography variant="caption" color="textSecondary" sx={{ display: "block", mb: 2 }}>
-            Al elegir otro modelo, color y vidrio se rellenarán con estos valores. Útil para agregar varios modelos iguales al carrito.
-          </Typography>
-          <Box sx={{ display: "flex", flexWrap: "wrap", gap: 2, alignItems: "flex-start" }}>
-            <Box sx={{ minWidth: { xs: "100%", sm: 200 }, flex: "1 1 200px" }}>
-              <Autocomplete
-                size="small"
-                options={colorsOptions}
-                getOptionLabel={(option) => `${option.name} ${option.percentage > 0 ? `(+${option.percentage}%)` : option.percentage < 0 ? `(${option.percentage}%)` : "(Base)"}`}
-                isOptionEqualToValue={(option, value) => option.id === value?.id}
-                value={defaultColorForNewItems}
-                onChange={(_, newValue) => handleDefaultColorChange(newValue)}
-                renderInput={(params) => <TextField {...params} label="Color por defecto" variant="outlined" placeholder="Ninguno" />}
-              />
-            </Box>
-            <Box sx={{ minWidth: { xs: "100%", sm: 200 }, flex: "1 1 200px" }}>
-              <Autocomplete
-                size="small"
-                options={glassesByProduct}
-                getOptionLabel={(option) => option.name || ""}
-                isOptionEqualToValue={(option, value) => option.id === value?.id}
-                value={defaultGlassProductForNewItems}
-                onChange={(_, newValue) => handleDefaultGlassProductChange(newValue)}
-                renderInput={(params) => <TextField {...params} label="Vidrio por defecto (nombre)" variant="outlined" placeholder="Ninguno" />}
-              />
-            </Box>
-            {defaultGlassProductForNewItems && (
-              <Box sx={{ minWidth: { xs: "100%", sm: 220 }, flex: "1 1 220px" }}>
-                <Autocomplete
-                  size="small"
-                  options={defaultGlassProductForNewItems.options || []}
-                  getOptionLabel={(opt) => `${opt.tickness ?? opt.thickness} mm — $${(parseFloat(opt.priceInstalled ?? opt.price ?? 0) || 0).toFixed(2)}/m²`}
-                  isOptionEqualToValue={(opt, val) => (opt.tickness ?? opt.thickness) === (val?.tickness ?? val?.thickness)}
-                  value={defaultGlassForNewItems && defaultGlassForNewItems.originalId === defaultGlassProductForNewItems.id ? defaultGlassProductForNewItems.options?.find((o) => String(o.tickness ?? o.thickness) === String(defaultGlassForNewItems.tickness)) ?? null : null}
-                  onChange={(_, newValue) => handleDefaultGlassVariantChange(newValue)}
-                  renderInput={(params) => <TextField {...params} label="Grosor por defecto" variant="outlined" placeholder="Elige grosor" />}
-                />
-              </Box>
-            )}
-          </Box>
-        </Paper>
 
         {/* Campos para modificar dimensiones */}
         <Box sx={{ display: "flex", flexWrap: "wrap", gap: 2, justifyContent: "center", mb: 2 }}>

@@ -29,7 +29,7 @@ import {
   Fab
 } from "@mui/material";
 import Image from "next/image";
-import { evaluate } from "mathjs";
+import { evaluateFormula } from "../../../utils/formulaEvaluate";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import { ShoppingCart, Delete, Add, Save } from "@mui/icons-material";
 
@@ -369,16 +369,9 @@ export default function CotizadorApp() {
   };
 
   // ––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––
-  // FUNCIÓN PARA CALCULAR LOS VALORES (utilizando mathjs)
+  // FUNCIÓN PARA CALCULAR LOS VALORES (fórmulas + UP/DOWN)
   // ––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––
-  const calculatePrice = (formula, variables) => {
-    try {
-      return evaluate(formula, variables);
-    } catch (error) {
-      console.error("Error evaluating formula:", error);
-      return 0;
-    }
-  };
+  const calculatePrice = (formula, variables) => evaluateFormula(formula, variables);
 
   // Calcula para cada sección (materials, chapes y vidrios) y la mano de obra
   const getCalculations = () => {

@@ -16,6 +16,11 @@ import {
   Fab,
   Paper,
   Typography,
+  Box,
+  FormControl,
+  InputLabel,
+  Select,
+  MenuItem,
 } from "@mui/material";
 import CrudStepperDialog from "../components/CrudStepperDialog";
 import { Add, Edit, Delete } from "@mui/icons-material";
@@ -26,6 +31,8 @@ export default function MaterialsPage() {
   const [models, setModels] = useState([]);
   const [materialUsageCount, setMaterialUsageCount] = useState({});
   const [searchText, setSearchText] = useState("");
+  const [colecciones, setColecciones] = useState([]);
+  const [selectedColeccionId, setSelectedColeccionId] = useState("");
   const [editingPriceId, setEditingPriceId] = useState(null); // ID del material en edición
   const [editingPriceValue, setEditingPriceValue] = useState(""); // Valor del precio en edición
   const [openDialog, setOpenDialog] = useState(false);
@@ -36,18 +43,44 @@ export default function MaterialsPage() {
   useEffect(() => {
     fetchMaterials();
     fetchModels();
+    fetchColecciones();
   }, []);
 
   useEffect(() => {
-    const filtered = materials.filter((material) =>
-      material.name.toLowerCase().includes(searchText.toLowerCase())
-    );
+    const selectedColeccion = colecciones.find((c) => c.id === selectedColeccionId);
+    const materialIdsInColeccion = selectedColeccion
+      ? new Set(selectedColeccion.materialIds || [])
+      : null;
+
+    const filtered = materials.filter((material) => {
+      const matchesSearch = material.name
+        .toLowerCase()
+        .includes(searchText.toLowerCase());
+      const matchesColeccion =
+        !materialIdsInColeccion || materialIdsInColeccion.has(material.id);
+      return matchesSearch && matchesColeccion;
+    });
     setFilteredMaterials(filtered);
-  }, [searchText, materials]);
+  }, [searchText, materials, selectedColeccionId, colecciones]);
 
   useEffect(() => {
     calculateMaterialUsage();
   }, [materials, models]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const fetchColecciones = async () => {
+    try {
+      const snapshot = await getDocs(collection(db, "materialCollections"));
+      const data = snapshot.docs.map((d) => ({
+        id: d.id,
+        name: d.data().name || "",
+        materialIds: Array.isArray(d.data().materialIds) ? d.data().materialIds : [],
+      }));
+      data.sort((a, b) => a.name.localeCompare(b.name, "es"));
+      setColecciones(data);
+    } catch (error) {
+      console.error("Error fetching colecciones de materiales:", error);
+    }
+  };
 
   const fetchModels = async () => {
     try {
@@ -195,15 +228,32 @@ export default function MaterialsPage() {
         Materiales
       </Typography>
 
-      {/* Buscador */}
-      <TextField
-        fullWidth
-        label="Buscar Material"
-        variant="outlined"
-        margin="normal"
-        value={searchText}
-        onChange={handleSearchChange}
-      />
+      {/* Buscador + filtro por colección */}
+      <Box sx={{ display: "flex", gap: 2, alignItems: "center", flexWrap: "wrap", my: 2 }}>
+        <TextField
+          sx={{ flex: "1 1 220px" }}
+          label="Buscar Material"
+          variant="outlined"
+          value={searchText}
+          onChange={handleSearchChange}
+        />
+        <FormControl sx={{ flex: "0 1 220px", minWidth: 180 }}>
+          <InputLabel id="material-coleccion-filter-label">Colección</InputLabel>
+          <Select
+            labelId="material-coleccion-filter-label"
+            label="Colección"
+            value={selectedColeccionId}
+            onChange={(e) => setSelectedColeccionId(e.target.value)}
+          >
+            <MenuItem value="">Todas</MenuItem>
+            {colecciones.map((c) => (
+              <MenuItem key={c.id} value={c.id}>
+                {c.name} ({(c.materialIds || []).length})
+              </MenuItem>
+            ))}
+          </Select>
+        </FormControl>
+      </Box>
 
       {/* Tabla */}
       <Paper elevation={3} sx={{ padding: "1rem", marginBottom: "1rem" }}>

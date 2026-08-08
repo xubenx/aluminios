@@ -11,6 +11,7 @@ import {
   TextField,
   Autocomplete,
 } from "@mui/material";
+import { FORMULA_HELP_TEXT } from "../../../../utils/formulaEvaluate";
 
 // Diálogo para confirmar la eliminación del modelo
 export function ConfirmDeleteDialog({ open, onCancel, onConfirm }) {
@@ -210,6 +211,8 @@ export function EditElementDialog({
           name="formula"
           value={formData.formula || ""}
           onChange={(e) => onFormChange({ ...formData, formula: e.target.value })}
+          helperText={FORMULA_HELP_TEXT}
+          placeholder="Ej: UP((ALTO+ANCHO)*2/TRAMO)*PRECIO"
         />
       </DialogContent>
       <DialogActions>

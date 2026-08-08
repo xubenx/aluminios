@@ -1,9 +1,9 @@
 "use client";
 import { useState, useEffect, useMemo } from "react";
 import { db } from "../../../../firebase";
-import { evaluate } from "mathjs";
 import { collection, getDocs, doc, updateDoc, getDoc, addDoc, query, orderBy } from "firebase/firestore";
 import { uploadProjectImage, deleteProjectImage } from "../../../utils/imageStorage";
+import { evaluateFormula } from "../../../utils/formulaEvaluate";
 import {
   DEFAULT_DIMENSION_CM,
   dimensionsCmToMeters,
@@ -1438,21 +1438,7 @@ export const useProyectosController = () => {
     }
   };
 
-  const calculatePrice = (formula, variables) => {
-    try {
-      const scope = {
-        PRECIO: variables.PRECIO || 0,
-        ALTO: variables.ALTO || 0,
-        ANCHO: variables.ANCHO || 0,
-        TRAMO: variables.TRAMO || 1,
-      };
-      const result = evaluate(formula, scope);
-      return typeof result === "number" ? result : 0;
-    } catch (error) {
-      console.error("Error calculating price:", error);
-      return 0;
-    }
-  };
+  const calculatePrice = (formula, variables) => evaluateFormula(formula, variables);
 
   const getCalculations = () => {
     if (!modelData) return null;

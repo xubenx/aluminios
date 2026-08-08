@@ -37,6 +37,7 @@ import WorkIcon from "@mui/icons-material/Work";
 import PersonIcon from "@mui/icons-material/Person";
 import NotificationsIcon from "@mui/icons-material/Notifications";
 import AddCircleOutlineIcon from "@mui/icons-material/AddCircleOutline";
+import CollectionsBookmarkIcon from "@mui/icons-material/CollectionsBookmark";
 import { useAuth } from "../../contexts/AuthContext";
 import Image from "next/image";
 
@@ -76,6 +77,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
     { text: "Clientes", href: "/sistema/clientes", icon: <PersonIcon /> },
     { text: "Diario", href: "/sistema/diario", icon: <AccountBalanceWalletIcon /> },
     { text: "Modelos", href: "/sistema/modelos", icon: <WindowIcon /> },
+    { text: "Colecciones", href: "/sistema/colecciones", icon: <CollectionsBookmarkIcon /> },
     { text: "Materiales", href: "/sistema/materiales", icon: <ConstructionIcon /> },
     { text: "Colores", href: "/sistema/colores", icon: <PaletteIcon /> },
     { text: "Herrajes", href: "/sistema/herrajes", icon: <BuildIcon /> },
