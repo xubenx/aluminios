@@ -69,7 +69,7 @@ export default function ColeccionesPage() {
   useEffect(() => {
     setSearchText("");
     handleCloseDialog();
-  }, [tab]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [tab]);
 
   const fetchAll = async () => {
     try {
