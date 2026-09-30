@@ -1,19 +1,23 @@
 rules_version = '2';
-
-// Craft rules based on data in your Firestore database
-// allow write: if firestore.get(
-//    /databases/(default)/documents/users/$(request.auth.uid)).data.isAdmin;
 service firebase.storage {
   match /b/{bucket}/o {
-    // Permitir lectura de todas las imágenes de modelos
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    function isOffice() {
+      return signedIn()
+        && (request.auth.token.role == 'admin' || request.auth.token.role == 'auxiliar');
+    }
+
     match /models/images/{imageId} {
       allow read: if true;
-      allow write: if true; // Temporal para migración, restringir después
+      allow write: if isOffice();
     }
-    
-    // Permitir acceso a archivos de prueba
-    match /test/{allPaths=**} {
-      allow read, write: if true;
+
+    match /projects/{allPaths=**} {
+      allow read: if signedIn();
+      allow write: if isOffice();
     }
   }
 }

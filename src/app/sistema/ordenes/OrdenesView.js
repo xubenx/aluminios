@@ -63,6 +63,8 @@ export default function OrdenesView({
   getFilteredOrders,
   getFilteredAssignedItems,
   getGeneralDashboardStats,
+  canManagePayments,
+  updateItemStatus,
   getPayableUnpaidOrders,
   markAllAsPaid,
   markAllAsPaidDialog,
@@ -183,7 +185,7 @@ export default function OrdenesView({
                   Administración de Órdenes de Trabajo
                 </Typography>
                 <Box sx={{ display: "flex", gap: 2, alignItems: "center", flexWrap: "wrap" }}>
-                  {getPayableUnpaidOrders && getPayableUnpaidOrders().length > 0 && (
+                  {canManagePayments && getPayableUnpaidOrders && getPayableUnpaidOrders().length > 0 && (
                     <Button
                       variant="contained"
                       color="success"
@@ -193,6 +195,7 @@ export default function OrdenesView({
                       Marcar todas pagadas (${(getPayableUnpaidOrders().reduce((s, o) => s + (o.totalLaborCost || 0), 0)).toLocaleString()})
                     </Button>
                   )}
+                {canManagePayments && (
                 <FormControl size="small" sx={{ minWidth: 220 }}>
                   <InputLabel>Filtrar por colaborador</InputLabel>
                   <Select
@@ -208,6 +211,7 @@ export default function OrdenesView({
                     ))}
                   </Select>
                 </FormControl>
+                )}
                 </Box>
               </Box>
               <Divider sx={{ mb: 2 }} />
@@ -245,7 +249,21 @@ export default function OrdenesView({
                               <TableCell>{row.itemName}</TableCell>
                               <TableCell>{row.area}</TableCell>
                               <TableCell>
-                                <Chip label={row.status} size="small" color="default" variant="outlined" />
+                                {canManagePayments || row.status !== "revisado" ? (
+                                  <FormControl size="small" sx={{ minWidth: 140 }}>
+                                    <Select
+                                      value={["pendiente", "enProceso", "instalado", "revisado"].includes(row.status) ? row.status : "pendiente"}
+                                      onChange={(e) => updateItemStatus(row.projectId, row.itemIndex, e.target.value)}
+                                    >
+                                      <MenuItem value="pendiente">Pendiente</MenuItem>
+                                      <MenuItem value="enProceso">En proceso</MenuItem>
+                                      <MenuItem value="instalado">Instalado</MenuItem>
+                                      {canManagePayments && <MenuItem value="revisado">Revisado</MenuItem>}
+                                    </Select>
+                                  </FormControl>
+                                ) : (
+                                  <Chip label="Revisado" size="small" color="success" variant="outlined" />
+                                )}
                               </TableCell>
                               <TableCell>
                                 {row.hasWorkOrder ? (
@@ -327,7 +345,7 @@ export default function OrdenesView({
                               ${(order.totalLaborCost || 0).toLocaleString()}
                             </Typography>
                             
-                            {order.paymentStatus === "unpaid" ? (
+                            {canManagePayments && order.paymentStatus === "unpaid" ? (
                               <Tooltip title={canPayOrder && !canPayOrder(order) ? "Solo se puede pagar si el estado es Instalado o Revisado" : ""}>
                                 <span>
                                   <Button
@@ -345,7 +363,7 @@ export default function OrdenesView({
                                   </Button>
                                 </span>
                               </Tooltip>
-                            ) : canUndoPayment(activeProjects.find(p => p.id === order.projectId)?.items?.[order.itemIndex]) ? (
+                            ) : canManagePayments && canUndoPayment(activeProjects.find(p => p.id === order.projectId)?.items?.[order.itemIndex]) ? (
                               <Button
                                 variant="outlined"
                                 color="error"
@@ -358,13 +376,15 @@ export default function OrdenesView({
                               >
                                 Deshacer Pago
                               </Button>
-                            ) : (
+                            ) : order.paymentStatus === "paid" ? (
                               <Chip
                                 label="Pagado"
                                 color="success"
                                 size="small"
                                 icon={<CheckCircleIcon />}
                               />
+                            ) : (
+                              <Chip label="Pendiente de pago" color="warning" size="small" />
                             )}
                           </Box>
                         </CardContent>

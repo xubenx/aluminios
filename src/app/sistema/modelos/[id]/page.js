@@ -10,6 +10,7 @@ import {
 } from "firebase/firestore";
 import { db } from "../../../../../firebase";
 import { getModelImageURL } from "../../../../utils/imageStorage";
+import { authFetch } from "../../../../lib/authFetch";
 import {
   Button,
   Table,
@@ -253,8 +254,8 @@ export default function ModelDetailsPage({ params }) {
       imageFormData.append('file', imageFile);
       imageFormData.append('modelId', id);
 
-      const uploadResponse = await fetch('/api/upload-image', {
-        method: 'POST',
+      const uploadResponse = await authFetch("/api/upload-image", {
+        method: "POST",
         body: imageFormData,
       });
 

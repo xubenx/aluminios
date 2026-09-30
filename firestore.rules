@@ -1,0 +1,95 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    function role() {
+      return request.auth.token.role;
+    }
+
+    function isAdmin() {
+      return signedIn() && role() == 'admin';
+    }
+
+    function isOffice() {
+      return signedIn() && (role() == 'admin' || role() == 'auxiliar');
+    }
+
+    match /employeeSecrets/{id} {
+      allow read, write: if false;
+    }
+
+    match /employees/{id} {
+      allow read: if signedIn();
+      allow write: if false;
+    }
+
+    match /customers/{id} {
+      allow read, create, update: if isOffice();
+      allow delete: if isAdmin();
+    }
+
+    match /journal/{id} {
+      allow read, create, update: if isOffice();
+      allow delete: if isAdmin();
+    }
+
+    match /reminders/{id} {
+      allow read, create, update: if isOffice();
+      allow delete: if isAdmin();
+    }
+
+    match /history/{id} {
+      allow read, create, update: if isOffice();
+      allow delete: if isAdmin();
+    }
+
+    match /projects/{id} {
+      allow read: if signedIn();
+      allow create, update: if isOffice();
+      allow delete: if isAdmin();
+    }
+
+    match /models/{id} {
+      allow read: if signedIn();
+      allow write: if isOffice();
+    }
+
+    match /modelCollections/{id} {
+      allow read: if signedIn();
+      allow write: if isOffice();
+    }
+
+    match /materials/{id} {
+      allow read: if signedIn();
+      allow write: if isOffice();
+    }
+
+    match /materialCollections/{id} {
+      allow read: if signedIn();
+      allow write: if isOffice();
+    }
+
+    match /chapes/{id} {
+      allow read: if signedIn();
+      allow write: if isOffice();
+    }
+
+    match /glasses/{id} {
+      allow read: if signedIn();
+      allow write: if isOffice();
+    }
+
+    match /colors/{id} {
+      allow read: if signedIn();
+      allow write: if isOffice();
+    }
+
+    match /extras/{id} {
+      allow read: if signedIn();
+      allow write: if isOffice();
+    }
+  }
+}

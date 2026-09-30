@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import TelegramBot from 'node-telegram-bot-api';
+import { rateLimit } from '../../../lib/rateLimit';
+import { normalizeMxPhone, whatsappUrl } from '../../../lib/phone';
 
 export async function POST(request: NextRequest) {
   try {
@@ -21,84 +23,74 @@ export async function POST(request: NextRequest) {
 
     // Obtener los datos del formulario
     const body = await request.json();
-    const { name, email, phone, message, pageUrl } = body;
+    const { name, email, phone, message } = body;
 
-    // Validar que todos los campos requeridos estén presentes
     if (!name || !email || !message) {
       return NextResponse.json(
-        { 
-          success: false, 
-          message: 'Todos los campos obligatorios deben ser completados' 
-        },
+        { success: false, message: "Todos los campos obligatorios deben ser completados" },
         { status: 400 }
       );
     }
 
-    // Crear instancia del bot
-    const bot = new TelegramBot(TELEGRAM_BOT_TOKEN);
+    const cleanName = String(name).trim().slice(0, 80);
+    const cleanEmail = String(email).trim().slice(0, 120);
+    const cleanMessage = String(message).trim().slice(0, 1000);
+    const cleanPhone = String(phone || "").trim().slice(0, 20);
 
-    // Formatear el mensaje para Telegram
-    const telegramMessage = `
-🆕 *Nuevo mensaje de contacto*
-
-👤 *Nombre:* ${name}
-📧 *Email:* ${email}
-📱 *Teléfono:* ${phone || 'No proporcionado'}
-
-💬 *Mensaje:*
-${message}
-
-🌐 *Página de origen:*
-🔗 *URL:* ${pageUrl || 'No disponible'}
-
-⏰ *Fecha:* ${new Date().toLocaleString('es-MX', { 
-  timeZone: 'America/Mexico_City',
-  year: 'numeric',
-  month: 'long',
-  day: 'numeric',
-  hour: '2-digit',
-  minute: '2-digit'
-})}
-    `.trim();
-
-    // Crear el mensaje prediseñado para WhatsApp
-    const whatsappMessage = `Hola ${name} 👋
-
-Vi que te contactaste a través de nuestra página web.
-
-¿En qué te puedo ayudar? �`;
-
-    // Limpiar el número de teléfono para WhatsApp (solo números)
-    const cleanPhone = phone ? phone.replace(/[^\d]/g, '') : '';
-    
-    // Codificar el mensaje para URL
-    const encodedWhatsappMessage = encodeURIComponent(whatsappMessage);
-    
-    // Crear el URL de WhatsApp con el número del cliente
-    let whatsappUrl;
-    if (cleanPhone && cleanPhone.length >= 10) {
-      // Si hay número válido, dirigir directamente a ese número
-      whatsappUrl = `https://wa.me/+52${cleanPhone}?text=${encodedWhatsappMessage}`;
-    } else {
-      // Si no hay número o es inválido, usar el enlace genérico
-      whatsappUrl = `https://wa.me/?text=${encodedWhatsappMessage}`;
+    if (cleanName.length < 2 || cleanMessage.length < 5 || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(cleanEmail)) {
+      return NextResponse.json(
+        { success: false, message: "Revisa el nombre, el correo y el mensaje." },
+        { status: 400 }
+      );
     }
 
-    // Enviar mensaje a Telegram con botón inline
+    const ip = (request.headers.get("x-forwarded-for") || "local").split(",")[0].trim();
+    const limit = rateLimit(`contact:${ip}`, 5, 10 * 60 * 1000);
+    if (!limit.ok) {
+      return NextResponse.json(
+        { success: false, message: "Espera unos minutos antes de enviar otro mensaje." },
+        { status: 429 }
+      );
+    }
+
+    const bot = new TelegramBot(TELEGRAM_BOT_TOKEN);
+    const localPhone = normalizeMxPhone(cleanPhone);
+    const telegramMessage = [
+      "Nuevo mensaje de contacto",
+      "",
+      `Nombre: ${cleanName}`,
+      `Email: ${cleanEmail}`,
+      `Teléfono: ${localPhone || "No proporcionado"}`,
+      "",
+      "Mensaje:",
+      cleanMessage,
+      "",
+      `Fecha: ${new Date().toLocaleString("es-MX", {
+        timeZone: "America/Mexico_City",
+        year: "numeric",
+        month: "long",
+        day: "numeric",
+        hour: "2-digit",
+        minute: "2-digit",
+      })}`,
+    ].join("\n");
+
+    const whatsappMessage = `Hola ${cleanName}, vi que te contactaste a través de nuestra página web. ¿En qué te puedo ayudar?`;
+    const replyUrl = whatsappUrl(cleanPhone, whatsappMessage);
+
     await bot.sendMessage(TELEGRAM_CHAT_ID, telegramMessage, {
-      parse_mode: 'Markdown',
       reply_markup: {
         inline_keyboard: [
           [
             {
-              text: cleanPhone && cleanPhone.length >= 10 
-                ? `💬 Responder a ${name} (${phone})` 
-                : `💬 Responder por WhatsApp a ${name}`,
-              url: whatsappUrl
-            }
-          ]
-        ]
-      }
+              text: localPhone.length === 10
+                ? `Responder a ${cleanName} (${localPhone})`
+                : `Responder por WhatsApp a ${cleanName}`,
+              url: replyUrl,
+            },
+          ],
+        ],
+      },
     });
 
     console.log('✅ Mensaje enviado exitosamente a Telegram');

@@ -16,6 +16,13 @@ NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=tu_sender_id
 NEXT_PUBLIC_FIREBASE_APP_ID=tu_app_id
 NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID=tu_measurement_id
 
+# Firebase Admin (servidor). No subas este JSON.
+# Puedes usar el JSON completo o el par correo + llave.
+FIREBASE_SERVICE_ACCOUNT_JSON=
+FIREBASE_ADMIN_PROJECT_ID=
+FIREBASE_ADMIN_CLIENT_EMAIL=
+FIREBASE_ADMIN_PRIVATE_KEY=
+
 # Telegram Bot Configuration
 TELEGRAM_BOT_TOKEN=tu_telegram_bot_token
 TELEGRAM_CHAT_ID=tu_telegram_chat_id
@@ -40,6 +47,21 @@ FIREBASE_MIGRATION_API_KEY=tu_migration_api_key
    ```bash
    npm run test-env
    ```
+
+4. **Migra las contraseñas actuales y asigna al dueño como administrador:**
+   ```bash
+   npm run migrate-passwords -- --owner=usuario_del_dueno
+   ```
+
+5. **Publica las reglas** de `firestore.rules` y `storage.rules` en Firebase. Hasta entonces el navegador sigue pudiendo leer los documentos directamente.
+
+## Roles
+
+- **admin**: todo el sistema, incluidas las cuentas de colaboradores.
+- **auxiliar**: cotizaciones, clientes, proyectos, diario, catálogo y órdenes. No administra cuentas.
+- **colaborador**: solo sus órdenes y el estado de sus piezas.
+
+El login ya no compara la contraseña en el navegador. La clave queda en `employeeSecrets`, fuera del alcance del cliente.
 
 ## 🔒 Seguridad
 

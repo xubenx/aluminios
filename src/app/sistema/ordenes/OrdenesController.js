@@ -10,8 +10,14 @@ import {
   updateDoc
 } from "firebase/firestore";
 import { db } from "../../../../firebase";
+import { useAuth } from "../../../contexts/AuthContext";
+import { authFetch } from "../../../lib/authFetch";
 
 export function useOrdenesController() {
+  const { user } = useAuth();
+  const canManagePayments = user?.role === "admin" || user?.role === "auxiliar";
+  const workshopEmployeeId = user?.role === "colaborador" ? user.userId : "";
+
   // Estados principales
   const [activeProjects, setActiveProjects] = useState([]);
   const [employees, setEmployees] = useState([]);
@@ -149,7 +155,7 @@ export function useOrdenesController() {
 
   // Estadísticas para dashboard general
   const getGeneralDashboardStats = () => {
-    const all = getAllAssignedItemsFromProjects();
+    const all = workshopEmployeeId ? getFilteredAssignedItems() : getAllAssignedItemsFromProjects();
     const withOrder = all.filter(i => i.hasWorkOrder);
     const paid = withOrder.filter(i => i.paymentStatus === "paid");
     const unpaid = withOrder.filter(i => i.paymentStatus === "unpaid");
@@ -757,6 +763,7 @@ export function useOrdenesController() {
   // Función para filtrar órdenes por empleado
   const getFilteredOrders = () => {
     const allOrders = getAllOrdersFromProjects();
+    if (workshopEmployeeId) return allOrders.filter(order => order.employeeId === workshopEmployeeId);
     if (!selectedEmployeeFilter) return allOrders;
     return allOrders.filter(order => order.employeeId === selectedEmployeeFilter);
   };
@@ -864,6 +871,7 @@ export function useOrdenesController() {
   // Filtrar todos los items asignados (para desglose completo)
   const getFilteredAssignedItems = () => {
     const all = getAllAssignedItemsFromProjects();
+    if (workshopEmployeeId) return all.filter(i => i.employeeId === workshopEmployeeId);
     if (!selectedEmployeeFilter) return all;
     return all.filter(i => i.employeeId === selectedEmployeeFilter);
   };
@@ -951,6 +959,28 @@ export function useOrdenesController() {
     });
   };
 
+  const updateItemStatus = async (projectId, itemIndex, status) => {
+    try {
+      const response = await authFetch("/api/ordenes/item-status", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ projectId, itemIndex, status }),
+      });
+      const data = await response.json();
+      if (!response.ok) {
+        throw new Error(data.message || "No se pudo actualizar el estado");
+      }
+      setSnackbar({ open: true, message: "Estado de la pieza actualizado.", severity: "success" });
+      loadActiveProjects();
+    } catch (statusError) {
+      setSnackbar({
+        open: true,
+        message: statusError.message || "Error al actualizar el estado",
+        severity: "error",
+      });
+    }
+  };
+
   return {
     // Estados
     activeProjects,
@@ -968,6 +998,8 @@ export function useOrdenesController() {
     snackbar,
     
     // Funciones
+    canManagePayments,
+    updateItemStatus,
     loadActiveProjects,
     loadEmployees,
     calculateLaborCostForEmployee,

@@ -39,6 +39,7 @@ import NotificationsIcon from "@mui/icons-material/Notifications";
 import AddCircleOutlineIcon from "@mui/icons-material/AddCircleOutline";
 import CollectionsBookmarkIcon from "@mui/icons-material/CollectionsBookmark";
 import { useAuth } from "../../contexts/AuthContext";
+import { canAccessPath, homeForRole, ROLE_LABELS } from "../../lib/roles";
 import Image from "next/image";
 
 export default function RootLayout({ children }: { children: ReactNode }) {
@@ -46,19 +47,23 @@ export default function RootLayout({ children }: { children: ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
   const { user, loading, logout } = useAuth() as {
-    user: { name?: string; usuario?: string } | null;
+    user: { name?: string; usuario?: string; role?: string } | null;
     loading: boolean;
     logout: () => void;
   };
   const isLoginPage = pathname === "/sistema/login";
+  const role = user?.role || "";
 
   useEffect(() => {
     if (loading) return;
     if (!isLoginPage && !user) router.replace("/sistema/login");
-  }, [loading, user, isLoginPage, router]);
+    if (!isLoginPage && user && !canAccessPath(role, pathname)) {
+      router.replace(homeForRole(role));
+    }
+  }, [loading, user, isLoginPage, router, role, pathname]);
 
   if (isLoginPage) return <>{children}</>;
-  if (loading || !user) {
+  if (loading || !user || !canAccessPath(role, pathname)) {
     return (
       <Box sx={{ display: "flex", justifyContent: "center", alignItems: "center", minHeight: "100vh" }}>
         <CircularProgress size={48} />
@@ -70,21 +75,24 @@ export default function RootLayout({ children }: { children: ReactNode }) {
     setDrawerOpen(open);
   };
   const menuItems = [
-    { text: "Recordatorios", href: "/sistema/recordatorios", icon: <NotificationsIcon /> },
-    { text: "Presupuestos", href: "/sistema/presupuestos", icon: <RequestQuote /> },
-    { text: "Proyectos", href: "/sistema/proyectos", icon: <AssignmentIcon /> },
-    { text: "Órdenes", href: "/sistema/ordenes", icon: <WorkIcon /> },
-    { text: "Clientes", href: "/sistema/clientes", icon: <PersonIcon /> },
-    { text: "Diario", href: "/sistema/diario", icon: <AccountBalanceWalletIcon /> },
-    { text: "Modelos", href: "/sistema/modelos", icon: <WindowIcon /> },
-    { text: "Colecciones", href: "/sistema/colecciones", icon: <CollectionsBookmarkIcon /> },
-    { text: "Materiales", href: "/sistema/materiales", icon: <ConstructionIcon /> },
-    { text: "Colores", href: "/sistema/colores", icon: <PaletteIcon /> },
-    { text: "Herrajes", href: "/sistema/herrajes", icon: <BuildIcon /> },
-    { text: "Vidrios", href: "/sistema/vidrios", icon: <GlassIcon /> },
-    { text: "Servicios / Extras", href: "/sistema/extras", icon: <AddCircleOutlineIcon /> },
-    { text: "Colaboradores", href: "/sistema/colaboradores", icon: <PeopleIcon /> },
+    { text: "Recordatorios", href: "/sistema/recordatorios", icon: <NotificationsIcon />, section: "principal", roles: ["admin", "auxiliar"] },
+    { text: "Presupuestos", href: "/sistema/presupuestos", icon: <RequestQuote />, section: "principal", roles: ["admin", "auxiliar"] },
+    { text: "Proyectos", href: "/sistema/proyectos", icon: <AssignmentIcon />, section: "principal", roles: ["admin", "auxiliar"] },
+    { text: "Órdenes", href: "/sistema/ordenes", icon: <WorkIcon />, section: "principal", roles: ["admin", "auxiliar", "colaborador"] },
+    { text: "Clientes", href: "/sistema/clientes", icon: <PersonIcon />, section: "principal", roles: ["admin", "auxiliar"] },
+    { text: "Diario", href: "/sistema/diario", icon: <AccountBalanceWalletIcon />, section: "principal", roles: ["admin", "auxiliar"] },
+    { text: "Modelos", href: "/sistema/modelos", icon: <WindowIcon />, section: "inventario", roles: ["admin", "auxiliar"] },
+    { text: "Colecciones", href: "/sistema/colecciones", icon: <CollectionsBookmarkIcon />, section: "inventario", roles: ["admin", "auxiliar"] },
+    { text: "Materiales", href: "/sistema/materiales", icon: <ConstructionIcon />, section: "inventario", roles: ["admin", "auxiliar"] },
+    { text: "Colores", href: "/sistema/colores", icon: <PaletteIcon />, section: "inventario", roles: ["admin", "auxiliar"] },
+    { text: "Herrajes", href: "/sistema/herrajes", icon: <BuildIcon />, section: "inventario", roles: ["admin", "auxiliar"] },
+    { text: "Vidrios", href: "/sistema/vidrios", icon: <GlassIcon />, section: "inventario", roles: ["admin", "auxiliar"] },
+    { text: "Servicios / Extras", href: "/sistema/extras", icon: <AddCircleOutlineIcon />, section: "inventario", roles: ["admin", "auxiliar"] },
+    { text: "Colaboradores", href: "/sistema/colaboradores", icon: <PeopleIcon />, section: "inventario", roles: ["admin"] },
   ];
+  const visibleItems = menuItems.filter((item) => item.roles.includes(role));
+  const principalItems = visibleItems.filter((item) => item.section === "principal");
+  const inventoryItems = visibleItems.filter((item) => item.section === "inventario");
 
   const renderMenuSection = (title: string, items: typeof menuItems) => (
     <Box sx={{ px: 1.2, py: 1 }}>
@@ -145,7 +153,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
       <AppBar position="sticky" sx={{ px: { xs: 1, md: 2 } }}>
         <Toolbar sx={{ minHeight: { xs: 68, md: 78 }, gap: 1 }}>
           <Box sx={{ flexGrow: 1, display: "flex", alignItems: "center", gap: 1.6 }}>
-            <Link href="/sistema" style={{ display: "flex", alignItems: "center", textDecoration: "none", color: "inherit" }}>
+            <Link href={homeForRole(role)} style={{ display: "flex", alignItems: "center", textDecoration: "none", color: "inherit" }}>
               <Image
                 src="/aluminios.svg"
                 alt="Aluminios San Francisco"
@@ -166,7 +174,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
 
           <Box sx={{ display: "flex", alignItems: "center", gap: { xs: 0.7, md: 1 } }}>
             <Chip
-              label={user?.name || user?.usuario || "Usuario"}
+              label={role === "admin" || role === "auxiliar" || role === "colaborador" ? ROLE_LABELS[role] : "Usuario"}
               size="small"
               variant="outlined"
               sx={{ display: { xs: "none", sm: "inline-flex" }, borderColor: "rgba(67,88,112,.3)", color: "text.primary" }}
@@ -230,9 +238,13 @@ export default function RootLayout({ children }: { children: ReactNode }) {
             </Typography>
           </Box>
           <Divider sx={{ borderColor: "rgba(122,138,158,0.2)" }} />
-          {renderMenuSection("Gestion principal", menuItems.slice(0, 5))}
-          <Divider sx={{ borderColor: "rgba(122,138,158,0.2)" }} />
-          {renderMenuSection("Inventario y equipo", menuItems.slice(5))}
+          {principalItems.length > 0 && renderMenuSection("Gestion principal", principalItems)}
+          {inventoryItems.length > 0 && (
+            <>
+              <Divider sx={{ borderColor: "rgba(122,138,158,0.2)" }} />
+              {renderMenuSection("Inventario y equipo", inventoryItems)}
+            </>
+          )}
         </Box>
       </Drawer>
 

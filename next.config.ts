@@ -25,6 +25,8 @@ const nextConfig: NextConfig = {
 
   // Configuración para optimización SEO
   poweredByHeader: false,
+
+  serverExternalPackages: ["firebase-admin"],
   
   // Configuración de headers para SEO
   async headers() {
