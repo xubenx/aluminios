@@ -1,9 +1,38 @@
 import { NextResponse } from "next/server";
 import { FieldValue } from "firebase-admin/firestore";
-import { getAdminAuth, getAdminDb } from "../../../lib/firebaseAdmin";
+import { getAdminAuth, getAdminDb, hasAdminCredentials } from "../../../lib/firebaseAdmin";
 import { hashPassword, verifyPassword } from "../../../lib/password";
 import { isRole } from "../../../lib/roles";
 import { rateLimit } from "../../../lib/rateLimit";
+import { findEmployeeByUsuario, passwordMatches } from "../../../lib/employeePassword";
+import { authEmailForUsuario, ensureEmailPasswordUser } from "../../../lib/firebaseEmailAuth";
+
+async function loginWithWebApi(usuario, password) {
+  const employee = await findEmployeeByUsuario(usuario);
+  if (!employee || !(await passwordMatches(employee, password))) {
+    return { status: 401, body: { message: "Usuario o contraseña incorrectos." } };
+  }
+
+  const role = isRole(employee.role) ? employee.role : "";
+  if (!role) {
+    return {
+      status: 403,
+      body: { message: "Tu cuenta no tiene un rol asignado. Pide a un administrador que lo configure." },
+    };
+  }
+
+  const email = authEmailForUsuario(usuario);
+  await ensureEmailPasswordUser(email, password);
+  return {
+    status: 200,
+    body: {
+      email,
+      role,
+      name: employee.name || employee.displayName || usuario,
+      employeeId: employee.id,
+    },
+  };
+}
 
 function clientIp(request) {
   const forwarded = request.headers.get("x-forwarded-for") || "";
@@ -26,6 +55,11 @@ export async function POST(request) {
         { message: "Demasiados intentos. Espera unos minutos e inténtalo de nuevo." },
         { status: 429 }
       );
+    }
+
+    if (!hasAdminCredentials()) {
+      const result = await loginWithWebApi(usuario, password);
+      return NextResponse.json(result.body, { status: result.status });
     }
 
     const db = getAdminDb();
@@ -78,17 +112,12 @@ export async function POST(request) {
       employeeId: employeeDoc.id,
     });
 
-    return NextResponse.json({ token });
+    return NextResponse.json({ token, role, email: authEmailForUsuario(usuario) });
   } catch (error) {
     console.error("Error en login:", error);
-    const missingAdmin = String(error?.message || "").includes("Firebase Admin");
-    return NextResponse.json(
-      {
-        message: missingAdmin
-          ? "El servidor no tiene configurada la cuenta de Firebase Admin."
-          : "No se pudo iniciar sesión.",
-      },
-      { status: 500 }
-    );
+    if (error?.code === "WEAK_PASSWORD" || error?.code === "EMAIL_EXISTS") {
+      return NextResponse.json({ message: error.message }, { status: 400 });
+    }
+    return NextResponse.json({ message: "No se pudo iniciar sesión." }, { status: 500 });
   }
 }

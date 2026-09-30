@@ -2,8 +2,6 @@
 
 import React, { useState } from "react";
 import { useRouter } from "next/navigation";
-import { getIdTokenResult } from "firebase/auth";
-import { getFirebaseAuth } from "../../../../firebase";
 import { homeForRole } from "../../../lib/roles";
 import {
   Box,
@@ -32,13 +30,7 @@ export default function LoginPage() {
     try {
       const res = await login(usuario, password);
       if (res.ok) {
-        const currentUser = getFirebaseAuth().currentUser;
-        if (!currentUser) {
-          setError("No se pudo abrir la sesión.");
-          return;
-        }
-        const token = await getIdTokenResult(currentUser);
-        router.replace(homeForRole(String(token.claims.role || "")));
+        router.replace(homeForRole(res.role));
       } else {
         setError(res.error || "Error al iniciar sesión");
       }

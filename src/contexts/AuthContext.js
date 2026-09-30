@@ -1,10 +1,38 @@
 "use client";
 
 import React, { createContext, useContext, useState, useEffect } from "react";
-import { onAuthStateChanged, signInWithCustomToken, signOut } from "firebase/auth";
-import { getFirebaseAuth } from "../../firebase";
+import { onAuthStateChanged, signInWithCustomToken, signInWithEmailAndPassword, signOut } from "firebase/auth";
+import { collection, getDocs, query, where } from "firebase/firestore";
+import { db, getFirebaseAuth } from "../../firebase";
+import { isRole } from "../lib/roles";
 
 const AuthContext = createContext(null);
+
+async function profileFromFirebaseUser(firebaseUser) {
+  const token = await firebaseUser.getIdTokenResult();
+  if (isRole(token.claims.role)) {
+    return {
+      userId: token.claims.employeeId || firebaseUser.uid,
+      usuario: token.claims.usuario || "",
+      name: token.claims.name || "",
+      role: token.claims.role,
+    };
+  }
+
+  const usuario = String(firebaseUser.email || "").split("@")[0].toLowerCase();
+  if (!usuario) return null;
+  const snapshot = await getDocs(query(collection(db, "employees"), where("usuario", "==", usuario)));
+  if (snapshot.empty) return null;
+  const employee = snapshot.docs[0];
+  const data = employee.data();
+  if (!isRole(data.role)) return null;
+  return {
+    userId: employee.id,
+    usuario: data.usuario || usuario,
+    name: data.name || data.displayName || usuario,
+    role: data.role,
+  };
+}
 
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
@@ -19,20 +47,14 @@ export function AuthProvider({ children }) {
       }
 
       try {
-        const token = await firebaseUser.getIdTokenResult();
-        const role = token.claims.role;
-        if (role !== "admin" && role !== "auxiliar" && role !== "colaborador") {
+        const profile = await profileFromFirebaseUser(firebaseUser);
+        if (!profile) {
           await signOut(getFirebaseAuth());
           setUser(null);
           setLoading(false);
           return;
         }
-        setUser({
-          userId: token.claims.employeeId || firebaseUser.uid,
-          usuario: token.claims.usuario || "",
-          name: token.claims.name || "",
-          role,
-        });
+        setUser(profile);
       } catch {
         setUser(null);
       } finally {
@@ -53,8 +75,12 @@ export function AuthProvider({ children }) {
     if (!response.ok) {
       return { ok: false, error: data.message || "No se pudo iniciar sesión." };
     }
-    await signInWithCustomToken(getFirebaseAuth(), data.token);
-    return { ok: true };
+    if (data.token) {
+      await signInWithCustomToken(getFirebaseAuth(), data.token);
+    } else {
+      await signInWithEmailAndPassword(getFirebaseAuth(), data.email, password);
+    }
+    return { ok: true, role: data.role };
   };
 
   const logout = async () => {

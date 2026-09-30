@@ -1,6 +1,8 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { canAccessPath, homeForRole, isOfficeRole, statusesForRole } from "./roles.js";
+import { authEmailForUsuario } from "./firebaseEmailAuth.js";
+import { hasAdminCredentials } from "./firebaseAdmin.js";
 import { hashPassword, verifyPassword } from "./password.js";
 import { normalizeMxPhone, whatsappUrl } from "./phone.js";
 import { rateLimit } from "./rateLimit.js";
@@ -37,6 +39,11 @@ test("el teléfono mexicano queda en 10 dígitos", () => {
   assert.equal(normalizeMxPhone("5214771234567"), "4771234567");
   assert.equal(normalizeMxPhone("4771234567"), "4771234567");
   assert.equal(whatsappUrl("4771234567", "Hola"), "https://wa.me/524771234567?text=Hola");
+});
+
+test("el correo de acceso sale del usuario", () => {
+  assert.equal(authEmailForUsuario("xubenx", "aluminios-88a45"), "xubenx@aluminios-88a45.firebaseapp.com");
+  assert.equal(hasAdminCredentials(), false);
 });
 
 test("el límite de intentos bloquea el siguiente envío", () => {
