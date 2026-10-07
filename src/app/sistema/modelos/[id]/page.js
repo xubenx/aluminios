@@ -10,6 +10,7 @@ import {
 } from "firebase/firestore";
 import { db } from "../../../../../firebase";
 import { getModelImageURL } from "../../../../utils/imageStorage";
+import { useCatalogs } from "../../../../contexts/CatalogsContext";
 import { authFetch } from "../../../../lib/authFetch";
 import {
   Button,
@@ -55,6 +56,7 @@ const StudioEditor = dynamic(() => import("../../../../components/studio/StudioE
 });
 
 export default function ModelDetailsPage({ params }) {
+  const { refresh: refreshCatalogs } = useCatalogs();
   // Estados principales
   const [id, setId] = useState(null);
   const [model, setModel] = useState(null);
@@ -258,6 +260,7 @@ export default function ModelDetailsPage({ params }) {
       setSavingDrawing(true);
       await updateDoc(doc(db, "models", id), { drawing: drawingDraft });
       setModel((prev) => ({ ...prev, drawing: drawingDraft }));
+      refreshCatalogs();
       setSnackbar({ open: true, message: "Dibujo actualizado correctamente.", severity: "success" });
       setShowDrawingEditor(false);
     } catch (error) {
@@ -290,6 +293,7 @@ export default function ModelDetailsPage({ params }) {
         equivalentModels.map((m) => updateDoc(doc(db, "models", m.id), { drawing: model.drawing }))
       );
       setEquivalentModels((prev) => prev.map((m) => ({ ...m, drawing: model.drawing })));
+      refreshCatalogs();
       setDrawingTransfer({ open: false, mode: "copy" });
       setSnackbar({
         open: true,
@@ -317,6 +321,7 @@ export default function ModelDetailsPage({ params }) {
     try {
       await updateDoc(doc(db, "models", id), { drawing: source.drawing });
       setModel((prev) => ({ ...prev, drawing: source.drawing }));
+      refreshCatalogs();
       setDrawingTransfer({ open: false, mode: "copy" });
       setSnackbar({ open: true, message: `Dibujo tomado de "${source.name}".`, severity: "success" });
     } catch (error) {
@@ -331,6 +336,7 @@ export default function ModelDetailsPage({ params }) {
         name: model.name,
         manpower: model.manpower,
       });
+      refreshCatalogs();
       setSnackbar({ open: true, message: "Modelo actualizado correctamente.", severity: "success" });
     } catch (error) {
       console.error(error);
@@ -349,6 +355,7 @@ export default function ModelDetailsPage({ params }) {
   const handleDeleteModel = async () => {
     try {
       await deleteDoc(doc(db, "models", id));
+      refreshCatalogs();
       setSnackbar({ open: true, message: "Modelo eliminado correctamente.", severity: "success" });
       setConfirmDelete(false);
       router.push("/sistema/modelos");
@@ -405,6 +412,7 @@ export default function ModelDetailsPage({ params }) {
 
       // Persistir la URL en el documento para evitar llamadas a Storage
       await updateDoc(doc(db, "models", id), { imageUrl: uploadResult.downloadURL });
+      refreshCatalogs();
 
       setSnackbar({ 
         open: true, 

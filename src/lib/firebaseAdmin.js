@@ -10,6 +10,7 @@ import { getStorage } from "firebase-admin/storage";
 const DEFAULT_SERVICE_ACCOUNT_PATH = "serviceAccountKey.json";
 
 function parseServiceAccount(raw) {
+  if (!raw) return null;
   try {
     const parsed = JSON.parse(raw);
     return parsed && typeof parsed === "object" ? parsed : null;
@@ -18,28 +19,80 @@ function parseServiceAccount(raw) {
   }
 }
 
+// Quita comillas que a veces se pegan en los valores de entorno de Vercel.
+function stripQuotes(value) {
+  const s = String(value ?? "").trim();
+  if (s.length >= 2 && ((s[0] === '"' && s.endsWith('"')) || (s[0] === "'" && s.endsWith("'")))) {
+    return s.slice(1, -1);
+  }
+  return s;
+}
+
+// Normaliza la llave privada sin importar como se haya guardado:
+// con \n literales, con saltos reales, con \r\n o con comillas.
+function normalizePrivateKey(value) {
+  let key = stripQuotes(value);
+  if (!key) return "";
+  // Comillas escapadas dentro del valor.
+  key = key.replace(/^"|"$/g, "");
+  // Un escape de mas (\\n) -> salto real.
+  key = key.replace(/\\\\n/g, "\n");
+  // \n literal -> salto real.
+  key = key.replace(/\\n/g, "\n");
+  return key.trim();
+}
+
+function normalizeServiceAccount(sa) {
+  if (!sa || typeof sa !== "object") return null;
+  return {
+    ...sa,
+    projectId: sa.projectId || sa.project_id,
+    clientEmail: sa.clientEmail || sa.client_email,
+    privateKey: normalizePrivateKey(sa.privateKey || sa.private_key),
+  };
+}
+
 function loadServiceAccount() {
+  // 1) JSON en variable de entorno (admite JSON crudo o base64).
   const raw = process.env.FIREBASE_SERVICE_ACCOUNT_JSON;
   if (raw) {
-    const fromJson = parseServiceAccount(raw);
-    if (fromJson) return fromJson;
+    const cleaned = stripQuotes(raw);
+    const fromJson =
+      parseServiceAccount(cleaned) ||
+      parseServiceAccount(Buffer.from(cleaned, "base64").toString("utf8"));
+    if (fromJson) return normalizeServiceAccount(fromJson);
   }
 
-  const filePath = process.env.FIREBASE_SERVICE_ACCOUNT_PATH || DEFAULT_SERVICE_ACCOUNT_PATH;
-  const resolvedPath = resolve(process.cwd(), filePath);
-  if (existsSync(resolvedPath)) {
-    const fromFile = parseServiceAccount(readFileSync(resolvedPath, "utf8"));
-    if (fromFile) return fromFile;
+  // 2) Archivo JSON. Se prueban varias rutas por si el proceso arranca desde otra carpeta.
+  const candidates = [
+    process.env.FIREBASE_SERVICE_ACCOUNT_PATH,
+    DEFAULT_SERVICE_ACCOUNT_PATH,
+    resolve(process.cwd(), "serviceAccountKey.json"),
+  ].filter(Boolean);
+  for (const candidate of candidates) {
+    const resolvedPath = resolve(process.cwd(), candidate);
+    if (existsSync(resolvedPath)) {
+      const fromFile = parseServiceAccount(readFileSync(resolvedPath, "utf8"));
+      if (fromFile) return normalizeServiceAccount(fromFile);
+    }
   }
 
-  const projectId = process.env.FIREBASE_ADMIN_PROJECT_ID || process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID;
-  const clientEmail = process.env.FIREBASE_ADMIN_CLIENT_EMAIL;
-  const privateKey = process.env.FIREBASE_ADMIN_PRIVATE_KEY?.replace(/\\n/g, "\n");
+  // 3) Par correo + llave.
+  const projectId = stripQuotes(
+    process.env.FIREBASE_ADMIN_PROJECT_ID || process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID
+  );
+  const clientEmail = stripQuotes(process.env.FIREBASE_ADMIN_CLIENT_EMAIL);
+  const privateKey = normalizePrivateKey(process.env.FIREBASE_ADMIN_PRIVATE_KEY);
 
   if (projectId && clientEmail && privateKey) {
     return { projectId, clientEmail, privateKey };
   }
 
+  console.error(
+    "[firebaseAdmin] No se encontraron credenciales. cwd=%s, probado: %s",
+    process.cwd(),
+    candidates.map((c) => resolve(process.cwd(), c)).join(", ")
+  );
   return null;
 }
 
@@ -53,12 +106,26 @@ export function getAdminApp() {
     );
   }
 
+  if (!serviceAccount.privateKey || !serviceAccount.clientEmail || !(serviceAccount.projectId || serviceAccount.project_id)) {
+    console.error("[firebaseAdmin] Credenciales incompletas: falta projectId, clientEmail o privateKey.");
+    throw new Error("Credenciales de Firebase Admin incompletas.");
+  }
+
   const storageBucket = process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET;
-  return initializeApp({
-    credential: cert(serviceAccount),
-    projectId: serviceAccount.project_id || serviceAccount.projectId,
-    storageBucket,
-  });
+  try {
+    return initializeApp({
+      credential: cert({
+        projectId: serviceAccount.projectId || serviceAccount.project_id,
+        clientEmail: serviceAccount.clientEmail,
+        privateKey: serviceAccount.privateKey,
+      }),
+      projectId: serviceAccount.projectId || serviceAccount.project_id,
+      storageBucket,
+    });
+  } catch (error) {
+    console.error("[firebaseAdmin] No se pudo inicializar con las credenciales:", error?.message);
+    throw new Error(`Credenciales de Firebase Admin invalidas: ${error?.message || "error desconocido"}`);
+  }
 }
 
 export function getAdminAuth() {

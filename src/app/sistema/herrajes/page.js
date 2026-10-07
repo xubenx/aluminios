@@ -2,6 +2,7 @@
 import React, { useState, useEffect } from "react";
 import { collection, getDocs, addDoc, updateDoc, deleteDoc, doc } from "firebase/firestore";
 import { db } from "../../../../firebase";
+import { useCatalogs } from "../../../contexts/CatalogsContext";
 import {
   Button,
   Table,
@@ -21,6 +22,7 @@ import CrudStepperDialog from "../components/CrudStepperDialog";
 import { Add, Edit, Delete } from "@mui/icons-material";
 
 export default function ChapesPage() {
+  const { refresh: refreshCatalogs } = useCatalogs();
   const [chapes, setChapes] = useState([]);
   const [filteredChapes, setFilteredChapes] = useState([]); // Para herrajes filtrados
   const [models, setModels] = useState([]);
@@ -120,6 +122,7 @@ export default function ChapesPage() {
       await updateDoc(chapeRef, { price: parseFloat(editingPriceValue) });
       setSnackbar({ open: true, message: "Precio actualizado correctamente.", severity: "success" });
       fetchChapes(); // Actualiza la lista de herrajes
+      refreshCatalogs();
     } catch (error) {
       console.error(error);
       setSnackbar({ open: true, message: "Error al actualizar el precio.", severity: "error" });
@@ -154,6 +157,7 @@ export default function ChapesPage() {
         setSnackbar({ open: true, message: "Herraje agregado correctamente.", severity: "success" });
       }
       fetchChapes();
+      refreshCatalogs();
       handleCloseDialog();
     } catch (error) {
       console.log(error);
@@ -167,6 +171,7 @@ export default function ChapesPage() {
         await deleteDoc(doc(db, "chapes", id));
         setSnackbar({ open: true, message: "Herraje eliminado correctamente.", severity: "success" });
         fetchChapes();
+        refreshCatalogs();
       } catch (error) {
         console.log(error);
         setSnackbar({ open: true, message: "Error al eliminar el herraje.", severity: "error" });

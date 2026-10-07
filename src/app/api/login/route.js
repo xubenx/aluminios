@@ -81,14 +81,15 @@ export async function POST(request) {
     return NextResponse.json({ token });
   } catch (error) {
     console.error("Error en login:", error);
-    const missingAdmin = String(error?.message || "").includes("Firebase Admin");
-    return NextResponse.json(
-      {
-        message: missingAdmin
-          ? "El servidor no tiene configurada la cuenta de Firebase Admin."
-          : "No se pudo iniciar sesión.",
-      },
-      { status: 500 }
-    );
+    const msg = String(error?.message || "");
+    let message = "No se pudo iniciar sesión.";
+    if (msg.includes("Faltan credenciales")) {
+      message = "El servidor no tiene configurada la cuenta de Firebase Admin.";
+    } else if (msg.includes("incompletas")) {
+      message = "Las credenciales de Firebase Admin están incompletas (revisa projectId, clientEmail y privateKey).";
+    } else if (msg.includes("invalidas")) {
+      message = "Las credenciales de Firebase Admin son inválidas (revisa la llave privada).";
+    }
+    return NextResponse.json({ message }, { status: 500 });
   }
 }

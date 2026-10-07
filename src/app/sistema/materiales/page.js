@@ -2,6 +2,7 @@
 import React, { useState, useEffect } from "react";
 import { collection, getDocs, updateDoc, doc, deleteDoc, addDoc } from "firebase/firestore"; // Se agregó `deleteDoc` y `addDoc` porque se usan en el código
 import { db } from "../../../../firebase";
+import { useCatalogs } from "../../../contexts/CatalogsContext";
 import {
   Button,
   Table,
@@ -26,6 +27,7 @@ import CrudStepperDialog from "../components/CrudStepperDialog";
 import { Add, Edit, Delete } from "@mui/icons-material";
 
 export default function MaterialsPage() {
+  const { refresh: refreshCatalogs } = useCatalogs();
   const [materials, setMaterials] = useState([]);
   const [filteredMaterials, setFilteredMaterials] = useState([]);
   const [models, setModels] = useState([]);
@@ -148,6 +150,7 @@ export default function MaterialsPage() {
       await updateDoc(materialRef, { price: parseFloat(editingPriceValue) });
       setSnackbar({ open: true, message: "Precio actualizado correctamente.", severity: "success" });
       fetchMaterials(); // Actualiza la lista de materiales
+      refreshCatalogs();
     } catch (error) {
       console.error(error);
       setSnackbar({ open: true, message: "Error al actualizar el precio.", severity: "error" });
@@ -201,6 +204,7 @@ export default function MaterialsPage() {
       }
       fetchMaterials();
       fetchModels(); // Actualizar modelos también por si hay cambios
+      refreshCatalogs();
       handleCloseDialog();
     } catch (error) {
       console.log(error);
@@ -215,6 +219,7 @@ export default function MaterialsPage() {
         setSnackbar({ open: true, message: "Material eliminado correctamente.", severity: "success" });
         fetchMaterials();
         fetchModels(); // Actualizar modelos también
+        refreshCatalogs();
       } catch (error) {
         console.log(error);
         setSnackbar({ open: true, message: "Error al eliminar el material.", severity: "error" });

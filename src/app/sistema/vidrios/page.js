@@ -2,6 +2,7 @@
 import React, { useState, useEffect } from "react";
 import { collection, getDocs, addDoc, updateDoc, doc } from "firebase/firestore";
 import { db } from "../../../../firebase";
+import { useCatalogs } from "../../../contexts/CatalogsContext";
 import {
   Button,
   Table,
@@ -27,6 +28,7 @@ import { Add, Edit, Delete, Calculate } from "@mui/icons-material";
 import { useRouter } from "next/navigation";
 
 export default function GlassesPage() {
+  const { refresh: refreshCatalogs } = useCatalogs();
   const router = useRouter();
   const [glasses, setGlasses] = useState([]);
   const [filteredGlasses, setFilteredGlasses] = useState([]);
@@ -168,6 +170,7 @@ export default function GlassesPage() {
         setSnackbar({ open: true, message: "Vidrio agregado correctamente.", severity: "success" });
       }
       fetchGlasses();
+      refreshCatalogs();
       handleCloseDialog();
     } catch (error) {
       console.log(error);
@@ -184,6 +187,7 @@ export default function GlassesPage() {
       });
       setSnackbar({ open: true, message: "Vidrio desactivado correctamente.", severity: "success" });
       fetchGlasses();
+      refreshCatalogs();
       setOpenConfirmDialog(false);
     } catch (error) {
       console.log(error);
@@ -210,6 +214,7 @@ export default function GlassesPage() {
       });
       setSnackbar({ open: true, message: "Vidrio reactivado correctamente.", severity: "success" });
       fetchGlasses();
+      refreshCatalogs();
     } catch (error) {
       console.log(error);
       setSnackbar({ open: true, message: "Error al reactivar el vidrio.", severity: "error" });

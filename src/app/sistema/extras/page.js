@@ -2,6 +2,7 @@
 import React, { useState, useEffect } from "react";
 import { collection, getDocs, addDoc, updateDoc, deleteDoc, doc } from "firebase/firestore";
 import { db } from "../../../../firebase";
+import { useCatalogs } from "../../../contexts/CatalogsContext";
 import {
   Button,
   Table,
@@ -21,6 +22,7 @@ import CrudStepperDialog from "../components/CrudStepperDialog";
 import { Add, Edit, Delete } from "@mui/icons-material";
 
 export default function ExtrasPage() {
+  const { refresh: refreshCatalogs } = useCatalogs();
   const [extras, setExtras] = useState([]);
   const [filteredExtras, setFilteredExtras] = useState([]);
   const [searchText, setSearchText] = useState("");
@@ -77,6 +79,7 @@ export default function ExtrasPage() {
       await updateDoc(ref, { price: parseFloat(editingPriceValue) });
       setSnackbar({ open: true, message: "Precio actualizado correctamente.", severity: "success" });
       fetchExtras();
+      refreshCatalogs();
     } catch (error) {
       console.error(error);
       setSnackbar({ open: true, message: "Error al actualizar el precio.", severity: "error" });
@@ -110,6 +113,7 @@ export default function ExtrasPage() {
         setSnackbar({ open: true, message: "Servicio/Extra agregado correctamente.", severity: "success" });
       }
       fetchExtras();
+      refreshCatalogs();
       handleCloseDialog();
     } catch (error) {
       console.error(error);
@@ -123,6 +127,7 @@ export default function ExtrasPage() {
       await deleteDoc(doc(db, "extras", id));
       setSnackbar({ open: true, message: "Servicio/Extra eliminado correctamente.", severity: "success" });
       fetchExtras();
+      refreshCatalogs();
     } catch (error) {
       console.error(error);
       setSnackbar({ open: true, message: "Error al eliminar.", severity: "error" });

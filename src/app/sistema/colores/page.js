@@ -2,6 +2,7 @@
 import React, { useState, useEffect } from "react";
 import { collection, getDocs, updateDoc, doc, deleteDoc, addDoc } from "firebase/firestore";
 import { db } from "../../../../firebase";
+import { useCatalogs } from "../../../contexts/CatalogsContext";
 import {
   Button,
   Table,
@@ -22,6 +23,7 @@ import CrudStepperDialog from "../components/CrudStepperDialog";
 import { Add, Edit, Delete } from "@mui/icons-material";
 
 export default function ColorsPage() {
+  const { refresh: refreshCatalogs } = useCatalogs();
   const [colors, setColors] = useState([]);
   const [filteredColors, setFilteredColors] = useState([]);
   const [searchText, setSearchText] = useState("");
@@ -75,6 +77,7 @@ export default function ColorsPage() {
       await updateDoc(colorRef, { percentage: parseFloat(editingPercentageValue) });
       setSnackbar({ open: true, message: "Porcentaje actualizado correctamente.", severity: "success" });
       fetchColors();
+      refreshCatalogs();
     } catch (error) {
       console.error(error);
       setSnackbar({ open: true, message: "Error al actualizar el porcentaje.", severity: "error" });
@@ -125,6 +128,7 @@ export default function ColorsPage() {
         setSnackbar({ open: true, message: "Color agregado correctamente.", severity: "success" });
       }
       fetchColors();
+      refreshCatalogs();
       handleCloseDialog();
     } catch (error) {
       console.log(error);
@@ -138,6 +142,7 @@ export default function ColorsPage() {
         await deleteDoc(doc(db, "colors", id));
         setSnackbar({ open: true, message: "Color eliminado correctamente.", severity: "success" });
         fetchColors();
+        refreshCatalogs();
       } catch (error) {
         console.log(error);
         setSnackbar({ open: true, message: "Error al eliminar el color.", severity: "error" });
