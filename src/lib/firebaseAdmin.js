@@ -139,3 +139,45 @@ export function getAdminDb() {
 export function getAdminBucket() {
   return getStorage(getAdminApp()).bucket();
 }
+
+/**
+ * Diagnostico seguro (sin exponer secretos) del estado de las credenciales.
+ * Sirve para saber exactamente donde falla la configuracion en produccion.
+ */
+export function describeAdminCredentials() {
+  const raw = process.env.FIREBASE_SERVICE_ACCOUNT_JSON;
+  const out = {
+    envPresent: {
+      FIREBASE_SERVICE_ACCOUNT_JSON: !!raw,
+      FIREBASE_SERVICE_ACCOUNT_PATH: !!process.env.FIREBASE_SERVICE_ACCOUNT_PATH,
+      FIREBASE_ADMIN_PROJECT_ID: !!process.env.FIREBASE_ADMIN_PROJECT_ID,
+      FIREBASE_ADMIN_CLIENT_EMAIL: !!process.env.FIREBASE_ADMIN_CLIENT_EMAIL,
+      FIREBASE_ADMIN_PRIVATE_KEY: !!process.env.FIREBASE_ADMIN_PRIVATE_KEY,
+      NEXT_PUBLIC_FIREBASE_PROJECT_ID: !!process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
+    },
+  };
+
+  if (raw) {
+    const cleaned = stripQuotes(raw);
+    const isBase64Json = !!parseServiceAccount(Buffer.from(cleaned, "base64").toString("utf8"));
+    out.jsonParse = {
+      rawJson: !!parseServiceAccount(cleaned),
+      base64Json: isBase64Json,
+      looksLikeBase64: /^[A-Za-z0-9+/=\s]+$/.test(cleaned) && cleaned.length > 40,
+    };
+  }
+
+  const sa = loadServiceAccount();
+  out.credentialsFound = !!sa;
+  if (sa) {
+    out.fields = {
+      projectId: !!sa.projectId,
+      clientEmail: !!sa.clientEmail,
+      privateKey: !!sa.privateKey,
+      privateKeyHasRealNewlines: typeof sa.privateKey === "string" && sa.privateKey.includes("\n"),
+      privateKeyHeaderOk: typeof sa.privateKey === "string" && sa.privateKey.startsWith("-----BEGIN PRIVATE KEY-----"),
+      projectIdValue: sa.projectId || null,
+    };
+  }
+  return out;
+}
