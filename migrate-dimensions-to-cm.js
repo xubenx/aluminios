@@ -6,9 +6,11 @@ const APPLY = process.argv.includes("--apply");
 
 const normalizeProjectItems = (items = []) => {
   let changed = false;
+  let changedItems = 0;
 
   const normalized = items.map((item) => {
     let next = item;
+    let itemChanged = false;
 
     if (item?.dimensions) {
       const dims = normalizeLegacyDimensionsToCm(item.dimensions);
@@ -19,6 +21,7 @@ const normalizeProjectItems = (items = []) => {
       ) {
         next = { ...next, dimensions: dims };
         changed = true;
+        itemChanged = true;
       }
     }
 
@@ -37,19 +40,22 @@ const normalizeProjectItems = (items = []) => {
           },
         };
         changed = true;
+        itemChanged = true;
       }
     }
 
+    if (itemChanged) changedItems += 1;
     return next;
   });
 
-  return { normalized, changed };
+  return { normalized, changed, changedItems };
 };
 
 async function migrateProjectDimensions() {
   const snapshot = await getDocs(collection(db, "projects"));
   const docs = snapshot.docs;
   let changedDocs = 0;
+  let changedItemsTotal = 0;
 
   console.log(`Proyectos inspeccionados: ${docs.length}`);
 
@@ -57,11 +63,12 @@ async function migrateProjectDimensions() {
 
   docs.forEach((projectDoc) => {
     const data = projectDoc.data();
-    const { normalized, changed } = normalizeProjectItems(data.items || []);
+    const { normalized, changed, changedItems } = normalizeProjectItems(data.items || []);
     if (!changed) return;
 
     changedDocs += 1;
-    console.log(`- ${projectDoc.id}: dimensiones normalizadas`);
+    changedItemsTotal += changedItems;
+    console.log(`- ${projectDoc.id}: ${changedItems} item(s) con dimensiones normalizadas`);
 
     if (APPLY) {
       batch.update(doc(db, "projects", projectDoc.id), {
@@ -72,9 +79,9 @@ async function migrateProjectDimensions() {
 
   if (APPLY && changedDocs > 0) {
     await batch.commit();
-    console.log(`\nMigracion aplicada. Documentos actualizados: ${changedDocs}`);
+    console.log(`\nMigracion aplicada. Documentos actualizados: ${changedDocs}, items normalizados: ${changedItemsTotal}`);
   } else {
-    console.log(`\nDry run. Documentos que cambiarian: ${changedDocs}`);
+    console.log(`\nDry run. Documentos que cambiarian: ${changedDocs}, items a normalizar: ${changedItemsTotal}`);
     console.log("Para aplicar cambios: node migrate-dimensions-to-cm.js --apply");
   }
 }

@@ -24,13 +24,21 @@ import {
   Typography,
   Snackbar,
   Alert,
-  Autocomplete
+  Autocomplete,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions
 } from "@mui/material";
 import Image from "next/image";
-import { Delete, Edit, AddPhotoAlternate } from "@mui/icons-material";
+import dynamic from "next/dynamic";
+import { Delete, Edit, AddPhotoAlternate, DesignServices as DesignServicesIcon, ContentCopy, SwapHoriz } from "@mui/icons-material";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import { useRouter } from "next/navigation";
 import { evaluateFormula } from "../../../../utils/formulaEvaluate";
+import { DEFAULT_DIMENSION_CM, dimensionsCmToMeters } from "../../../../utils/units";
+import DrawingView from "../../../../components/studio/DrawingView";
+import { createEmptyDrawing } from "../../../../utils/drawing";
 // Importamos los diálogos desde ModelDialogs.js
 import {
   ConfirmDeleteDialog,
@@ -40,6 +48,11 @@ import {
   ChangeImageDialog,
   EditElementDialog,
 } from "./ModelDialogs";
+
+// Editor de cotas pesado: solo se carga cuando se abre el dialogo
+const StudioEditor = dynamic(() => import("../../../../components/studio/StudioEditor"), {
+  ssr: false,
+});
 
 export default function ModelDetailsPage({ params }) {
   // Estados principales
@@ -51,8 +64,12 @@ export default function ModelDetailsPage({ params }) {
   const [currentSection, setCurrentSection] = useState("");
   const [formData, setFormData] = useState({ id: "", formula: "", amount: "" });
   const [snackbar, setSnackbar] = useState({ open: false, message: "", severity: "success" });
-  // Dimensiones locales (solo a nivel cliente, no se guardan en Firebase)
-  const [dimensions, setDimensions] = useState({ height: "1", width: "1" });
+  // Dimensiones locales (en cm; solo a nivel cliente, no se guardan en Firebase)
+  const [dimensions, setDimensions] = useState({
+    height: String(DEFAULT_DIMENSION_CM),
+    width: String(DEFAULT_DIMENSION_CM),
+    unit: "cm",
+  });
   // Estados para confirmaciones
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [confirmUpdateModel, setConfirmUpdateModel] = useState(false);
@@ -69,6 +86,14 @@ export default function ModelDetailsPage({ params }) {
   // Nuevo estado para la selección de vidrio (combobox independiente)
   const [selectedGlass, setSelectedGlass] = useState(null);
   const [buffm2, setBuffm2] = useState("100");
+  // Editor embebido de cotas/anotaciones (visual)
+  const [showDrawingEditor, setShowDrawingEditor] = useState(false);
+  const [drawingEditorInitial, setDrawingEditorInitial] = useState(null);
+  const [drawingDraft, setDrawingDraft] = useState(null);
+  const [savingDrawing, setSavingDrawing] = useState(false);
+  // Equivalencias (mismo variantKey) para reutilizar el dibujo entre lineas
+  const [equivalentModels, setEquivalentModels] = useState([]);
+  const [drawingTransfer, setDrawingTransfer] = useState({ open: false, mode: "copy" });
 
   const router = useRouter();
 
@@ -118,13 +143,41 @@ export default function ModelDetailsPage({ params }) {
           glasses,
         });
 
-        // Cargar imagen desde Firebase Storage
-        try {
-          const imageURL = await getModelImageURL(id);
-          setModelImageURL(imageURL);
-        } catch {
-          console.log(`No se encontró imagen para el modelo ${id}`);
-          setModelImageURL(null);
+        // Arrancar con las medidas base de la plantilla y luego ajustar en vivo
+        if (data.drawing?.baseDimension) {
+          setDimensions({
+            height: String(data.drawing.baseDimension.height ?? DEFAULT_DIMENSION_CM),
+            width: String(data.drawing.baseDimension.width ?? DEFAULT_DIMENSION_CM),
+            unit: "cm",
+          });
+        }
+
+        // Imagen: preferir la URL guardada en el doc; si no, resolver en Storage (legacy)
+        if (data.imageUrl) {
+          setModelImageURL(data.imageUrl);
+        } else {
+          try {
+            const imageURL = await getModelImageURL(id);
+            setModelImageURL(imageURL);
+          } catch {
+            setModelImageURL(null);
+          }
+        }
+
+        // Buscar equivalentes (mismo variantKey) para copiar/reutilizar el dibujo
+        if (data.variantKey) {
+          try {
+            const modelsSnap = await getDocs(collection(db, "models"));
+            const equivalents = modelsSnap.docs
+              .map((d) => ({ id: d.id, name: d.data().name || "Modelo", ...d.data() }))
+              .filter((m) => m.id !== id && m.variantKey === data.variantKey);
+            setEquivalentModels(equivalents);
+          } catch (error) {
+            console.error("Error al buscar modelos equivalentes:", error);
+            setEquivalentModels([]);
+          }
+        } else {
+          setEquivalentModels([]);
         }
       } else {
         setModel(null);
@@ -187,6 +240,91 @@ export default function ModelDetailsPage({ params }) {
   };
 
   // Guarda cambios en el modelo (solo se actualiza nombre y mano de obra)
+  const handleOpenDrawingEditor = () => {
+    const initial =
+      model?.drawing ||
+      createEmptyDrawing(
+        Number(dimensions.width) || DEFAULT_DIMENSION_CM,
+        Number(dimensions.height) || DEFAULT_DIMENSION_CM
+      );
+    setDrawingEditorInitial(initial);
+    setDrawingDraft(initial);
+    setShowDrawingEditor(true);
+  };
+
+  const handleSaveDrawing = async () => {
+    if (!id || !drawingDraft) return;
+    try {
+      setSavingDrawing(true);
+      await updateDoc(doc(db, "models", id), { drawing: drawingDraft });
+      setModel((prev) => ({ ...prev, drawing: drawingDraft }));
+      setSnackbar({ open: true, message: "Dibujo actualizado correctamente.", severity: "success" });
+      setShowDrawingEditor(false);
+    } catch (error) {
+      console.error(error);
+      setSnackbar({ open: true, message: "Error al guardar el dibujo.", severity: "error" });
+    } finally {
+      setSavingDrawing(false);
+    }
+  };
+
+  const equivalentsWithDrawing = equivalentModels.filter((m) => m.drawing);
+
+  // Copia el dibujo actual a todos los modelos equivalentes (mismo variantKey).
+  const openCopyDrawingToEquivalents = () => {
+    if (!model?.drawing) {
+      setSnackbar({ open: true, message: "Este modelo no tiene dibujo para copiar.", severity: "error" });
+      return;
+    }
+    if (equivalentModels.length === 0) {
+      setSnackbar({ open: true, message: "Este modelo no tiene equivalentes en otras lineas.", severity: "info" });
+      return;
+    }
+    setDrawingTransfer({ open: true, mode: "copy" });
+  };
+
+  const confirmCopyDrawingToEquivalents = async () => {
+    if (!model?.drawing) return;
+    try {
+      await Promise.all(
+        equivalentModels.map((m) => updateDoc(doc(db, "models", m.id), { drawing: model.drawing }))
+      );
+      setEquivalentModels((prev) => prev.map((m) => ({ ...m, drawing: model.drawing })));
+      setDrawingTransfer({ open: false, mode: "copy" });
+      setSnackbar({
+        open: true,
+        message: `Dibujo copiado a ${equivalentModels.length} equivalente(s).`,
+        severity: "success",
+      });
+    } catch (error) {
+      console.error(error);
+      setSnackbar({ open: true, message: "Error al copiar el dibujo.", severity: "error" });
+    }
+  };
+
+  // Usa el dibujo de un equivalente como punto de partida para este modelo.
+  const openUseEquivalentDrawing = () => {
+    if (equivalentsWithDrawing.length === 0) {
+      setSnackbar({ open: true, message: "Ningun equivalente tiene dibujo todavia.", severity: "info" });
+      return;
+    }
+    setDrawingTransfer({ open: true, mode: "use" });
+  };
+
+  const applyEquivalentDrawing = async (source) => {
+    if (!source?.drawing) return;
+    if (model?.drawing && !confirm(`Este modelo ya tiene un dibujo. Reemplazarlo por el de "${source.name}"?`)) return;
+    try {
+      await updateDoc(doc(db, "models", id), { drawing: source.drawing });
+      setModel((prev) => ({ ...prev, drawing: source.drawing }));
+      setDrawingTransfer({ open: false, mode: "copy" });
+      setSnackbar({ open: true, message: `Dibujo tomado de "${source.name}".`, severity: "success" });
+    } catch (error) {
+      console.error(error);
+      setSnackbar({ open: true, message: "Error al usar el dibujo del equivalente.", severity: "error" });
+    }
+  };
+
   const handleSaveModelConfirmed = async () => {
     try {
       await updateDoc(doc(db, "models", id), {
@@ -195,7 +333,7 @@ export default function ModelDetailsPage({ params }) {
       });
       setSnackbar({ open: true, message: "Modelo actualizado correctamente.", severity: "success" });
     } catch (error) {
-      console.log(error);
+      console.error(error);
       setSnackbar({ open: true, message: "Error al actualizar el modelo.", severity: "error" });
     }
   };
@@ -215,7 +353,7 @@ export default function ModelDetailsPage({ params }) {
       setConfirmDelete(false);
       router.push("/sistema/modelos");
     } catch (error) {
-      console.log(error);
+      console.error(error);
       setSnackbar({ open: true, message: "Error al eliminar el modelo.", severity: "error" });
     }
   };
@@ -264,7 +402,10 @@ export default function ModelDetailsPage({ params }) {
       }
 
       const uploadResult = await uploadResponse.json();
-      
+
+      // Persistir la URL en el documento para evitar llamadas a Storage
+      await updateDoc(doc(db, "models", id), { imageUrl: uploadResult.downloadURL });
+
       setSnackbar({ 
         open: true, 
         message: "Imagen cambiada correctamente.", 
@@ -333,7 +474,7 @@ export default function ModelDetailsPage({ params }) {
       setSnackbar({ open: true, message: "Elemento guardado correctamente.", severity: "success" });
       handleCloseDialog();
     } catch (error) {
-      console.log(error);
+      console.error(error);
 
       setSnackbar({ open: true, message: "Error al guardar el elemento.", severity: "error" });
     }
@@ -351,7 +492,7 @@ export default function ModelDetailsPage({ params }) {
       setModel({ ...model, [section]: updatedSection });
       setSnackbar({ open: true, message: "Elemento eliminado correctamente.", severity: "success" });
     } catch (error) {
-      console.log(error);
+      console.error(error);
 
       setSnackbar({ open: true, message: "Error al eliminar el elemento.", severity: "error" });
     }
@@ -372,6 +513,8 @@ export default function ModelDetailsPage({ params }) {
   const options = getOptionsForSection();
   const selectedOption = options.find(option => option.id === formData.id) || null;
   // --- Cálculos de precios y cantidades ---
+  // Las dimensiones se ingresan en cm; las fórmulas (con TRAMO en metros) trabajan en metros.
+  const { heightInMeters, widthInMeters } = dimensionsCmToMeters(dimensions);
 
   // MATERIALS: Se consulta el precio y TRAMO de la colección de materiales para cada material.
   const totalMaterialsData = model.materials.reduce((acc, material) => {
@@ -381,29 +524,23 @@ export default function ModelDetailsPage({ params }) {
   
     const meterage = calculatePrice(material.formula, {
       PRECIO: 1,
-      ALTO: dimensions.height,
-      ANCHO: dimensions.width,
+      ALTO: heightInMeters,
+      ANCHO: widthInMeters,
       TRAMO: tramo,
     });
   
     const price = calculatePrice(material.formula, {
       PRECIO: currentPrice,
-      ALTO: dimensions.height,
-      ANCHO: dimensions.width,
+      ALTO: heightInMeters,
+      ANCHO: widthInMeters,
       TRAMO: tramo,
     });
-  
-    console.log("Material:", material.name);
-    console.log("Meterage:", meterage);
-    console.log("Price:", price);
   
     return {
       price: acc.price + price,
       meterage: acc.meterage + meterage,
     };
   }, { price: 0, meterage: 0 });
-  
-  console.log("Cálculos de materiales (totalMaterialsData):", totalMaterialsData);
 
   // CHAPES: Se consulta el precio a partir de la colección de chapes.
   const totalChapesData = model.chapes.reduce((acc, chape) => {
@@ -411,14 +548,14 @@ export default function ModelDetailsPage({ params }) {
     const currentPrice = chapeData ? parseFloat(chapeData.price || "0") : 0;
     const pieces = calculatePrice(chape.formula, {
       PRECIO: 1,
-      ALTO: dimensions.height,
-      ANCHO: dimensions.width,
+      ALTO: heightInMeters,
+      ANCHO: widthInMeters,
       TRAMO: 1,
     });
     const price = calculatePrice(chape.formula, {
       PRECIO: currentPrice,
-      ALTO: dimensions.height,
-      ANCHO: dimensions.width,
+      ALTO: heightInMeters,
+      ANCHO: widthInMeters,
       TRAMO: 1,
     });
     return {
@@ -430,8 +567,8 @@ export default function ModelDetailsPage({ params }) {
 const totalGlassMeterage = model.glasses.reduce((acc, glass) => {
   const meterage = calculatePrice(glass.formula, {
     PRECIO: 1,
-    ALTO: dimensions.height,
-    ANCHO: dimensions.width,
+    ALTO: heightInMeters,
+    ANCHO: widthInMeters,
   });
   return acc + meterage;
 }, 0);
@@ -440,8 +577,8 @@ const totalGlassMeterage = model.glasses.reduce((acc, glass) => {
   const totalGlassesData = model.glasses.reduce((acc, glass) => {
     const meterage = calculatePrice(glass.formula, {
       PRECIO: 1,
-      ALTO: dimensions.height,
-      ANCHO: dimensions.width,
+      ALTO: heightInMeters,
+      ANCHO: widthInMeters,
     });
     const glassPrice = selectedGlass ? parseFloat(selectedGlass.priceInstalled || "0") : 0;
     const price = meterage * glassPrice;
@@ -463,11 +600,46 @@ const totalGlassMeterage = model.glasses.reduce((acc, glass) => {
       
 
 
-      {/* Botón para retroceder */}
-      <Box sx={{ display: "flex", alignItems: "center", marginBottom: 2 }}>
+      {/* Botón para retroceder y abrir el Studio */}
+      <Box sx={{ display: "flex", alignItems: "center", gap: 1, marginBottom: 2, flexWrap: "wrap" }}>
         <Button variant="outlined" startIcon={<ArrowBackIcon />} onClick={() => router.push("/sistema/modelos")}>
           Volver
         </Button>
+        <Button
+          variant="contained"
+          color="primary"
+          startIcon={<DesignServicesIcon />}
+          onClick={() => router.push(`/sistema/modelos/${id}/studio`)}
+        >
+          Abrir Studio
+        </Button>
+        <Button
+          variant="outlined"
+          startIcon={<DesignServicesIcon />}
+          onClick={handleOpenDrawingEditor}
+        >
+          Editar cotas
+        </Button>
+        {equivalentModels.length > 0 && (
+          <Button
+            variant="outlined"
+            startIcon={<ContentCopy />}
+            onClick={openCopyDrawingToEquivalents}
+            disabled={!model.drawing}
+          >
+            Copiar dibujo a equivalentes
+          </Button>
+        )}
+        {equivalentModels.length > 0 && (
+          <Button
+            variant="outlined"
+            startIcon={<SwapHoriz />}
+            onClick={openUseEquivalentDrawing}
+            disabled={equivalentsWithDrawing.length === 0}
+          >
+            Usar dibujo de un equivalente
+          </Button>
+        )}
       </Box>
 
       <Typography variant="h4" align="center" sx={{ color: "black", mb: 3 }}>
@@ -486,21 +658,30 @@ const totalGlassMeterage = model.glasses.reduce((acc, glass) => {
           Eliminar Modelo
         </Button>
         <Box sx={{ display: "flex", justifyContent: "center", alignItems: "center", height: { xs: "300px", sm: "400px", md: "500px" }, mb: 2 }}>
-          <Image
-            src={modelImageURL ? `${modelImageURL}?t=${imageTimestamp}` : '/placeholder-image.png'}
-            alt={`Imagen de ${model.name}`}
-            width={500}
-            height={500}
-            style={{ 
-              objectFit: "cover", 
-              borderRadius: "16px",
-              opacity: modelImageURL ? 1 : 0.5
-            }}
-            onError={(e) => {
-              e.target.src = '/placeholder-image.png';
-              e.target.style.opacity = '0.5';
-            }}
-          />
+          {model.drawing ? (
+            <DrawingView
+              drawing={model.drawing}
+              widthCm={dimensions.width}
+              heightCm={dimensions.height}
+              style={{ maxHeight: "100%" }}
+            />
+          ) : (
+            <Image
+              src={modelImageURL ? `${modelImageURL}?t=${imageTimestamp}` : '/placeholder-image.png'}
+              alt={`Imagen de ${model.name}`}
+              width={500}
+              height={500}
+              style={{ 
+                objectFit: "cover", 
+                borderRadius: "16px",
+                opacity: modelImageURL ? 1 : 0.5
+              }}
+              onError={(e) => {
+                e.target.src = '/placeholder-image.png';
+                e.target.style.opacity = '0.5';
+              }}
+            />
+          )}
         </Box>
         <Button  variant="contained" color="azulote" startIcon={<AddPhotoAlternate />} onClick={handleChangeImage}>
           Cambiar Imagen
@@ -538,7 +719,7 @@ const totalGlassMeterage = model.glasses.reduce((acc, glass) => {
 <Box sx={{ display: "flex", gap: 2, mb: 2 }}>
   <TextField
     fullWidth
-    label="Alto"
+    label="Alto (cm)"
     type="text"
     value={dimensions.height}
     onChange={(e) =>
@@ -550,7 +731,7 @@ const totalGlassMeterage = model.glasses.reduce((acc, glass) => {
   />
   <TextField
     fullWidth
-    label="Ancho"
+    label="Ancho (cm)"
     type="text"
     value={dimensions.width}
     onChange={(e) =>
@@ -600,14 +781,14 @@ const totalGlassMeterage = model.glasses.reduce((acc, glass) => {
               const tramo = materialData ? parseFloat(materialData.stretch || "6.1") : 6.1;
               const meterage = calculatePrice(material.formula, {
                 PRECIO: 1,
-                ALTO: dimensions.height,
-                ANCHO: dimensions.width,
+                ALTO: heightInMeters,
+                ANCHO: widthInMeters,
                 TRAMO: 1,
               });
               const price = calculatePrice(material.formula, {
                 PRECIO: currentPrice,
-                ALTO: dimensions.height,
-                ANCHO: dimensions.width,
+                ALTO: heightInMeters,
+                ANCHO: widthInMeters,
                 TRAMO: tramo,
               });
               // Asegurar que meterage sea un número válido
@@ -661,14 +842,14 @@ const totalGlassMeterage = model.glasses.reduce((acc, glass) => {
               const currentPrice = chapeData ? parseFloat(chapeData.price || "0") : 0;
               const pieces = calculatePrice(chape.formula, {
                 PRECIO: 1,
-                ALTO: dimensions.height,
-                ANCHO: dimensions.width,
+                ALTO: heightInMeters,
+                ANCHO: widthInMeters,
                 TRAMO: 1,
               });
               const price = calculatePrice(chape.formula, {
                 PRECIO: currentPrice,
-                ALTO: dimensions.height,
-                ANCHO: dimensions.width,
+                ALTO: heightInMeters,
+                ANCHO: widthInMeters,
                 TRAMO: 1,
               });
               return (
@@ -717,8 +898,8 @@ const totalGlassMeterage = model.glasses.reduce((acc, glass) => {
             {model.glasses.map((glass, index) => {
               const meterage = calculatePrice(glass.formula, {
                 PRECIO: 1,
-                ALTO: dimensions.height,
-                ANCHO: dimensions.width,
+                ALTO: heightInMeters,
+                ANCHO: widthInMeters,
               });
               // Se usa el priceInstalled del vidrio seleccionado (del combobox independiente)
               const glassPrice = selectedGlass ? parseFloat(selectedGlass.priceInstalled || "0") : 0;
@@ -810,6 +991,103 @@ const totalGlassMeterage = model.glasses.reduce((acc, glass) => {
         onImageChange={handleImageFileChange}
         previewImage={previewImage}
       />
+
+      {/* Editor de cotas/anotaciones (visual) */}
+      <Dialog
+        open={showDrawingEditor}
+        onClose={() => setShowDrawingEditor(false)}
+        maxWidth="lg"
+        fullWidth
+      >
+        <DialogTitle>Cotas y anotaciones</DialogTitle>
+        <DialogContent>
+          <StudioEditor
+            initialDrawing={drawingEditorInitial}
+            modelName={model?.name}
+            title="Cotas y anotaciones (visual)"
+            showBaseControls={false}
+            widthCm={dimensions.width}
+            heightCm={dimensions.height}
+            onChange={setDrawingDraft}
+          />
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setShowDrawingEditor(false)}>Cancelar</Button>
+          <Button variant="contained" onClick={handleSaveDrawing} disabled={savingDrawing}>
+            {savingDrawing ? "Guardando..." : "Guardar"}
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Reutilizar el dibujo entre modelos equivalentes (mismo variantKey) */}
+      <Dialog
+        open={drawingTransfer.open}
+        onClose={() => setDrawingTransfer({ open: false, mode: "copy" })}
+        maxWidth="sm"
+        fullWidth
+      >
+        {drawingTransfer.mode === "copy" ? (
+          <>
+            <DialogTitle>Copiar dibujo a equivalentes</DialogTitle>
+            <DialogContent>
+              <Typography variant="body2" sx={{ mb: 1 }}>
+                Se copiara el dibujo de <strong>{model.name}</strong> a {equivalentModels.length} modelo(s) del mismo producto.
+              </Typography>
+              <Alert severity={equivalentsWithDrawing.length > 0 ? "warning" : "info"} sx={{ mb: 2 }}>
+                {equivalentsWithDrawing.length > 0
+                  ? `Atencion: ${equivalentsWithDrawing.length} equivalente(s) ya tienen dibujo y se sobrescribiran.`
+                  : "Ningun equivalente tiene dibujo; no se sobrescribe nada."}
+              </Alert>
+              <Box sx={{ display: "flex", flexDirection: "column", gap: 0.5 }}>
+                {equivalentModels.map((m) => (
+                  <Typography key={m.id} variant="body2" color="textSecondary">
+                    • {m.name} {m.drawing ? "(tiene dibujo)" : "(sin dibujo)"}
+                  </Typography>
+                ))}
+              </Box>
+            </DialogContent>
+            <DialogActions>
+              <Button onClick={() => setDrawingTransfer({ open: false, mode: "copy" })}>Cancelar</Button>
+              <Button
+                variant="contained"
+                color={equivalentsWithDrawing.length > 0 ? "warning" : "primary"}
+                onClick={confirmCopyDrawingToEquivalents}
+              >
+                Copiar
+              </Button>
+            </DialogActions>
+          </>
+        ) : (
+          <>
+            <DialogTitle>Usar dibujo de un equivalente</DialogTitle>
+            <DialogContent>
+              <Typography variant="body2" color="textSecondary" sx={{ mb: 2 }}>
+                Elige el modelo equivalente cuyo dibujo quieras copiar como punto de partida.
+              </Typography>
+              {model.drawing && (
+                <Alert severity="warning" sx={{ mb: 2 }}>
+                  Este modelo ya tiene dibujo; se reemplazara por el del equivalente que elijas.
+                </Alert>
+              )}
+              <Box sx={{ display: "flex", flexDirection: "column", gap: 1 }}>
+                {equivalentsWithDrawing.map((m) => (
+                  <Button
+                    key={m.id}
+                    variant="outlined"
+                    onClick={() => applyEquivalentDrawing(m)}
+                    sx={{ justifyContent: "flex-start" }}
+                  >
+                    Usar el de {m.name}
+                  </Button>
+                ))}
+              </Box>
+            </DialogContent>
+            <DialogActions>
+              <Button onClick={() => setDrawingTransfer({ open: false, mode: "copy" })}>Cancelar</Button>
+            </DialogActions>
+          </>
+        )}
+      </Dialog>
 
       <Snackbar
         open={snackbar.open}

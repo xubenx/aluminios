@@ -3,6 +3,7 @@ import { useState, useEffect, useMemo } from "react";
 import { db } from "../../../../firebase";
 import { collection, getDocs, doc, updateDoc, getDoc, addDoc, query, orderBy } from "firebase/firestore";
 import { uploadProjectImage, deleteProjectImage } from "../../../utils/imageStorage";
+import { useCatalogs } from "../../../contexts/CatalogsContext";
 import { evaluateFormula } from "../../../utils/formulaEvaluate";
 import {
   DEFAULT_DIMENSION_CM,
@@ -55,84 +56,6 @@ const loadEmployees = async () => {
     }));
   } catch (error) {
     console.error("Error loading employees:", error);
-    throw error;
-  }
-};
-
-const loadModels = async () => {
-  try {
-    const querySnapshot = await getDocs(collection(db, "models"));
-    return querySnapshot.docs.map(doc => ({
-      id: doc.id,
-      ...doc.data()
-    }));
-  } catch (error) {
-    console.error("Error loading models:", error);
-    throw error;
-  }
-};
-
-const loadGlasses = async () => {
-  try {
-    const querySnapshot = await getDocs(collection(db, "glasses"));
-    return querySnapshot.docs.map(doc => ({
-      id: doc.id,
-      ...doc.data()
-    }));
-  } catch (error) {
-    console.error("Error loading glasses:", error);
-    throw error;
-  }
-};
-
-const loadMaterials = async () => {
-  try {
-    const querySnapshot = await getDocs(collection(db, "materials"));
-    return querySnapshot.docs.map(doc => ({
-      id: doc.id,
-      ...doc.data()
-    }));
-  } catch (error) {
-    console.error("Error loading materials:", error);
-    throw error;
-  }
-};
-
-const loadChapes = async () => {
-  try {
-    const querySnapshot = await getDocs(collection(db, "chapes"));
-    return querySnapshot.docs.map(doc => ({
-      id: doc.id,
-      ...doc.data()
-    }));
-  } catch (error) {
-    console.error("Error loading chapes:", error);
-    throw error;
-  }
-};
-
-const loadExtras = async () => {
-  try {
-    const querySnapshot = await getDocs(collection(db, "extras"));
-    return querySnapshot.docs.map(doc => ({
-      id: doc.id,
-      ...doc.data()
-    }));
-  } catch (error) {
-    console.error("Error loading extras:", error);
-    return [];
-  }
-};
-
-const loadColors = async () => {
-  try {
-    const querySnapshot = await getDocs(collection(db, "colors"));
-    return querySnapshot.docs.map(doc => ({
-      id: doc.id,
-      ...doc.data()
-    }));
-  } catch (error) {
-    console.error("Error loading colors:", error);
     throw error;
   }
 };
@@ -253,7 +176,6 @@ const updateProjectWithRecalculatedTotal = async (projectId, updatedItems) => {
 // Additional helper functions needed
 const updateProjectItem = async (projectId, itemIndex, updatedData) => {
   try {
-    console.log("Updating project item with data:", updatedData); // Debug log
     const projectDoc = await getDoc(doc(db, "projects", projectId));
     if (!projectDoc.exists()) {
       throw new Error("Project not found");
@@ -281,8 +203,6 @@ const updateProjectItem = async (projectId, itemIndex, updatedData) => {
       items: updatedItems,
       total: newTotal
     }));
-    
-    console.log("Project updated successfully"); // Debug log
   } catch (error) {
     console.error("Error updating project item:", error);
     throw error;
@@ -447,6 +367,16 @@ const getStatusText = (status) => {
 };
 
 export const useProyectosController = () => {
+  // Catalogos compartidos (evita re-fetch entre paginas)
+  const {
+    models: catalogModels,
+    materials: catalogMaterials,
+    chapes: catalogChapes,
+    glasses: catalogGlasses,
+    colors: catalogColors,
+    extras: catalogExtras,
+  } = useCatalogs();
+
   // Estados principales
   const [projects, setProjects] = useState([]);
   const [filteredProjects, setFilteredProjects] = useState([]);
@@ -555,13 +485,51 @@ export const useProyectosController = () => {
     return () => window.removeEventListener('resize', checkMobile);
   }, []);
 
-  // Cargar proyectos al montar el componente
+  // Cargar proyectos al montar el componente (los catalogos vienen del contexto)
   useEffect(() => {
     fetchProjects();
     fetchEmployees();
-    fetchModels();
-    fetchOptions();
   }, []);
+
+  // Sincronizar catalogos del contexto con el estado local
+  useEffect(() => {
+    setModels(catalogModels);
+    setFilteredModels(catalogModels);
+  }, [catalogModels]);
+
+  useEffect(() => {
+    setMaterialsOptions(catalogMaterials);
+    setChapesOptions(catalogChapes);
+    setColorsOptions(catalogColors);
+    setExtrasOptions(catalogExtras);
+
+    const glassesData = catalogGlasses;
+    let glassesList = [];
+    if (glassesData && glassesData.length > 0) {
+      glassesList = glassesData.flatMap((doc) => {
+        const data = doc;
+        if (data.options && Array.isArray(data.options)) {
+          return data.options.map((option, index) => ({
+            id: `${doc.id}-${index}`,
+            originalId: doc.id,
+            name: `${data.name} ${option.tickness || option.thickness || ''}mm`,
+            tickness: option.tickness || option.thickness || '',
+            priceInstalled: option.priceInstalled || option.price || 0,
+            price: option.price || option.priceInstalled || 0
+          }));
+        }
+        return [{
+          id: doc.id,
+          originalId: doc.id,
+          name: data.name,
+          tickness: data.tickness || data.thickness || '',
+          priceInstalled: data.priceInstalled || data.price || 0,
+          price: data.price || data.priceInstalled || 0
+        }];
+      });
+    }
+    setGlassesOptions(glassesList);
+  }, [catalogModels, catalogMaterials, catalogChapes, catalogGlasses, catalogColors, catalogExtras]);
 
   // Filtrar proyectos basado en la búsqueda y filtros (tabulación por status)
   useEffect(() => {
@@ -806,84 +774,6 @@ export const useProyectosController = () => {
       setEmployees(employeesData);
     } catch (error) {
       console.error("Error fetching employees: ", error);
-    }
-  };
-
-  const fetchModels = async () => {
-    try {
-      const modelsData = await loadModels();
-      setModels(modelsData);
-      setFilteredModels(modelsData);
-    } catch (error) {
-      console.error("Error fetching models: ", error);
-    }
-  };
-
-  const fetchOptions = async () => {
-    try {
-      const materialsData = await loadMaterials();
-      setMaterialsOptions(materialsData);
-
-      const chapesData = await loadChapes();
-      setChapesOptions(chapesData);
-
-      const glassesData = await loadGlasses();
-      
-      // Process glasses data - handle different possible structures
-      let glassesList = [];
-      
-      if (glassesData && glassesData.length > 0) {
-        glassesList = glassesData.flatMap(doc => {
-          const data = doc;
-          
-          // If glass has options property with array
-          if (data.options && Array.isArray(data.options)) {
-            return data.options.map((option, index) => ({
-              id: `${doc.id}-${index}`,
-              originalId: doc.id,
-              name: `${data.name} ${option.tickness || option.thickness || ''}mm`,
-              tickness: option.tickness || option.thickness || '',
-              priceInstalled: option.priceInstalled || option.price || 0,
-              price: option.price || option.priceInstalled || 0
-            }));
-          } 
-          // If glass is a simple object with direct properties
-          else {
-            return [{
-              id: doc.id,
-              originalId: doc.id,
-              name: data.name,
-              tickness: data.tickness || data.thickness || '',
-              priceInstalled: data.priceInstalled || data.price || 0,
-              price: data.price || data.priceInstalled || 0
-            }];
-          }
-        });
-      }
-      
-      setGlassesOptions(glassesList);
-
-      const extrasData = await loadExtras();
-      setExtrasOptions(extrasData);
-
-      // Cargar colores usando la función dedicada
-      const colorsData = await loadColors();
-      setColorsOptions(colorsData);
-      
-      console.log("Options loaded:", {
-        materials: materialsData?.length || 0,
-        chapes: chapesData?.length || 0,
-        glasses: glassesList?.length || 0,
-        extras: extrasData?.length || 0,
-        colors: colorsData?.length || 0
-      });
-    } catch (error) {
-      console.error("Error fetching options: ", error);
-      setSnackbar({
-        open: true,
-        message: "Error al cargar las opciones. Algunos elementos podrían no estar disponibles.",
-        severity: "warning"
-      });
     }
   };
 
@@ -2004,6 +1894,9 @@ export const useProyectosController = () => {
       }
       
       // Ensure all values are defined and clean
+      // Nota: `drawing` se omite a proposito. updateProjectItem hace merge
+      // ({ ...itemActual, ...updatedData }), por lo que el dibujo de la pieza
+      // se CONSERVA al re-cotizar; nunca se borra por recalcular.
       const updatedModel = {
         dimensions: {
           height: parseFloat(recalcDimensions.height) || 0,
@@ -2023,12 +1916,6 @@ export const useProyectosController = () => {
           laborCostActual: calculations.laborCostActual || 0
         }
       };
-
-      console.log("DEBUG - Saving updated model:", {
-        selectedColor: recalcSelectedColor,
-        selectedGlass: recalcSelectedGlass,
-        updatedModel
-      });
 
       await updateProjectItem(recalcModel.projectId, recalcModel.modelIndex, updatedModel);
       
@@ -2198,7 +2085,6 @@ export const useProyectosController = () => {
 
   const handleRecalcIndividualItem = (project, itemIndex) => {
     const item = project.items[itemIndex];
-    console.log("DEBUG - Item to recalc:", item); // Debug log
     setRecalcIndividualItem({ ...item, projectId: project.id, itemIndex });
     setRecalcIndividualQuantity(item.quantity || 1);
     setRecalcIndividualQuantityType("metros");
@@ -2250,10 +2136,8 @@ export const useProyectosController = () => {
             }
             
             total = area * unitPrice;
-            console.log(`Glass found: ${vidrio.name}, unitPrice: ${unitPrice}, area: ${area}, total: ${total}`); // Debug log
           } else {
-            console.error(`Glass not found for itemId: ${recalcIndividualItem.itemId}`); // Debug log
-            console.log("Available glasses:", glassesOptions.map(g => ({ id: g.id, originalId: g.originalId, name: g.name }))); // Debug log
+            console.error(`Glass not found for itemId: ${recalcIndividualItem.itemId}`);
           }
           break;
         case 'extra':
@@ -2277,8 +2161,6 @@ export const useProyectosController = () => {
             })
           : undefined
       };
-
-      console.log("Updating item with:", updatedItem); // Debug log
 
       await updateProjectItem(recalcIndividualItem.projectId, recalcIndividualItem.itemIndex, updatedItem);
       
@@ -2487,9 +2369,6 @@ export const useProyectosController = () => {
       setRecalcIndividualPreview({ unitPrice: 0, total: 0, calculation: "" });
       return;
     }
-
-    console.log("DEBUG - Calculating preview for:", recalcIndividualItem); // Debug log
-    console.log("DEBUG - Available glasses:", glassesOptions.slice(0, 3)); // Debug log (first 3 items)
 
     let unitPrice = 0;
     let total = 0;

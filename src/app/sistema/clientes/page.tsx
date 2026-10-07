@@ -8,6 +8,7 @@ import { getModelImageURL } from "../../../utils/imageStorage";
 import {
   DEFAULT_DIMENSION_CM,
   normalizeLegacyDimensionsToCm,
+  dimensionsCmToMeters,
   m2FromCmDimensions,
 } from "../../../utils/units";
 import {
@@ -217,23 +218,31 @@ export default function ClientesPage() {
   }, [modelSearchQuery, models]);
 
   // Componente de imagen con caché mejorado
-  const CachedImage = ({ modelId, modelName, height = 200, width = "100%" }: {
+  const CachedImage = ({ modelId, modelName, imageUrl, height = 200, width = "100%" }: {
     modelId: string;
     modelName: string;
+    imageUrl?: string;
     height?: number;
     width?: string | number;
   }) => {
     const [imageLoaded, setImageLoaded] = useState(false);
     const [imageError, setImageError] = useState(false);
-    const [imageUrl, setImageUrl] = useState<string>('');
+    const [imageUrlState, setImageUrlState] = useState<string>('');
 
     useEffect(() => {
+      // URL guardada en el documento del modelo: no hace falta llamar a Storage
+      if (imageUrl) {
+        setImageUrlState(imageUrl);
+        setImageLoaded(true);
+        setImageCache(prev => new Set([...prev, modelId]));
+        return;
+      }
       const loadImage = async () => {
         try {
           if (imageCache.has(modelId)) {
             setImageLoaded(true);
             const cachedUrl = await getModelImageURL(modelId);
-            setImageUrl(cachedUrl || '/images/placeholder.png');
+            setImageUrlState(cachedUrl || '/images/placeholder.png');
             return;
           }
 
@@ -241,20 +250,20 @@ export default function ClientesPage() {
           if (firebaseUrl) {
             setImageCache(prev => new Set([...prev, modelId]));
             setImageLoaded(true);
-            setImageUrl(firebaseUrl);
+            setImageUrlState(firebaseUrl);
           } else {
-            setImageUrl('/images/placeholder.png');
+            setImageUrlState('/images/placeholder.png');
             setImageError(true);
           }
         } catch (error) {
           console.error('Error loading image:', error);
-          setImageUrl('/images/placeholder.png');
+          setImageUrlState('/images/placeholder.png');
           setImageError(true);
         }
       };
 
       loadImage();
-    }, [modelId]);
+    }, [modelId, imageUrl]);
 
     if (imageError) {
       return (
@@ -279,9 +288,9 @@ export default function ClientesPage() {
 
     return (
       <Box sx={{ position: 'relative', width, height }}>
-        {imageUrl && (
+        {imageUrlState && (
           <Image
-            src={imageUrl}
+            src={imageUrlState}
             alt={modelName}
             width={typeof width === 'number' ? width : 200}
             height={typeof height === 'number' ? height : 200}
@@ -521,6 +530,9 @@ export default function ClientesPage() {
     if (model) {
       setEditingModel({
         ...model,
+        dimensions: model.dimensions
+          ? normalizeLegacyDimensionsToCm(model.dimensions)
+          : model.dimensions,
         projectId: project.id,
         modelIndex
       });
@@ -536,7 +548,15 @@ export default function ClientesPage() {
       if (!project || !project.items) return;
 
       const updatedItems = [...project.items];
-      updatedItems[editingModel.modelIndex] = editingModel;
+      updatedItems[editingModel.modelIndex] = editingModel.dimensions
+        ? {
+            ...editingModel,
+            dimensions: normalizeLegacyDimensionsToCm({
+              ...editingModel.dimensions,
+              unit: "cm",
+            }),
+          }
+        : editingModel;
 
       await updateProject(editingModel.projectId, { items: updatedItems });
       setSnackbar({ open: true, message: "Modelo actualizado correctamente.", severity: "success" });
@@ -633,11 +653,12 @@ export default function ClientesPage() {
     const height = parseFloat(String(normalizedDims?.height || 0)) || 0;
     const width = parseFloat(String(normalizedDims?.width || 0)) || 0;
     const area = m2FromCmDimensions(height, width);
-    
+    const { heightInMeters, widthInMeters } = dimensionsCmToMeters(normalizedDims);
+
     const variables = {
       area: area,
-      height: height,
-      width: width,
+      height: heightInMeters,
+      width: widthInMeters,
       glassPrice: typeof selectedGlass.price === 'number' ? selectedGlass.price : 0
     };
     
@@ -1252,6 +1273,7 @@ export default function ClientesPage() {
                                             <CachedImage
                                               modelId={item.modelId}
                                               modelName={item.modelName || 'Sin nombre'}
+                                              imageUrl={models.find(m => m.id === item.modelId)?.imageUrl as string | undefined}
                                               height={60}
                                               width={80}
                                             />
@@ -1281,7 +1303,7 @@ export default function ClientesPage() {
                                               )}
                                               {item.dimensions && (
                                                 <Typography variant="caption" color="textSecondary">
-                                                  Dimensiones: {item.dimensions.height}x{item.dimensions.width}
+                                                  Dimensiones: {item.dimensions.height} x {item.dimensions.width} cm
                                                 </Typography>
                                               )}
                                               <Typography variant="caption" color="primary">
@@ -1602,6 +1624,7 @@ export default function ClientesPage() {
                   <CachedImage
                     modelId={editingModel.modelId}
                     modelName={editingModel.modelName || 'Sin nombre'}
+                    imageUrl={models.find(m => m.id === editingModel.modelId)?.imageUrl as string | undefined}
                     height={150}
                     width={200}
                   />
@@ -1643,31 +1666,33 @@ export default function ClientesPage() {
                 <Box sx={{ display: 'flex', gap: 2 }}>
                   <TextField
                     fullWidth
-                    label="Alto (m)"
+                    label="Alto (cm)"
                     type="number"
-                    value={editingModel.dimensions.height || 1}
+                    value={editingModel.dimensions.height ?? DEFAULT_DIMENSION_CM}
                     onChange={(e) => setEditingModel({
                       ...editingModel,
                       dimensions: { 
                         height: parseFloat(e.target.value) || 0,
-                        width: editingModel.dimensions?.width || 0
+                        width: editingModel.dimensions?.width || 0,
+                        unit: "cm"
                       }
                     })}
-                    inputProps={{ min: 0, step: 0.01 }}
+                    inputProps={{ min: 0, step: 1 }}
                   />
                   <TextField
                     fullWidth
-                    label="Ancho (m)"
+                    label="Ancho (cm)"
                     type="number"
-                    value={editingModel.dimensions.width || 1}
+                    value={editingModel.dimensions.width ?? DEFAULT_DIMENSION_CM}
                     onChange={(e) => setEditingModel({
                       ...editingModel,
                       dimensions: { 
                         height: editingModel.dimensions?.height || 0,
-                        width: parseFloat(e.target.value) || 0
+                        width: parseFloat(e.target.value) || 0,
+                        unit: "cm"
                       }
                     })}
-                    inputProps={{ min: 0, step: 0.01 }}
+                    inputProps={{ min: 0, step: 1 }}
                   />
                   <TextField
                     fullWidth
@@ -1774,6 +1799,7 @@ export default function ClientesPage() {
                       <CachedImage
                         modelId={model.id}
                         modelName={model.name}
+                        imageUrl={model.imageUrl as string | undefined}
                         height={100}
                         width="100%"
                       />
@@ -1795,19 +1821,19 @@ export default function ClientesPage() {
                 
                 <Box sx={{ display: 'flex', gap: 2, mb: 2 }}>
                   <TextField
-                    label="Alto (m)"
+                    label="Alto (cm)"
                     type="number"
                     value={dimensions.height}
                     onChange={(e) => setDimensions({ ...dimensions, height: e.target.value })}
-                    inputProps={{ min: 0.1, step: 0.01 }}
+                    inputProps={{ min: 1, step: 1 }}
                     sx={{ width: 150 }}
                   />
                   <TextField
-                    label="Ancho (m)"
+                    label="Ancho (cm)"
                     type="number"
                     value={dimensions.width}
                     onChange={(e) => setDimensions({ ...dimensions, width: e.target.value })}
-                    inputProps={{ min: 0.1, step: 0.01 }}
+                    inputProps={{ min: 1, step: 1 }}
                     sx={{ width: 150 }}
                   />
                 </Box>

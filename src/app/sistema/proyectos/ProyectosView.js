@@ -53,16 +53,20 @@ import {
 } from "@mui/icons-material";
 
 // Componente de imagen con caché mejorado
-const CachedImage = ({ modelId, modelName, height = 200, width = "100%", imageCache, setImageCache }) => {
+const CachedImage = ({ modelId, modelName, imageUrl, height = 200, width = "100%", imageCache, setImageCache }) => {
   const [imageLoaded, setImageLoaded] = React.useState(imageCache.has(modelId));
   const [imageError, setImageError] = React.useState(false);
-  const [imageSrc, setImageSrc] = React.useState('');
+  const [imageSrc, setImageSrc] = React.useState(imageUrl || '');
 
   React.useEffect(() => {
+    if (imageUrl) {
+      setImageSrc(imageUrl);
+      return;
+    }
     const loadImage = async () => {
       try {
-        const imageUrl = await getModelImageURL(modelId);
-        setImageSrc(imageUrl || '/images/placeholder.png');
+        const fetchedUrl = await getModelImageURL(modelId);
+        setImageSrc(fetchedUrl || '/images/placeholder.png');
       } catch (error) {
         console.error('Error loading image:', error);
         setImageSrc('/images/placeholder.png');
@@ -71,7 +75,7 @@ const CachedImage = ({ modelId, modelName, height = 200, width = "100%", imageCa
     };
 
     loadImage();
-  }, [modelId]);
+  }, [modelId, imageUrl]);
 
   const handleImageLoad = () => {
     if (!imageLoaded) {
@@ -1864,6 +1868,7 @@ const ProyectosView = ({
                           <CachedImage
                             modelId={model.id}
                             modelName={model.name}
+                            imageUrl={model.imageUrl}
                             height={120}
                             imageCache={imageCache}
                             setImageCache={setImageCache}

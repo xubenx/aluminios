@@ -3,6 +3,7 @@ import React, { useState, useEffect, useRef, useMemo } from "react";
 import { collection, getDocs, getDoc, doc, addDoc, serverTimestamp } from "firebase/firestore";
 import { db } from "../../../../firebase";
 import { getModelImageURL } from "../../../utils/imageStorage";
+import { useCatalogs } from "../../../contexts/CatalogsContext";
 import { evaluateFormula } from "../../../utils/formulaEvaluate";
 import {
   DEFAULT_DIMENSION_CM,
@@ -10,7 +11,9 @@ import {
   m2FromCmDimensions,
   normalizeLegacyDimensionsToCm,
 } from "../../../utils/units";
-
+import DrawingView from "../../../components/studio/DrawingView";
+import { createEmptyDrawing } from "../../../utils/drawing";
+import { buildVariantMap, buildCollectionByModel } from "../../../utils/variants";
 import {
   Box,
   Button,
@@ -50,8 +53,14 @@ import {
   useMediaQuery
 } from "@mui/material";
 import Image from "next/image";
+import dynamic from "next/dynamic";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
-import { ShoppingCart, Delete, Add, Save } from "@mui/icons-material";
+import { ShoppingCart, Delete, Add, Save, DesignServices as DesignServicesIcon } from "@mui/icons-material";
+
+// Editor de cotas pesado: se carga bajo demanda al abrir su dialogo
+const StudioEditor = dynamic(() => import("../../../components/studio/StudioEditor"), {
+  ssr: false,
+});
 
 export default function CotizadorApp() {
   const theme = useTheme();
@@ -82,6 +91,11 @@ export default function CotizadorApp() {
     width: String(DEFAULT_DIMENSION_CM),
     unit: "cm",
   });
+  // Dibujo de la pieza en cotizacion (copia editable de la plantilla del modelo)
+  const [pieceDrawing, setPieceDrawing] = useState(null);
+  const [drawingEditorInitial, setDrawingEditorInitial] = useState(null);
+  const [drawingBackup, setDrawingBackup] = useState(null);
+  const [showDrawingEditor, setShowDrawingEditor] = useState(false);
   const [selectedGlass, setSelectedGlass] = useState(null);
   const [selectedGlassProduct, setSelectedGlassProduct] = useState(null); // Vidrio elegido por nombre (para variantes)
   const [selectedColor, setSelectedColor] = useState(null);
@@ -89,6 +103,49 @@ export default function CotizadorApp() {
   const [defaultColorForNewItems, setDefaultColorForNewItems] = useState(null);
   const [defaultGlassProductForNewItems, setDefaultGlassProductForNewItems] = useState(null);
   const [defaultGlassForNewItems, setDefaultGlassForNewItems] = useState(null);
+  // Linea (coleccion) por defecto y linea activa del modelo en cotizacion
+  const [defaultLineForNewItems, setDefaultLineForNewItems] = useState(null);
+  const [selectedLineId, setSelectedLineId] = useState("");
+  // Aviso al cambiar de linea: el equivalente tiene otro dibujo y se ofrece usarlo
+  const [lineDrawingNotice, setLineDrawingNotice] = useState(null);
+
+  // Equivalencias entre lineas: variantKey -> { byCollection }
+  const variantMap = useMemo(() => buildVariantMap(models, colecciones), [models, colecciones]);
+  const collectionByModel = useMemo(() => buildCollectionByModel(colecciones), [colecciones]);
+
+  // Lineas disponibles para un modelo (incluye la suya)
+  const getModelLines = (model) => {
+    if (!model) return [];
+    const colById = new Map(colecciones.map((c) => [c.id, c]));
+    const ownCollectionId = collectionByModel.get(model.id);
+    const lines = [];
+    if (ownCollectionId) {
+      lines.push({
+        collectionId: ownCollectionId,
+        name: colById.get(ownCollectionId)?.name || "Sin linea",
+        model,
+      });
+    }
+    const entry = model.variantKey ? variantMap.get(model.variantKey) : null;
+    if (entry) {
+      Object.entries(entry.byCollection).forEach(([cid, variantModel]) => {
+        if (cid === ownCollectionId) return;
+        lines.push({
+          collectionId: cid,
+          name: colById.get(cid)?.name || "Sin linea",
+          model: variantModel,
+        });
+      });
+    }
+    return lines;
+  };
+
+  // Dado un modelo, devuelve su equivalente en la coleccion indicada (o el mismo).
+  const getVariantInCollection = (model, collectionId) => {
+    if (!model || !collectionId) return model;
+    const entry = model.variantKey ? variantMap.get(model.variantKey) : null;
+    return entry?.byCollection?.[collectionId] || model;
+  };
 
   // Caché de URLs de imágenes (ref para evitar re-renders que causan parpadeo)
   const imageUrlCacheRef = useRef(new Map());
@@ -125,14 +182,22 @@ export default function CotizadorApp() {
 
   // Componente de imagen con caché en ref (evita parpadeo al no provocar re-renders del padre)
   const CachedImage = useMemo(() => {
-    const Component = ({ modelId, modelName, height = 200, width = "100%", cacheRef }) => {
-      const cachedUrl = cacheRef.current.get(modelId);
-      const [imageSrc, setImageSrc] = useState(cachedUrl || "");
-      const [imageLoaded, setImageLoaded] = useState(!!cachedUrl);
+    const Component = ({ modelId, modelName, imageUrl, height = 200, width = "100%", cacheRef }) => {
+      const initialUrl = imageUrl || cacheRef.current.get(modelId) || "";
+      const [imageSrc, setImageSrc] = useState(initialUrl);
+      const [imageLoaded, setImageLoaded] = useState(!!initialUrl);
       const [imageError, setImageError] = useState(false);
       const loadedRef = useRef(false);
 
       useEffect(() => {
+        // URL guardada en el documento del modelo: no hace falta llamar a Storage
+        if (imageUrl) {
+          cacheRef.current.set(modelId, imageUrl);
+          setImageSrc(imageUrl);
+          setImageLoaded(true);
+          return;
+        }
+        const cachedUrl = cacheRef.current.get(modelId);
         if (cachedUrl) {
           setImageSrc(cachedUrl);
           setImageLoaded(true);
@@ -143,12 +208,12 @@ export default function CotizadorApp() {
 
         const loadImage = async () => {
           try {
-            const imageUrl = await getModelImageURL(modelId);
-            const url = imageUrl || '/images/placeholder.png';
+            const fetchedUrl = await getModelImageURL(modelId);
+            const url = fetchedUrl || '/images/placeholder.png';
             cacheRef.current.set(modelId, url);
             setImageSrc(url);
             setImageLoaded(true);
-            if (!imageUrl) setImageError(true);
+            if (!fetchedUrl) setImageError(true);
           } catch (error) {
             console.error('Error loading image:', error);
             cacheRef.current.set(modelId, '/images/placeholder.png');
@@ -159,7 +224,7 @@ export default function CotizadorApp() {
         };
 
         loadImage();
-      }, [modelId, cachedUrl, cacheRef]);
+      }, [modelId, imageUrl, cacheRef]);
 
       if (imageError) {
         return (
@@ -195,37 +260,29 @@ export default function CotizadorApp() {
   }, []);
 
   // ––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––
-  // BÚSQUEDA DE MODELOS
+  // CATALOGOS (modelos, colecciones y opciones) desde CatalogsContext
   // ––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––
-  const fetchModels = async () => {
-    try {
-      const modelsSnapshot = await getDocs(collection(db, "models"));
-      const modelsData = modelsSnapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
-      setModels(modelsData);
-      setFilteredModels(modelsData);
-    } catch (error) {
-      console.error("Error fetching models: ", error);
-    }
-  };
-
-  const fetchColecciones = async () => {
-    try {
-      const snapshot = await getDocs(collection(db, "modelCollections"));
-      const data = snapshot.docs.map((d) => ({
-        id: d.id,
-        name: d.data().name || "",
-        modelIds: Array.isArray(d.data().modelIds) ? d.data().modelIds : [],
-      }));
-      data.sort((a, b) => a.name.localeCompare(b.name, "es"));
-      setColecciones(data);
-    } catch (error) {
-      console.error("Error fetching colecciones: ", error);
-    }
-  };
+  const {
+    models: catalogModels,
+    modelCollections: catalogCollections,
+    materials: catalogMaterials,
+    chapes: catalogChapes,
+    glasses: catalogGlasses,
+    colors: catalogColors,
+    extras: catalogExtras,
+  } = useCatalogs();
 
   useEffect(() => {
-    fetchModels();
-    fetchColecciones();
+    setModels(catalogModels);
+    setFilteredModels(catalogModels);
+  }, [catalogModels]);
+
+  useEffect(() => {
+    const sorted = [...catalogCollections].sort((a, b) => a.name.localeCompare(b.name, "es"));
+    setColecciones(sorted);
+  }, [catalogCollections]);
+
+  useEffect(() => {
     fetchCustomers();
     loadCartFromStorage();
   }, []);
@@ -235,6 +292,12 @@ export default function CotizadorApp() {
     const modelIdsInColeccion = selectedColeccion
       ? new Set(selectedColeccion.modelIds || [])
       : null;
+    // La linea por defecto tambien filtra el catalogo.
+    const lineIds = defaultLineForNewItems?.id
+      ? new Set(
+          colecciones.find((c) => c.id === defaultLineForNewItems.id)?.modelIds || []
+        )
+      : null;
 
     setFilteredModels(
       models.filter((model) => {
@@ -243,11 +306,12 @@ export default function CotizadorApp() {
           .includes(searchQuery.toLowerCase());
         const matchesColeccion =
           !modelIdsInColeccion || modelIdsInColeccion.has(model.id);
-        return matchesSearch && matchesColeccion;
+        const matchesLine = !lineIds || lineIds.has(model.id);
+        return matchesSearch && matchesColeccion && matchesLine;
       })
     );
     setModelsPage(1); // Resetear página al cambiar búsqueda/filtro
-  }, [searchQuery, models, selectedColeccionId, colecciones]);
+  }, [searchQuery, models, selectedColeccionId, colecciones, defaultLineForNewItems]);
 
   const paginatedModels = useMemo(() => {
     const start = (modelsPage - 1) * MODELS_PER_PAGE;
@@ -296,56 +360,38 @@ export default function CotizadorApp() {
   }, [globalColor, globalGlass]);
 
   // ––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––
-  // CARGA DE OPCIONES DE MATERIALES, CHAPES Y VIDRIOS
+  // OPCIONES DE MATERIALES, CHAPES Y VIDRIOS (derivadas del contexto)
   // ––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––
-  const fetchOptions = async () => {
-    try {
-      const materialsSnap = await getDocs(collection(db, "materials"));
-      setMaterialsOptions(materialsSnap.docs.map((doc) => ({ id: doc.id, ...doc.data() })));
-
-      const chapesSnap = await getDocs(collection(db, "chapes"));
-      setChapesOptions(chapesSnap.docs.map((doc) => ({ id: doc.id, ...doc.data() })));
-
-      const glassesSnap = await getDocs(collection(db, "glasses"));
-      const glassesDocs = glassesSnap.docs
-        .map((d) => ({ id: d.id, ...d.data() }))
-        .filter((g) => g.status !== "inactive");
-      // Lista por producto (nombre + opciones), como en /sistema/vidrios
-      setGlassesByProduct(glassesDocs);
-      // Lista plana para cálculo y dropdown del carrito: cada opción con precio numérico
-      const glassesList = glassesDocs.flatMap((glassDoc) => {
-        const options = glassDoc.options || [];
-        const name = glassDoc.name || "";
-        return options.map((opt) => {
-          const tickness = opt.tickness ?? opt.thickness ?? "";
-          const priceInstalled = parseFloat(opt.priceInstalled ?? opt.price ?? 0) || 0;
-          const priceCut = parseFloat(opt.priceCut ?? 0) || 0;
-          return {
-            id: `${glassDoc.id}_${tickness}`,
-            originalId: glassDoc.id,
-            name: `${name} ${tickness}mm`,
-            tickness,
-            priceInstalled,
-            price: priceInstalled,
-            priceCut,
-          };
-        });
-      });
-      setGlassesOptions(glassesList);
-
-      const colorsSnap = await getDocs(collection(db, "colors"));
-      setColorsOptions(colorsSnap.docs.map((doc) => ({ id: doc.id, ...doc.data() })));
-
-      const extrasSnap = await getDocs(collection(db, "extras"));
-      setExtrasOptions(extrasSnap.docs.map((doc) => ({ id: doc.id, ...doc.data() })));
-    } catch (error) {
-      console.error("Error fetching options: ", error);
-    }
-  };
-
   useEffect(() => {
-    fetchOptions();
-  }, []);
+    setMaterialsOptions(catalogMaterials);
+    setChapesOptions(catalogChapes);
+    setColorsOptions(catalogColors);
+    setExtrasOptions(catalogExtras);
+
+    const glassesDocs = catalogGlasses.filter((g) => g.status !== "inactive");
+    // Lista por producto (nombre + opciones), como en /sistema/vidrios
+    setGlassesByProduct(glassesDocs);
+    // Lista plana para cálculo y dropdown del carrito: cada opción con precio numérico
+    const glassesList = glassesDocs.flatMap((glassDoc) => {
+      const options = glassDoc.options || [];
+      const name = glassDoc.name || "";
+      return options.map((opt) => {
+        const tickness = opt.tickness ?? opt.thickness ?? "";
+        const priceInstalled = parseFloat(opt.priceInstalled ?? opt.price ?? 0) || 0;
+        const priceCut = parseFloat(opt.priceCut ?? 0) || 0;
+        return {
+          id: `${glassDoc.id}_${tickness}`,
+          originalId: glassDoc.id,
+          name: `${name} ${tickness}mm`,
+          tickness,
+          priceInstalled,
+          price: priceInstalled,
+          priceCut,
+        };
+      });
+    });
+    setGlassesOptions(glassesList);
+  }, [catalogMaterials, catalogChapes, catalogGlasses, catalogColors, catalogExtras]);
 
   useEffect(() => {
     if (!modelData || selectedGlass || defaultGlassForNewItems) return;
@@ -416,8 +462,17 @@ export default function CotizadorApp() {
     );
   };
 
-  const handleSelectModel = async (model) => {
+  const handleSelectModel = async (rawModel, opts = {}) => {
+    const { applyDefaultLine = true } = opts;
+    // Si hay una linea por defecto y el modelo tiene variante ahi, cotizar esa variante.
+    const model =
+      applyDefaultLine && defaultLineForNewItems?.id
+        ? getVariantInCollection(rawModel, defaultLineForNewItems.id)
+        : rawModel;
     setSelectedModel(model);
+    setSelectedLineId(collectionByModel.get(model.id) || "");
+    // Al elegir un modelo, limpiar cualquier aviso de dibujo de equivalencia previo
+    setLineDrawingNotice(null);
     setSelectedGlass(null);
     setSelectedGlassProduct(null);
     setSelectedColor(null);
@@ -436,6 +491,17 @@ export default function CotizadorApp() {
           glasses,
         };
         setModelData(nextModelData);
+        // La pieza arranca con la plantilla del modelo; luego se puede editar por pieza
+        setPieceDrawing(data.drawing || null);
+
+        // Arrancar con las medidas base de la plantilla; luego el usuario las ajusta en vivo
+        if (data.drawing?.baseDimension) {
+          setDimensions({
+            height: String(data.drawing.baseDimension.height ?? DEFAULT_DIMENSION_CM),
+            width: String(data.drawing.baseDimension.width ?? DEFAULT_DIMENSION_CM),
+            unit: "cm",
+          });
+        }
 
         const getAutoGlassForModel = () => {
           const modelGlassIds = new Set((nextModelData.glasses || []).map((g) => g.id).filter(Boolean));
@@ -471,6 +537,33 @@ export default function CotizadorApp() {
     } catch (error) {
       console.error("Error fetching model details:", error);
     }
+  };
+
+  // Cambiar de linea: cotiza el modelo equivalente conservando las medidas.
+  const handleChangeLine = async (collectionId) => {
+    if (!selectedModel || !collectionId) return;
+    const target = getVariantInCollection(selectedModel, collectionId);
+    if (!target || target.id === selectedModel.id) {
+      setSelectedLineId(collectionId);
+      return;
+    }
+    const keepDimensions = { ...dimensions };
+    // El dibujo de la pieza NO se pierde al cambiar de linea: conservamos el
+    // que el usuario ya tenia y, si el equivalente tiene otro distinto, se le
+    // ofrece usarlo de forma explicita (sin reemplazarlo automaticamente).
+    const keepDrawing = pieceDrawing;
+    await handleSelectModel(target, { applyDefaultLine: false });
+    setDimensions(keepDimensions);
+    if (keepDrawing) setPieceDrawing(keepDrawing);
+    setSelectedLineId(collectionId);
+    const equivalentDrawing = target.drawing || null;
+    const offerEquivalent =
+      !!equivalentDrawing &&
+      !!keepDrawing &&
+      JSON.stringify(equivalentDrawing) !== JSON.stringify(keepDrawing);
+    setLineDrawingNotice(
+      offerEquivalent ? { drawing: equivalentDrawing, modelName: target.name } : null
+    );
   };
 
   // ––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––
@@ -550,6 +643,25 @@ export default function CotizadorApp() {
   // ––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––
   // FUNCIONES DEL CARRITO Y PROYECTO
   // ––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––
+  const handleOpenDrawingEditor = () => {
+    const current = pieceDrawing || modelData?.drawing || null;
+    const initial =
+      current ||
+      createEmptyDrawing(
+        Number(dimensions.width) || DEFAULT_DIMENSION_CM,
+        Number(dimensions.height) || DEFAULT_DIMENSION_CM
+      );
+    setDrawingBackup(pieceDrawing);
+    setDrawingEditorInitial(initial);
+    setPieceDrawing(initial);
+    setShowDrawingEditor(true);
+  };
+
+  const handleCancelDrawingEditor = () => {
+    setPieceDrawing(drawingBackup);
+    setShowDrawingEditor(false);
+  };
+
   const addToCart = () => {
     if (!modelData) {
       return;
@@ -577,6 +689,8 @@ export default function CotizadorApp() {
       dimensions: normalizeLegacyDimensionsToCm({ ...dimensions, unit: "cm" }),
       selectedGlass: effectiveGlass ? { ...effectiveGlass } : null,
       selectedColor: selectedColor ? { ...selectedColor } : null,
+      // Vista de fabricacion de la pieza (plantilla + ajustes visuales por milimetros)
+      drawing: pieceDrawing ? { ...pieceDrawing } : null,
       calculations: { ...calculations },
       m2: modelData.m2 || 100, // Costo por m² de vidrio del modelo
       // Almacenar fórmulas del modelo para recálculo rápido en carrito
@@ -1356,6 +1470,7 @@ export default function CotizadorApp() {
             modelId: item.modelId,
             modelName: item.modelName,
             dimensions: item.dimensions || null,
+            drawing: item.drawing || null,
             selectedGlass: item.selectedGlass || null,
             selectedColor: item.selectedColor || null,
             total: safeRound(c.totalGeneral),
@@ -1636,6 +1751,17 @@ export default function CotizadorApp() {
                 />
               </Box>
             )}
+            <Box sx={{ minWidth: { xs: "100%", sm: 180 }, flex: "1 1 180px" }}>
+              <Autocomplete
+                size="small"
+                options={colecciones}
+                getOptionLabel={(option) => option.name || ""}
+                isOptionEqualToValue={(option, value) => option.id === value?.id}
+                value={defaultLineForNewItems}
+                onChange={(_, newValue) => setDefaultLineForNewItems(newValue)}
+                renderInput={(params) => <TextField {...params} label="Linea por defecto" variant="outlined" placeholder="Ninguna" />}
+              />
+            </Box>
           </Box>
         </Paper>
         <Grid container spacing={{ xs: 2, sm: 3 }}>
@@ -1645,6 +1771,7 @@ export default function CotizadorApp() {
                 <CachedImage
                   modelId={model.id}
                   modelName={model.name}
+                  imageUrl={model.imageUrl}
                   height={isMobile ? 160 : 200}
                   cacheRef={imageUrlCacheRef}
                 />
@@ -1723,15 +1850,19 @@ export default function CotizadorApp() {
   }
 
   // Componente para imagen de modelo principal en cotizador
-  const ModelImage = ({ modelId, modelName }) => {
-    const [imageSrc, setImageSrc] = useState('/images/placeholder.png');
+  const ModelImage = ({ modelId, modelName, imageUrl }) => {
+    const [imageSrc, setImageSrc] = useState(imageUrl || '/images/placeholder.png');
     const [imageError, setImageError] = useState(false);
 
     useEffect(() => {
+      if (imageUrl) {
+        setImageSrc(imageUrl);
+        return;
+      }
       const loadImage = async () => {
         try {
-          const imageUrl = await getModelImageURL(modelId);
-          setImageSrc(typeof imageUrl === "string" && imageUrl.length > 0 ? imageUrl : '/images/placeholder.png');
+          const fetchedUrl = await getModelImageURL(modelId);
+          setImageSrc(typeof fetchedUrl === "string" && fetchedUrl.length > 0 ? fetchedUrl : '/images/placeholder.png');
         } catch (error) {
           console.error('Error loading model image:', error);
           setImageSrc('/images/placeholder.png');
@@ -1740,7 +1871,7 @@ export default function CotizadorApp() {
       };
 
       loadImage();
-    }, [modelId]);
+    }, [modelId, imageUrl]);
 
     const safeSrc = typeof imageSrc === "string" && imageSrc.length > 0 ? imageSrc : '/images/placeholder.png';
 
@@ -1768,14 +1899,79 @@ export default function CotizadorApp() {
     const calculations = getCalculations();
     return (
       <Box sx={{ px: { xs: 1, sm: 2 }, py: 2, maxWidth: "1200px", margin: "0 auto", pb: 4 }}>
-        <Button variant="outlined" size={isMobile ? "small" : "medium"} startIcon={<ArrowBackIcon />} onClick={() => { setSelectedModel(null); setModelData(null); }}>
+        <Button variant="outlined" size={isMobile ? "small" : "medium"} startIcon={<ArrowBackIcon />} onClick={() => { setShowDrawingEditor(false); setSelectedModel(null); setModelData(null); setPieceDrawing(null); setLineDrawingNotice(null); }}>
           Volver a Buscar
         </Button>
-        <Typography variant="h4" align="center" sx={{ mt: 2, mb: 2, color: "text.primary", fontSize: { xs: "1.35rem", sm: "1.5rem", md: "2.125rem" }, wordBreak: "break-word", fontWeight: 700 }}>
+        <Typography variant="h4" align="center" sx={{ mt: 2, mb: 1, color: "text.primary", fontSize: { xs: "1.35rem", sm: "1.5rem", md: "2.125rem" }, wordBreak: "break-word", fontWeight: 700 }}>
           {modelData.name}
         </Typography>
-        <Box sx={{ display: "flex", justifyContent: "center", alignItems: "center", mb: { xs: 2, sm: 4 } }}>
-          <ModelImage modelId={modelData.id} modelName={modelData.name} />
+        {(() => {
+          const lines = getModelLines(selectedModel || modelData);
+          if (lines.length <= 1) return null;
+          return (
+            <Box sx={{ display: "flex", justifyContent: "center", mb: 2 }}>
+              <FormControl size="small" sx={{ minWidth: { xs: "100%", sm: 320 }, maxWidth: 420 }}>
+                <InputLabel id="linea-selector-label">Linea de cotizacion</InputLabel>
+                <Select
+                  labelId="linea-selector-label"
+                  label="Linea de cotizacion"
+                  value={selectedLineId || lines[0]?.collectionId || ""}
+                  onChange={(e) => handleChangeLine(e.target.value)}
+                >
+                  {lines.map((ln) => (
+                    <MenuItem key={ln.collectionId} value={ln.collectionId}>
+                      {ln.name} — {ln.model.name}
+                    </MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+            </Box>
+          );
+        })()}
+        {lineDrawingNotice && (
+          <Alert
+            severity="info"
+            sx={{ mb: 2, mx: "auto", maxWidth: 560 }}
+            action={
+              <Button
+                color="inherit"
+                size="small"
+                onClick={() => {
+                  setPieceDrawing(lineDrawingNotice.drawing);
+                  setLineDrawingNotice(null);
+                }}
+              >
+                Usar el dibujo del modelo equivalente
+              </Button>
+            }
+          >
+            {`Se conservo tu dibujo. El equivalente "${lineDrawingNotice.modelName}" tiene otro dibujo.`}
+          </Alert>
+        )}
+        <Box sx={{ display: "flex", flexDirection: "column", alignItems: "center", mb: { xs: 2, sm: 4 } }}>
+          {pieceDrawing || modelData.drawing ? (
+            <>
+              <Box sx={{ width: "100%", maxWidth: 460 }}>
+                <DrawingView
+                  drawing={pieceDrawing || modelData.drawing}
+                  widthCm={dimensions.width}
+                  heightCm={dimensions.height}
+                  style={{ maxHeight: { xs: 260, sm: 400 } }}
+                />
+              </Box>
+              <Button
+                variant="outlined"
+                size="small"
+                startIcon={<DesignServicesIcon />}
+                sx={{ mt: 1 }}
+                onClick={handleOpenDrawingEditor}
+              >
+                Editar cotas / vista de fabricación
+              </Button>
+            </>
+          ) : (
+            <ModelImage modelId={modelData.id} modelName={modelData.name} imageUrl={modelData.imageUrl} />
+          )}
         </Box>
 
         {/* Campos para modificar dimensiones */}
@@ -2868,6 +3064,35 @@ export default function CotizadorApp() {
             </Button>
           </DialogActions>
         </Dialog>
+
+        {/* Editor de cotas / vista de fabricacion de la pieza */}
+        {showDrawingEditor && modelData && (
+          <Dialog
+            open={showDrawingEditor}
+            onClose={handleCancelDrawingEditor}
+            maxWidth="lg"
+            fullWidth
+          >
+            <DialogTitle>Cotas / vista de fabricacion</DialogTitle>
+            <DialogContent>
+              <StudioEditor
+                initialDrawing={drawingEditorInitial}
+                modelName={modelData.name}
+                title="Cotas y anotaciones (visual)"
+                showBaseControls={false}
+                widthCm={dimensions.width}
+                heightCm={dimensions.height}
+                onChange={setPieceDrawing}
+              />
+            </DialogContent>
+            <DialogActions>
+              <Button onClick={handleCancelDrawingEditor}>Cancelar</Button>
+              <Button variant="contained" onClick={() => setShowDrawingEditor(false)}>
+                Aplicar
+              </Button>
+            </DialogActions>
+          </Dialog>
+        )}
 
       </>
     );

@@ -42,6 +42,12 @@ import {
   Cancel as CancelIcon,
   DoneAll as DoneAllIcon
 } from "@mui/icons-material";
+import dynamic from "next/dynamic";
+
+// Plano tecnico: solo se necesita al abrir el dialogo de la orden
+const WorkOrderDrawing = dynamic(() => import("../../../components/studio/WorkOrderDrawing"), {
+  ssr: false,
+});
 
 export default function OrdenesView({
   activeProjects,
@@ -75,7 +81,8 @@ export default function OrdenesView({
   handleCloseDialog,
   handleCloseSnackbar,
   handleSelectOrder,
-  handleClosePaymentConfirmation
+  handleClosePaymentConfirmation,
+  getModelDrawing
 }) {
   if (loading) {
     return (
@@ -442,6 +449,35 @@ export default function OrdenesView({
                 <Typography><strong>Estado:</strong> {workOrder.status}</Typography>
               </Grid>
             </Grid>
+
+            {/* Plano tecnico de la pieza (vista guardada o plantilla del modelo) */}
+            {(() => {
+              if (typeof getModelDrawing !== "function") return null;
+              const resolveDrawing = (it) => it.drawing || getModelDrawing(it.modelId);
+              const drawable = (workOrder.items || []).filter(
+                (it) => it.type === "model" && resolveDrawing(it)
+              );
+              if (drawable.length === 0) return null;
+              return (
+                <Box sx={{ mb: 2 }}>
+                  {drawable.map((it, index) => (
+                    <WorkOrderDrawing
+                      key={`${it.modelId}-${index}`}
+                      drawing={resolveDrawing(it)}
+                      widthCm={it.dimensions?.width}
+                      heightCm={it.dimensions?.height}
+                      meta={{
+                        company: "Aluminio San Francisco",
+                        modelName: it.modelName || it.itemName,
+                        client: workOrder.client,
+                        projectName: workOrder.projectName,
+                        date: workOrder.date,
+                      }}
+                    />
+                  ))}
+                </Box>
+              );
+            })()}
 
             <Divider sx={{ marginY: 2 }} />
 

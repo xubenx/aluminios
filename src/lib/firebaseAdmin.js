@@ -1,12 +1,35 @@
+import { existsSync, readFileSync } from "fs";
+import { resolve } from "path";
 import { cert, getApps, initializeApp } from "firebase-admin/app";
 import { getAuth } from "firebase-admin/auth";
 import { getFirestore } from "firebase-admin/firestore";
 import { getStorage } from "firebase-admin/storage";
 
+// Ruta por defecto del JSON de la cuenta de servicio (Firebase Console >
+// Configuracion del proyecto > Cuentas de servicio > Generar nueva clave privada).
+const DEFAULT_SERVICE_ACCOUNT_PATH = "serviceAccountKey.json";
+
+function parseServiceAccount(raw) {
+  try {
+    const parsed = JSON.parse(raw);
+    return parsed && typeof parsed === "object" ? parsed : null;
+  } catch {
+    return null;
+  }
+}
+
 function loadServiceAccount() {
   const raw = process.env.FIREBASE_SERVICE_ACCOUNT_JSON;
   if (raw) {
-    return JSON.parse(raw);
+    const fromJson = parseServiceAccount(raw);
+    if (fromJson) return fromJson;
+  }
+
+  const filePath = process.env.FIREBASE_SERVICE_ACCOUNT_PATH || DEFAULT_SERVICE_ACCOUNT_PATH;
+  const resolvedPath = resolve(process.cwd(), filePath);
+  if (existsSync(resolvedPath)) {
+    const fromFile = parseServiceAccount(readFileSync(resolvedPath, "utf8"));
+    if (fromFile) return fromFile;
   }
 
   const projectId = process.env.FIREBASE_ADMIN_PROJECT_ID || process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID;

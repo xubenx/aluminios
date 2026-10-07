@@ -11,16 +11,19 @@ import {
 } from "firebase/firestore";
 import { db } from "../../../../firebase";
 import { useAuth } from "../../../contexts/AuthContext";
+import { useCatalogs } from "../../../contexts/CatalogsContext";
 import { authFetch } from "../../../lib/authFetch";
 
 export function useOrdenesController() {
   const { user } = useAuth();
+  const { models: catalogModels } = useCatalogs();
   const canManagePayments = user?.role === "admin" || user?.role === "auxiliar";
   const workshopEmployeeId = user?.role === "colaborador" ? user.userId : "";
 
   // Estados principales
   const [activeProjects, setActiveProjects] = useState([]);
   const [employees, setEmployees] = useState([]);
+  const [models, setModels] = useState([]);
   const [selectedProject, setSelectedProject] = useState(null);
   const [selectedEmployee, setSelectedEmployee] = useState("");
   const [loading, setLoading] = useState(true);
@@ -66,11 +69,19 @@ export function useOrdenesController() {
     severity: "success"
   });
 
-  // Cargar proyectos activos al inicializar
+  // Cargar proyectos activos al inicializar (los modelos vienen del contexto)
   useEffect(() => {
     loadActiveProjects();
     loadEmployees();
   }, []);
+
+  // Sincronizar modelos del contexto (para los dibujos del Studio)
+  useEffect(() => {
+    setModels(catalogModels);
+  }, [catalogModels]);
+
+  const getModelDrawing = (modelId) =>
+    models.find((m) => m.id === modelId)?.drawing || null;
 
   // Función para cargar proyectos activos (estatus "active")
   const loadActiveProjects = async () => {
@@ -940,8 +951,36 @@ export function useOrdenesController() {
     setSelectedEmployee(employeeId);
   };
 
+  // Abre el detalle/impresion de una orden (item asignado) en el dialogo
   const handleSelectOrder = (order) => {
     setSelectedOrder(order);
+
+    const project = activeProjects.find((p) => p.id === order.projectId);
+    const item = project?.items?.[order.itemIndex];
+    if (!item) return;
+
+    setWorkOrder({
+      projectId: project.id,
+      projectName: order.projectName,
+      client: order.client,
+      employee: order.employee,
+      employeeId: order.employeeId,
+      items: [
+        {
+          ...item,
+          employeeLaborCost: order.totalLaborCost,
+          aluminumLaborCost: order.aluminumLaborCost,
+          glassLaborCost: order.glassLaborCost,
+        },
+      ],
+      totalLaborCost: order.totalLaborCost,
+      date: new Date(order.createdAt?.toDate?.() || order.createdAt)
+        .toISOString()
+        .split("T")[0],
+      status: order.status,
+    });
+    setDialogType("view");
+    setOpenDialog(true);
   };
 
   // Handlers para filtros
@@ -1011,6 +1050,9 @@ export function useOrdenesController() {
     printWorkOrder,
     getProjectsForEmployee,
     getEmployeeName,
+    getModelDrawing,
+    models,
+    loadModels,
     getAllOrdersFromProjects,
     getAllAssignedItemsFromProjects,
     getFilteredAssignedItems,

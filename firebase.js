@@ -1,7 +1,12 @@
 // Import the functions you need from the SDKs you need
 import { initializeApp } from "firebase/app";
 import { getAuth } from "firebase/auth";
-import { getFirestore } from "firebase/firestore";
+import {
+  getFirestore,
+  initializeFirestore,
+  persistentLocalCache,
+  persistentMultipleTabManager,
+} from "firebase/firestore";
 import { getStorage } from "firebase/storage";
 import { getAnalytics, isSupported } from "firebase/analytics";
 
@@ -18,7 +23,19 @@ const firebaseConfig = {
 
 // Initialize Firebase
 const app = initializeApp(firebaseConfig);
-const db = getFirestore(app);
+
+// Cache offline de Firestore (IndexedDB). Si el entorno no lo soporta
+// (p.ej. SSR sin IndexedDB) se cae a getFirestore plano.
+/** @type {import("firebase/firestore").Firestore} */
+let db;
+try {
+  db = initializeFirestore(app, {
+    localCache: persistentLocalCache({ tabManager: persistentMultipleTabManager() }),
+  });
+} catch {
+  db = getFirestore(app);
+}
+
 const storage = getStorage(app);
 
 let authInstance;
@@ -34,9 +51,6 @@ export function getFirebaseAuth() {
 isSupported().then((supported) => {
   if (supported) {
     getAnalytics(app);
-    console.log("Firebase Analytics initialized.");
-  } else {
-    console.log("Firebase Analytics is not supported in this environment.");
   }
 });
 

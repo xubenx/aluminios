@@ -2,14 +2,13 @@
 import React, { useState, useEffect } from "react";
 import {
   collection,
-  getDocs,
   addDoc,
   updateDoc,
   doc,
 } from "firebase/firestore";
 import { db } from "../../../../firebase";
-import { getModelImageURL } from "../../../utils/imageStorage";
 import { authFetch } from "../../../lib/authFetch";
+import { useCatalogs } from "../../../contexts/CatalogsContext";
 import {
   Button,
   Card,
@@ -28,6 +27,7 @@ import {
   MenuItem,
 } from "@mui/material";
 import CrudStepperDialog from "../components/CrudStepperDialog";
+import DrawingView from "../../../components/studio/DrawingView";
 import { useRouter } from "next/navigation";
 import { Add } from "@mui/icons-material";
 
@@ -56,10 +56,26 @@ export default function ModelsPage() {
 
   const router = useRouter();
 
+  // Catalogos compartidos: modelos y colecciones vienen del contexto
+  const {
+    models: catalogModels,
+    modelCollections: catalogCollections,
+    refresh: refreshCatalogs,
+  } = useCatalogs();
+
   useEffect(() => {
-    fetchModels();
-    fetchColecciones();
-  }, []);
+    setModels(catalogModels);
+    const imageURLs = {};
+    catalogModels.forEach((model) => {
+      if (model.imageUrl) imageURLs[model.id] = model.imageUrl;
+    });
+    setModelImageURLs(imageURLs);
+  }, [catalogModels]);
+
+  useEffect(() => {
+    const sorted = [...catalogCollections].sort((a, b) => a.name.localeCompare(b.name, "es"));
+    setColecciones(sorted);
+  }, [catalogCollections]);
 
   useEffect(() => {
     const selectedColeccion = colecciones.find((c) => c.id === selectedColeccionId);
@@ -78,58 +94,6 @@ export default function ModelsPage() {
       })
     );
   }, [searchQuery, models, selectedColeccionId, colecciones]);
-
-  const fetchColecciones = async () => {
-    try {
-      const snapshot = await getDocs(collection(db, "modelCollections"));
-      const data = snapshot.docs.map((d) => ({
-        id: d.id,
-        name: d.data().name || "",
-        modelIds: Array.isArray(d.data().modelIds) ? d.data().modelIds : [],
-      }));
-      data.sort((a, b) => a.name.localeCompare(b.name, "es"));
-      setColecciones(data);
-    } catch (error) {
-      console.error("Error fetching colecciones:", error);
-    }
-  };
-
-  const fetchModels = async () => {
-    try {
-      const modelsSnapshot = await getDocs(collection(db, "models"));
-      const modelsData = modelsSnapshot.docs.map((doc) => ({
-        id: doc.id,
-        ...doc.data(),
-      }));
-      
-      setModels(modelsData);
-      setFilteredModels(modelsData);
-
-      // Cargar URLs de imágenes desde Firebase Storage
-      const imageURLs = {};
-      await Promise.all(
-        modelsData.map(async (model) => {
-          try {
-            const imageURL = await getModelImageURL(model.id);
-            if (imageURL) {
-              imageURLs[model.id] = imageURL;
-            }
-          } catch {
-            console.log(`No se encontró imagen para el modelo ${model.id}`);
-          }
-        })
-      );
-      
-      setModelImageURLs(imageURLs);
-    } catch (error) {
-      console.error("Error fetching models:", error);
-      setSnackbar({
-        open: true,
-        message: "Error al cargar los modelos",
-        severity: "error",
-      });
-    }
-  };
 
   const handleInputChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -240,9 +204,12 @@ export default function ModelsPage() {
           }
 
           const uploadResult = await uploadResponse.json();
-          console.log("Imagen subida correctamente para modelo:", docRef.id);
-          console.log("URL de la imagen:", uploadResult.downloadURL);
-          
+
+          // Persistir la URL en el documento para evitar llamadas a Storage al listar
+          await updateDoc(doc(db, "models", docRef.id), {
+            imageUrl: uploadResult.downloadURL,
+          });
+
           // Actualizar el estado con la nueva URL de imagen
           setModelImageURLs(prev => ({
             ...prev,
@@ -259,10 +226,10 @@ export default function ModelsPage() {
         }
       }
 
-      fetchModels();
+      refreshCatalogs();
       handleCloseDialog();
     } catch (error) {
-      console.log(error);
+      console.error(error);
       setSnackbar({
         open: true,
         message: "Error al guardar el modelo.",
@@ -309,20 +276,42 @@ export default function ModelsPage() {
         {filteredModels.map((model) => (
           <Grid item xs={12} sm={6} md={4} lg={3} key={model.id}>
             <Card sx={{ maxWidth: 345, boxShadow: 3 }}>
-              <CardMedia
-                component="img"
-                height="200"
-                image={modelImageURLs[model.id] || '/placeholder-image.png'}
-                alt={`Imagen de ${model.name}`}
-                onError={(e) => {
-                  e.target.src = '/placeholder-image.png';
-                  e.target.style.opacity = '0.5';
-                }}
-                sx={{
-                  objectFit: 'cover',
-                  backgroundColor: '#f5f5f5'
-                }}
-              />
+              {model.drawing ? (
+                <Box
+                  sx={{
+                    height: 200,
+                    p: 1,
+                    backgroundColor: '#fafafa',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    overflow: 'hidden',
+                  }}
+                >
+                  <DrawingView
+                    drawing={model.drawing}
+                    widthCm={model.drawing.baseDimension?.width}
+                    heightCm={model.drawing.baseDimension?.height}
+                    showDimensions={false}
+                    style={{ maxHeight: 180 }}
+                  />
+                </Box>
+              ) : (
+                <CardMedia
+                  component="img"
+                  height="200"
+                  image={modelImageURLs[model.id] || '/placeholder-image.png'}
+                  alt={`Imagen de ${model.name}`}
+                  onError={(e) => {
+                    e.target.src = '/placeholder-image.png';
+                    e.target.style.opacity = '0.5';
+                  }}
+                  sx={{
+                    objectFit: 'cover',
+                    backgroundColor: '#f5f5f5'
+                  }}
+                />
+              )}
               <CardContent>
                 <Typography
                   gutterBottom

@@ -16,8 +16,10 @@ NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=tu_sender_id
 NEXT_PUBLIC_FIREBASE_APP_ID=tu_app_id
 NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID=tu_measurement_id
 
-# Firebase Admin (servidor). No subas este JSON.
-# Puedes usar el JSON completo o el par correo + llave.
+# Firebase Admin (servidor). No subas estas credenciales.
+# Opcion A (recomendada): ruta al JSON de la cuenta de servicio.
+FIREBASE_SERVICE_ACCOUNT_PATH=./serviceAccountKey.json
+# Opcion B: el JSON completo en una sola linea, o el par correo + llave.
 FIREBASE_SERVICE_ACCOUNT_JSON=
 FIREBASE_ADMIN_PROJECT_ID=
 FIREBASE_ADMIN_CLIENT_EMAIL=
@@ -45,15 +47,22 @@ FIREBASE_MIGRATION_API_KEY=tu_migration_api_key
 
 3. **Verifica la configuración:**
    ```bash
-   npm run test-env
+   npm run test-env     # variables publicas (cliente)
+   npm run check-admin  # credenciales de Firebase Admin (servidor)
    ```
 
-4. **Migra las contraseñas actuales y asigna al dueño como administrador:**
+4. **Obtén la cuenta de servicio (para el login):**
+   Firebase Console > Configuración del proyecto > Cuentas de servicio >
+   **Generar nueva clave privada**. Descarga el JSON y guárdalo como
+   `serviceAccountKey.json` en la raíz del proyecto (ya está en `.gitignore`).
+   Después corre `npm run check-admin` y reinicia el servidor.
+
+5. **Migra las contraseñas actuales y asigna al dueño como administrador:**
    ```bash
    npm run migrate-passwords -- --owner=usuario_del_dueno
    ```
 
-5. **Publica las reglas** de `firestore.rules` y `storage.rules` en Firebase. Hasta entonces el navegador sigue pudiendo leer los documentos directamente.
+6. **Publica las reglas** de `firestore.rules` y `storage.rules` en Firebase. Hasta entonces el navegador sigue pudiendo leer los documentos directamente.
 
 ## Roles
 

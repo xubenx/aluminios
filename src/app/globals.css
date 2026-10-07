@@ -24,3 +24,26 @@ body {
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
 }
+
+/* Impresion de planos tecnicos: cuando hay un bloque .wo-print en la pagina,
+   se imprime solo ese bloque (plano + bloque de titulo). */
+@media print {
+  body:has(.wo-print) * {
+    visibility: hidden;
+  }
+  body:has(.wo-print) .wo-print,
+  body:has(.wo-print) .wo-print * {
+    visibility: visible;
+  }
+  body:has(.wo-print) .wo-print {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+    padding: 0;
+    margin: 0;
+  }
+  .wo-no-print {
+    display: none !important;
+  }
+}

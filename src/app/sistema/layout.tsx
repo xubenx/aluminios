@@ -39,6 +39,7 @@ import NotificationsIcon from "@mui/icons-material/Notifications";
 import AddCircleOutlineIcon from "@mui/icons-material/AddCircleOutline";
 import CollectionsBookmarkIcon from "@mui/icons-material/CollectionsBookmark";
 import { useAuth } from "../../contexts/AuthContext";
+import { CatalogsProvider } from "../../contexts/CatalogsContext";
 import { canAccessPath, homeForRole, ROLE_LABELS } from "../../lib/roles";
 import Image from "next/image";
 
@@ -267,7 +268,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
             backdropFilter: "blur(18px)",
           }}
         >
-          {children}
+          <CatalogsProvider>{children}</CatalogsProvider>
         </Box>
       </Container>
     </>

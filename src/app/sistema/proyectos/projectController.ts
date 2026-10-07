@@ -26,6 +26,7 @@ export interface ProjectItem {
   dimensions?: {
     height: number;
     width: number;
+    unit?: "cm" | "m";
   };
   selectedGlass?: Glass;
   selectedColor?: Color;
@@ -448,7 +449,7 @@ export const addModelToProject = async (
   modelData: {
     modelId: string;
     modelName: string;
-    dimensions: { height: number; width: number };
+    dimensions: { height: number; width: number; unit?: "cm" | "m" };
     selectedGlass: Glass;
     selectedColor: Color;
     calculations: ModelCalculations;
@@ -520,7 +521,7 @@ export const addIndividualItemToProject = async (
     quantity: number;
     unitPrice: number;
     total: number;
-    dimensions?: { height: number; width: number } | null;
+    dimensions?: { height: number; width: number; unit?: "cm" | "m" } | null;
   }
 ): Promise<void> => {
   try {
