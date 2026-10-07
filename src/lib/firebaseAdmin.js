@@ -29,16 +29,30 @@ function stripQuotes(value) {
 }
 
 // Normaliza la llave privada sin importar como se haya guardado:
-// con \n literales, con saltos reales, con \r\n o con comillas.
+// con \n literales, con saltos reales, con \r\n, con comillas, o pegada junto
+// al nombre del campo (ej: "\"private_key\": \"-----BEGIN...\"").
 function normalizePrivateKey(value) {
   let key = stripQuotes(value);
   if (!key) return "";
   // Comillas escapadas dentro del valor.
   key = key.replace(/^"|"$/g, "");
-  // Un escape de mas (\\n) -> salto real.
+  // Doble escape (\\n) y escape simple (\n) -> salto real.
   key = key.replace(/\\\\n/g, "\n");
-  // \n literal -> salto real.
   key = key.replace(/\\n/g, "\n");
+  key = key.replace(/\r/g, "");
+
+  // Extrae exactamente el bloque PEM, descartando cualquier texto alrededor.
+  const begin = key.indexOf("-----BEGIN");
+  if (begin !== -1) {
+    const endStart = key.indexOf("-----END", begin);
+    if (endStart !== -1) {
+      const endClose = key.indexOf("-----", endStart + 8);
+      const end = endClose !== -1 ? endClose + 5 : key.length;
+      key = key.slice(begin, end);
+    } else {
+      key = key.slice(begin);
+    }
+  }
   return key.trim();
 }
 
